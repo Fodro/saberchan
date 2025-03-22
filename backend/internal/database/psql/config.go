@@ -26,7 +26,7 @@ func (r *repo) ChangeCurrConfig(configId uuid.UUID) error {
 }
 
 func (r *repo) GetCurrentConfig() (*database.Config, error) {
-	stmt := `SELECT nickname, bump_limit, site_name FROM config WHERE current = true ORDER_BY created_at DESC LIMIT 1`
+	stmt := `SELECT nickname, bump_limit, site_name FROM config WHERE current = true ORDER BY created_at DESC LIMIT 1`
 	row := r.db.QueryRow(stmt)
 	var config database.Config
 	if row.Scan(&config.Nickname, &config.BumpLimit) != nil {
@@ -37,7 +37,7 @@ func (r *repo) GetCurrentConfig() (*database.Config, error) {
 }
 
 func (r *repo) GetConfigs() ([]database.Config, error) {
-	stmt := `SELECT nickname, bump_limit, site_name FROM config ORDER_BY created_at DESC`
+	stmt := `SELECT nickname, bump_limit, site_name FROM config ORDER BY created_at DESC`
 	rows, err := r.db.Query(stmt)
 	if err != nil {
 		return nil, err

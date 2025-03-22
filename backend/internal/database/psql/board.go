@@ -12,13 +12,13 @@ func (r *repo) AddBoard(board *database.Board) error {
 }
 
 func (r *repo) DeleteBoard(id uuid.UUID) error {
-	stmt := `DELETE FROM boards WHERE id = $1 CASCADE`
+	stmt := `DELETE FROM board WHERE id = $1 CASCADE`
 	_, err := r.db.Exec(stmt, id)
 	return err
 }
 
 func (r *repo) GetBoardByAlias(alias string) (*database.Board, error) {
-	stmt := `SELECT id, alias, name, description FROM boards WHERE alias = $1`
+	stmt := `SELECT id, alias, name, description FROM board WHERE alias = $1`
 	row := r.db.QueryRow(stmt, alias)
 	var board database.Board
 	if err := row.Scan(&board.ID, &board.Alias, &board.Name, &board.Description); err != nil {
@@ -28,7 +28,7 @@ func (r *repo) GetBoardByAlias(alias string) (*database.Board, error) {
 }
 
 func (r *repo) GetBoards() ([]database.Board, error) {
-	stmt := `SELECT id, alias, name FROM boards ORDER BY alias DESC`
+	stmt := `SELECT id, alias, name, description FROM board ORDER BY alias DESC`
 	rows, err := r.db.Query(stmt)
 	if err != nil {
 		return nil, err
@@ -47,7 +47,7 @@ func (r *repo) GetBoards() ([]database.Board, error) {
 }
 
 func (r *repo) UpdateBoard(board *database.Board) error {
-	stmt := `UPDATE boards SET alias = $1, name = $2, description = $3 WHERE id = $4`
+	stmt := `UPDATE board SET alias = $1, name = $2, description = $3 WHERE id = $4`
 	_, err := r.db.Exec(stmt, board.Alias, board.Name, board.Description, board.ID)
 	return err
 }

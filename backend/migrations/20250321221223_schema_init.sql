@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS post (
 	sage BOOLEAN NOT NULL DEFAULT FALSE,
 	op_marker BOOLEAN NOT NULL DEFAULT FALSE,
 	created_at TIMESTAMP NOT NULL DEFAULT current_timestamp,
-	browser_fingerprint VARCHAR(255) NOT NULL,
+	browser_fingerprint VARCHAR(255),
 	ip VARCHAR(255) NOT NULL,
 	has_attachment BOOLEAN NOT NULL DEFAULT FALSE
 );

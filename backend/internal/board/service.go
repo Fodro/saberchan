@@ -17,7 +17,6 @@ func (s *service) CreateBoard(board *Board) error {
 		Alias:       board.Alias,
 		Name:        board.Name,
 		Description: board.Description,
-		Locked:      board.Locked,
 	}
 
 	err := s.repo.AddBoard(boardDB)
@@ -58,10 +57,14 @@ func (s *service) CreateThread(thread *Thread) error {
 		ID:      uuid.New(),
 		BoardID: thread.BoardID,
 		Title:   thread.Title,
-		Locked:  thread.Locked,
 	}
 
-	return s.repo.AddThread(threadDB)
+	err := s.repo.AddThread(threadDB)
+	if err != nil {
+		return err
+	}
+
+	return s.CreatePost(threadDB.ID, thread.OriginalPost)
 }
 
 func (s *service) DeleteBoard(id uuid.UUID) error {
@@ -111,11 +114,12 @@ func (s *service) GetBoardWithThreads(alias string) (*Board, error) {
 	}
 
 	return &Board{
-		ID:      boardDB.ID,
-		Alias:   boardDB.Alias,
-		Name:    boardDB.Name,
-		Locked:  boardDB.Locked,
-		Threads: threads,
+		ID:          boardDB.ID,
+		Alias:       boardDB.Alias,
+		Name:        boardDB.Name,
+		Locked:      boardDB.Locked,
+		Description: boardDB.Description,
+		Threads:     threads,
 	}, nil
 
 }
@@ -147,9 +151,21 @@ func (s *service) GetThreadWithPosts(id uuid.UUID) (*Thread, error) {
 	if err != nil {
 		return nil, err
 	}
+	var op *Post
 	posts := make([]*Post, 0, len(postsDB))
 	for i, postDB := range postsDB {
 		if i == 0 {
+			op = &Post{
+				ID:                 postDB.ID,
+				Number:             postDB.Number,
+				Text:               postDB.Text,
+				ThreadID:           postDB.ThreadID,
+				Sage:               postDB.Sage,
+				OpMarker:           postDB.OpMarker,
+				BrowserFingerprint: postDB.BrowserFingerprint,
+				IP:                 postDB.IP,
+				Attachments:        nil, //TODO: add attachments
+			}
 			continue
 		}
 		posts = append(posts, &Post{
@@ -165,13 +181,13 @@ func (s *service) GetThreadWithPosts(id uuid.UUID) (*Thread, error) {
 		})
 	}
 	return &Thread{
-		ID:      threadDB.ID,
-		BoardID: threadDB.BoardID,
-		Title:   threadDB.Title,
-		Locked:  threadDB.Locked,
-		UpdatedAt: threadDB.UpdatedAt.String(),
-		OriginalPost: posts[0],
-		Posts:   posts,
+		ID:           threadDB.ID,
+		BoardID:      threadDB.BoardID,
+		Title:        threadDB.Title,
+		Locked:       threadDB.Locked,
+		UpdatedAt:    threadDB.UpdatedAt.String(),
+		OriginalPost: op,
+		Posts:        posts,
 	}, nil
 }
 

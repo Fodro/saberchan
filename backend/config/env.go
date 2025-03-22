@@ -7,7 +7,7 @@ import (
 )
 
 type Config struct {
-	Port    int  `env:"PORT" envDefault:"8080"`
+	Port    string  `env:"PORT" envDefault:"8080"`
 	StoreIp bool `env:"STORE_IP" envDefault:"false"`
 	Secret string `env:"SECRET" envDefault:"dontuseme"`
 

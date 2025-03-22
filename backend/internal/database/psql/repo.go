@@ -20,3 +20,7 @@ func NewRepo(connStr string) database.Repository {
 	}
 	return &repo{db: db}
 }
+
+func (r *repo) Ping() error {
+	return r.db.Ping()
+}

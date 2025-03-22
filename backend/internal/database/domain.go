@@ -37,6 +37,8 @@ type Repository interface {
 	//attachment
 	AddAttachment(attachment *Attachment) error
 	GetAttachments(postID uuid.UUID) ([]Attachment, error)
+
+	Ping() error
 }
 
 type (
