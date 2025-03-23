@@ -55,3 +55,14 @@ func (r *repo) GetOPPost(threadID uuid.UUID) (*database.Post, error) {
 	}
 	return &post, nil
 }
+
+func (r *repo) GetRepliesForThread(threadID uuid.UUID) (uint64, error) {
+	stmt := "SELECT COUNT(id) FROM post WHERE thread_id = $1"
+	row := r.db.QueryRow(stmt, threadID)
+	var count uint64
+	if err := row.Scan(&count); err != nil {
+		return 0, err
+	}
+
+	return count - 1, nil
+}

@@ -33,6 +33,7 @@ type Repository interface {
 	GetPosts(threadID uuid.UUID) ([]Post, error)
 	DeletePost(id uuid.UUID) error
 	GetOPPost(threadID uuid.UUID) (*Post, error)
+	GetRepliesForThread(threadID uuid.UUID) (uint64, error)
 
 	//attachment
 	AddAttachment(attachment *Attachment) error

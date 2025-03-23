@@ -37,6 +37,7 @@ type (
 		Locked bool `json:"locked"`
 		UpdatedAt string `json:"updated_at"`
 		Posts []*Post `json:"posts"`
+		RepliesCount uint64 `json:"replies_count"`
 	}
 
 	Post struct {

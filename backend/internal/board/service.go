@@ -94,6 +94,10 @@ func (s *service) GetBoardWithThreads(alias string) (*Board, error) {
 		if err != nil {
 			return nil, err
 		}
+		repliesCount, err := s.repo.GetRepliesForThread(threadDB.ID)
+		if err != nil {
+			return nil, err
+		}
 		threads = append(threads, &Thread{
 			ID:      threadDB.ID,
 			BoardID: threadDB.BoardID,
@@ -110,6 +114,7 @@ func (s *service) GetBoardWithThreads(alias string) (*Board, error) {
 				IP:                 opPostDB.IP,
 				Attachments:        nil, //TODO: add attachments
 			},
+			RepliesCount: repliesCount,
 		})
 	}
 
