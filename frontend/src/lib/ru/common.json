@@ -1,0 +1,27 @@
+{
+	"recent": "Недавние",
+	"all": "Все",
+	"autoreload": "Автообновление",
+	"disable": "Отключить",
+	"disabled": "Отключено",
+	"cancel": "Отмена",
+	"post": "Отправить!",
+	"you": "Вы",
+	"reply": "Ответить",
+	"op": "ОП",
+	"threads": {
+		"new": "Создать тред"
+	},
+	"fields": {
+		"title": "Заголовок",
+		"title_placeholder": "Введите заголовок...",
+		"text_placeholder": "Введите текст...",
+		"text": "Текст",
+		"files": "Файлы",
+		"captcha": "Капча"
+	},
+	"boards": {
+		"list_title": "Доски",
+		"noRecent": "Нет недавних досок..."
+	}
+}

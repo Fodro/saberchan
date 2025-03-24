@@ -37,6 +37,7 @@
 	},
 	"dependencies": {
 		"mode-watcher": "^0.5.1",
-		"svelte-radix": "^2.0.1"
+		"svelte-radix": "^2.0.1",
+		"sveltekit-i18n": "^2.4.2"
 	}
 }

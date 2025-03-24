@@ -7,5 +7,6 @@ export type Post = {
 	op_marker: boolean;
 	browser_fingerprint: string;
 	ip: string;
+	created_at: string;
 	attachments: null;
 };

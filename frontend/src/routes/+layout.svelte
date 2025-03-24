@@ -9,6 +9,7 @@
 	import { Button } from "$lib/components/ui/button/index.js";
 	import { goto, invalidate } from "$app/navigation";
 	import { onMount, setContext } from "svelte";
+	import { t } from "$lib/translations";
 
 	let intervals = [1, 5, 10, 15, 30, 60];
 
@@ -45,6 +46,7 @@
 	onMount(() => {
 		const savedInterval = localStorage.getItem("autoreload");
 		interval = savedInterval !== null ? +savedInterval : 9999;
+		console.log($t("common.autoreload"));
 	});
 
 	let { children, data } = $props();

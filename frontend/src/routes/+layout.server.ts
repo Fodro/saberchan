@@ -1,4 +1,5 @@
 import { MAIN_BACKEND_URL } from '$env/static/private';
+import { loadTranslations, translations } from '$lib/translations';
 import type { Board } from '$lib/types/board';
 import type { Metadata } from '$lib/types/metadata';
 import type { LayoutServerLoad } from './$types';
@@ -20,5 +21,11 @@ export const load: LayoutServerLoad = async ({ fetch, cookies, depends }) => {
 
 	depends('board:all');
 
-	return { boards, meta };
+	const locale = cookies.get('locale') || 'en';
+	await loadTranslations(locale, '/');
+
+	return {
+		boards, meta, 
+		i18n: { locale, route: '/' },
+		translations: translations.get() };
 };

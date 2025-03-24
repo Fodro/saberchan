@@ -1,0 +1,27 @@
+{
+	"recent": "Recent",
+	"all": "All",
+	"autoreload": "Autoreload",
+	"disable": "Disable",
+	"disabled": "Off",
+	"cancel": "Cancel",
+	"post": "Post!",
+	"you": "You",
+	"reply": "Reply",
+	"op": "OP",
+	"threads": {
+		"new": "New Thread"
+	},
+	"fields": {
+		"title": "Title",
+		"title_placeholder": "Type your title here",
+		"text_placeholder": "Type your text here...",
+		"text": "Text",
+		"files": "Files",
+		"captcha": "Captcha"
+	},
+	"boards": {
+		"list_title": "Boards",
+		"noRecent": "No recent boards..."
+	}
+}

@@ -8,6 +8,7 @@
 	import Label from "$lib/components/ui/label/label.svelte";
 	import { Separator } from "$lib/components/ui/separator/index.js";
 	import { Textarea } from "$lib/components/ui/textarea/index.js";
+	import { formatDateTime } from "$lib/helpers.js";
 	import { trackBoard } from "$lib/tracking";
 	import type { Thread } from "$lib/types/thread.js";
 	import { getContext, onMount } from "svelte";
@@ -80,6 +81,7 @@
 					</div>
 				</div>
 			</Card.Content>
+			<!-- TODO: add captcha -->
 			<Card.Footer>
 				<div
 					class="flex flex-row justify-start items-center gap-4 w-full h-full"
@@ -111,7 +113,7 @@
 							await window.open(
 								`/board/${data.slug}/thread/${thread.id}`,
 								"_blank",
-								"noopener"
+								"noopener",
 							);
 						}}
 					>
@@ -137,14 +139,17 @@
 				</Card.Title>
 				<Card.Description>
 					anon #{thread.original_post.number}, replies: {thread.replies_count}
+					at {formatDateTime(thread.original_post.created_at)}
 				</Card.Description>
 			</Card.Header>
 			<Card.Content>
 				{#if thread.original_post.text.length <= 400}
-					<p>{thread.original_post.text}</p>
+					<p class="leading-7">{thread.original_post.text}</p>
 				{/if}
 				{#if thread.original_post.text.length > 400}
-					<p>{thread.original_post.text.substring(0, 400)}...</p>
+					<p class="leading-7">
+						{thread.original_post.text.substring(0, 400)}...
+					</p>
 				{/if}
 			</Card.Content>
 			<Card.Footer>
