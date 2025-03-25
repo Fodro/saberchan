@@ -54,6 +54,7 @@
 		{data.board.name}
 	</h3>
 	<Button
+		class="cursor-pointer"
 		on:click={() => {
 			isReplyOpen = !isReplyOpen;
 		}}
@@ -89,6 +90,7 @@
 						>
 							<Label>{$t("common.fields.text")}</Label>
 							<Button
+								class="cursor-pointer"
 								size="icon"
 								variant="outline"
 								on:click={() => {
@@ -101,6 +103,7 @@
 								<FontBold />
 							</Button>
 							<Button
+								class="cursor-pointer"
 								size="icon"
 								variant="outline"
 								on:click={() => {
@@ -113,6 +116,7 @@
 								<FontItalic />
 							</Button>
 							<Button
+								class="cursor-pointer"
 								size="icon"
 								variant="outline"
 								on:click={() => {
@@ -125,6 +129,7 @@
 								<Underline />
 							</Button>
 							<Button
+								class="cursor-pointer"
 								size="icon"
 								variant="outline"
 								on:click={() => {
@@ -137,6 +142,7 @@
 								<Overline />
 							</Button>
 							<Button
+								class="cursor-pointer"
 								size="icon"
 								variant="outline"
 								on:click={() => {
@@ -149,6 +155,7 @@
 								<TextNone />
 							</Button>
 							<Button
+								class="cursor-pointer"
 								size="icon"
 								variant="outline"
 								on:click={() => {
@@ -161,6 +168,7 @@
 								<CaretUp />
 							</Button>
 							<Button
+								class="cursor-pointer"
 								size="icon"
 								variant="outline"
 								on:click={() => {
@@ -173,6 +181,7 @@
 								<CaretDown />
 							</Button>
 							<Button
+								class="cursor-pointer"
 								size="icon"
 								variant="outline"
 								on:click={() => {
@@ -189,6 +198,7 @@
 								<TransparencyGrid />
 							</Button>
 							<Button
+								class="cursor-pointer"
 								size="icon"
 								variant="outline"
 								on:click={() => {
@@ -217,6 +227,7 @@
 					class="flex flex-row justify-start items-center gap-4 w-full h-full"
 				>
 					<Button
+						class="cursor-pointer"
 						variant="secondary"
 						on:click={() => {
 							isReplyOpen = !isReplyOpen;
@@ -225,6 +236,7 @@
 						{$t("common.cancel")}
 					</Button>
 					<Button
+						class="cursor-pointer"
 						on:click={async () => {
 							const res = await fetch("/api/thread", {
 								method: "POST",
@@ -287,6 +299,7 @@
 			</Card.Content>
 			<Card.Footer>
 				<Button
+					class="cursor-pointer"
 					href={`/board/${data.slug}/thread/${thread.id}`}
 					target="_blank"
 					rel="noreferrer noopener"

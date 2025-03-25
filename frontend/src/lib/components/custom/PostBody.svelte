@@ -56,12 +56,8 @@
 		<!-- svelte-ignore event_directive_deprecated -->
 		<a
 			class="text-orange-500 hover:underline cursor-pointer"
-			href={`${window.location.href.split("#")[0]}#${line.trim().replaceAll(">>", "")}`}
+			href={`#${line.trim().replaceAll(">>", "")}`}
 			data-sveltekit-reload
-			on:click={() => {
-				const link = `${window.location.href.split("#")[0]}#${line.trim().replaceAll(">>", "")}`;
-				goto("/").then(() => goto(link));
-			}}
 		>
 			<Render html={line.trim()} options={sanitizeOpts} />
 		</a>

@@ -62,6 +62,7 @@
 				Saberchan
 			</h2>
 			<Button
+				class="cursor-pointer"
 				on:click={() => {
 					goto("/");
 				}}
@@ -76,6 +77,7 @@
 			{#if data.i18n.locale === "ru"}
 				<Button
 					variant="secondary"
+					class="cursor-pointer"
 					on:click={async () => {
 						await fetch("/locale", {
 							method: "POST",
@@ -91,6 +93,7 @@
 			{#if data.i18n.locale === "en"}
 				<Button
 					variant="secondary"
+					class="cursor-pointer"
 					on:click={async () => {
 						await fetch("/locale", {
 							method: "POST",
@@ -103,7 +106,7 @@
 					EN
 				</Button>
 			{/if}
-			<Button on:click={toggleMode} size="icon">
+			<Button on:click={toggleMode} size="icon" class="cursor-pointer">
 				<Sun
 					class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
 				/>

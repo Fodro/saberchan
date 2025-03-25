@@ -15,6 +15,7 @@ export const load: LayoutServerLoad = async ({ params, depends, fetch, cookies }
 		if (thread.original_post.browser_fingerprint === fingerprint) {
 			thread.is_author = true;
 		}
+		thread.original_post.browser_fingerprint = ""
 	})
 
 	return { slug, board };

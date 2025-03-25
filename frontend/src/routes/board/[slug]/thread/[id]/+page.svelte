@@ -34,23 +34,13 @@
 	let newSage = $state(false);
 	let newOP = $state(false);
 	let isReplyOpen = $state(false);
-	let hash = $state("");
 	let counter: () => number = getContext("counter");
 
 	const { data } = $props();
 
 	$effect(() => {
-		scrollIntoView(hash.replaceAll("#", ""));
-	});
-
-	$effect(() => {
 		counter();
 		invalidate("thread:id");
-	});
-
-	onMount(() => {
-		console.log(window.location.hash);
-		hash = window.location.hash;
 	});
 </script>
 
@@ -68,6 +58,7 @@
 		{data.thread.title}
 	</h3>
 	<Button
+		class="cursor-pointer"
 		on:click={() => {
 			isReplyOpen = !isReplyOpen;
 		}}
@@ -83,7 +74,7 @@
 	<div class="grid grid-cols-1 gap-4 pb-2">
 		<Card.Root
 			id={`${data.thread.original_post.number}`}
-			class={`${hash === `#${data.thread.original_post.number}` ? "border-sky-500" : ""} ${data.thread.original_post.is_author ? "outline" : ""}`}
+			class="target:border-sky-500"
 		>
 			<Card.Header>
 				<Card.Title
@@ -108,6 +99,7 @@
 					class="flex flex-row justify-start items-center gap-4 w-full h-full"
 				>
 					<Button
+						class="cursor-pointer"
 						variant="secondary"
 						on:click={() => {
 							const toAppend = `>>${data.thread.original_post.number}\n`;
@@ -120,6 +112,7 @@
 						{$t("common.reply")}
 					</Button>
 					<Button
+						class="cursor-pointer"
 						variant="outline"
 						on:click={async () => {
 							const link = `${window.location.href}#${data.thread.original_post.number}`;
@@ -133,10 +126,7 @@
 			</Card.Footer>
 		</Card.Root>
 		{#each data.thread.posts as post}
-			<Card.Root
-				id={`${post.number}`}
-				class={`${hash === `#${post.number}` ? "border-sky-500" : ""} ${post.is_author ? "outline" : ""}`}
-			>
+			<Card.Root id={`${post.number}`} class="target:border-sky-500">
 				<Card.Header>
 					<Card.Title
 						>anon #{post.number}
@@ -169,6 +159,7 @@
 						class="flex flex-row justify-start items-center gap-4 w-full h-full"
 					>
 						<Button
+							class="cursor-pointer"
 							variant="secondary"
 							on:click={() => {
 								const toAppend = `>>${post.number}\n`;
@@ -181,6 +172,7 @@
 							{$t("common.reply")}
 						</Button>
 						<Button
+							class="cursor-pointer"
 							variant="outline"
 							on:click={async () => {
 								const base = window.location.href.split("#");
@@ -207,7 +199,11 @@
 			<Card.Content>
 				<div class="grid grid-cols-1 w-full items-center gap-4">
 					<div class="flex flex-row justify-start items-center gap-2">
-						<Checkbox id="sage" bind:checked={newSage} />
+						<Checkbox
+							id="sage"
+							bind:checked={newSage}
+							class="cursor-pointer"
+						/>
 						<Label>
 							{$t("common.fields.sage")}
 						</Label>
@@ -216,7 +212,11 @@
 						<div
 							class="flex flex-row justify-start items-center gap-2"
 						>
-							<Checkbox id="op" bind:checked={newOP} />
+							<Checkbox
+								id="op"
+								bind:checked={newOP}
+								class="cursor-pointer"
+							/>
 							<Label>
 								{$t("common.op")}
 							</Label>
@@ -228,6 +228,7 @@
 						>
 							<Label>{$t("common.fields.text")}</Label>
 							<Button
+								class="cursor-pointer"
 								size="icon"
 								variant="outline"
 								on:click={() => {
@@ -240,6 +241,7 @@
 								<FontBold />
 							</Button>
 							<Button
+								class="cursor-pointer"
 								size="icon"
 								variant="outline"
 								on:click={() => {
@@ -252,6 +254,7 @@
 								<FontItalic />
 							</Button>
 							<Button
+								class="cursor-pointer"
 								size="icon"
 								variant="outline"
 								on:click={() => {
@@ -264,6 +267,7 @@
 								<Underline />
 							</Button>
 							<Button
+								class="cursor-pointer"
 								size="icon"
 								variant="outline"
 								on:click={() => {
@@ -276,6 +280,7 @@
 								<Overline />
 							</Button>
 							<Button
+								class="cursor-pointer"
 								size="icon"
 								variant="outline"
 								on:click={() => {
@@ -288,6 +293,7 @@
 								<TextNone />
 							</Button>
 							<Button
+								class="cursor-pointer"
 								size="icon"
 								variant="outline"
 								on:click={() => {
@@ -300,6 +306,7 @@
 								<CaretUp />
 							</Button>
 							<Button
+								class="cursor-pointer"
 								size="icon"
 								variant="outline"
 								on:click={() => {
@@ -312,6 +319,7 @@
 								<CaretDown />
 							</Button>
 							<Button
+								class="cursor-pointer"
 								size="icon"
 								variant="outline"
 								on:click={() => {
@@ -328,6 +336,7 @@
 								<TransparencyGrid />
 							</Button>
 							<Button
+								class="cursor-pointer"
 								size="icon"
 								variant="outline"
 								on:click={() => {
@@ -356,6 +365,7 @@
 					class="flex flex-row justify-start items-center gap-4 w-full h-full"
 				>
 					<Button
+						class="cursor-pointer"
 						variant="secondary"
 						on:click={() => {
 							isReplyOpen = !isReplyOpen;
@@ -364,6 +374,7 @@
 						{$t("common.cancel")}
 					</Button>
 					<Button
+						class="cursor-pointer"
 						on:click={async () => {
 							await fetch("/api/post", {
 								method: "POST",

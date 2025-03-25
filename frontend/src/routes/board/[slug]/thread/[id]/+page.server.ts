@@ -16,10 +16,13 @@ export const load: PageServerLoad = async ({ params, depends, fetch, cookies }) 
 		thread.original_post.is_author = true;
 	}
 
+	thread.original_post.browser_fingerprint = ""
+
 	thread.posts.forEach((post) => {
 		if (post.browser_fingerprint === fingerprint) {
 			post.is_author = true;
 		}
+		post.browser_fingerprint = ""
 	})
 
 	return { slug, thread };
