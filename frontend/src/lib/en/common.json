@@ -9,6 +9,8 @@
 	"you": "You",
 	"reply": "Reply",
 	"op": "OP",
+	"copy_link": "Copy Link",
+	"copied": "Link copied!",
 	"threads": {
 		"new": "New Thread"
 	},
@@ -18,10 +20,16 @@
 		"text_placeholder": "Type your text here...",
 		"text": "Text",
 		"files": "Files",
-		"captcha": "Captcha"
+		"captcha": "Captcha",
+		"sage": "Sage"
 	},
 	"boards": {
 		"list_title": "Boards",
 		"noRecent": "No recent boards..."
+	},
+	"posts": {
+		"replies": "replies",
+		"at": "at",
+		"new": "New Post"
 	}
 }

@@ -9,4 +9,5 @@ export type Post = {
 	ip: string;
 	created_at: string;
 	attachments: null;
+	is_author: boolean;
 };

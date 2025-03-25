@@ -2,16 +2,17 @@
 	import { HoverCard, HoverCardTrigger } from "$lib/components/ui/hover-card";
 	import { Separator } from "$lib/components/ui/separator/index.js";
 	import HoverCardContent from "$lib/components/ui/hover-card/hover-card-content.svelte";
+	import { t } from "$lib/translations";
 
 	let { data } = $props();
 </script>
 
 <svelte:head>
-	<title>Saberchan - Boards</title>
+	<title>Saberchan - {$t("common.boards.list_title")}</title>
 </svelte:head>
 
 <h3 class="mt-8 scroll-m-20 text-2xl font-semibold tracking-tight mb-5">
-	Boards
+	{$t("common.boards.list_title")}
 </h3>
 
 <Separator class="my-4" />

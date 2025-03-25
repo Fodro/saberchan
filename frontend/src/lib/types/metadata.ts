@@ -5,3 +5,7 @@ export type Metadata = {
 export type VisitedBoard = {
 	alias: string;
 }
+
+export type Locale = {
+	locale: string;
+};

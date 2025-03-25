@@ -7,3 +7,21 @@ export const formatDateTime = (dateStr: string): string => {
 const addZero = (num: number): string => {
 	return num < 10 ? "0" + num : "" + num
 }
+
+export const scrollIntoView = (id: string) => {
+	const el = document.getElementById(id);
+	if (!el) return;
+	el.scrollIntoView({
+		behavior: 'smooth'
+	});
+}
+
+export const insertTagAtCursor = (myField: HTMLTextAreaElement, open: string, close: string) => {
+	if (myField.selectionStart || myField.selectionStart === 0) {
+		const startPos = myField.selectionStart;
+		const endPos = myField.selectionEnd;
+		myField.value = myField.value.substring(0, startPos) + open + myField.value.substring(startPos, endPos) + close + myField.value.substring(endPos, myField.value.length);
+	} else {
+		myField.value += open + close;
+	}
+}

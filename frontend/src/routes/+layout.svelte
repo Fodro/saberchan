@@ -1,5 +1,6 @@
 <script lang="ts">
 	import "../app.css";
+	import { Toaster } from "$lib/components/ui/sonner";
 	import * as Menubar from "$lib/components/ui/menubar/index.js";
 	import { ModeWatcher } from "mode-watcher";
 	import Sun from "svelte-radix/Sun.svelte";
@@ -46,7 +47,6 @@
 	onMount(() => {
 		const savedInterval = localStorage.getItem("autoreload");
 		interval = savedInterval !== null ? +savedInterval : 9999;
-		console.log($t("common.autoreload"));
 	});
 
 	let { children, data } = $props();
@@ -72,6 +72,37 @@
 			</Button>
 		</div>
 		<div class="flex flex-row-reverse basis-1/2 gap-3">
+			<!-- TODO: make a select -->
+			{#if data.i18n.locale === "ru"}
+				<Button
+					variant="secondary"
+					on:click={async () => {
+						await fetch("/locale", {
+							method: "POST",
+							body: JSON.stringify({
+								locale: "en",
+							}),
+						});
+					}}
+				>
+					RU
+				</Button>
+			{/if}
+			{#if data.i18n.locale === "en"}
+				<Button
+					variant="secondary"
+					on:click={async () => {
+						await fetch("/locale", {
+							method: "POST",
+							body: JSON.stringify({
+								locale: "ru",
+							}),
+						});
+					}}
+				>
+					EN
+				</Button>
+			{/if}
 			<Button on:click={toggleMode} size="icon">
 				<Sun
 					class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
@@ -84,14 +115,16 @@
 	</div>
 	<Menubar.Root>
 		<Menubar.Menu>
-			<Menubar.Trigger>Boards</Menubar.Trigger>
+			<Menubar.Trigger>{$t("common.boards.list_title")}</Menubar.Trigger>
 			<Menubar.Content>
 				<Menubar.Sub>
-					<Menubar.SubTrigger>Recent</Menubar.SubTrigger>
+					<Menubar.SubTrigger
+						>{$t("common.recent")}</Menubar.SubTrigger
+					>
 					<Menubar.SubContent>
 						{#if data.meta.recentBoards.length === 0}
 							<Menubar.Item disabled>
-								No recent boards
+								{$t("common.boards.noRecent")}
 							</Menubar.Item>
 						{/if}
 						{#each data.meta.recentBoards as alias}
@@ -124,9 +157,9 @@
 		</Menubar.Menu>
 		<Menubar.Menu>
 			<Menubar.Trigger>
-				Autoreload: {interval && interval !== 9999
+				{$t("common.autoreload")}: {interval && interval !== 9999
 					? `${interval}s`
-					: "disabled"}
+					: $t("common.disabled")}
 			</Menubar.Trigger>
 			<Menubar.Content>
 				<Menubar.Item
@@ -135,7 +168,7 @@
 						interval = undefined;
 					}}
 				>
-					Disable
+					{$t("common.disable")}
 				</Menubar.Item>
 				{#each intervals as i}
 					<Menubar.Item
@@ -153,3 +186,5 @@
 
 	{@render children()}
 </div>
+
+<Toaster />
