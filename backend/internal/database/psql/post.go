@@ -6,8 +6,8 @@ import (
 )
 
 func (r *repo) AddPost(post *database.Post) error {
-	stmt := `INSERT INTO post (id, text, thread_id, sage, browser_fingerprint, ip) VALUES ($1, $2, $3, $4, $5, $6)`
-	_, err := r.db.Exec(stmt, post.ID, post.Text, post.ThreadID, post.Sage, post.BrowserFingerprint, post.IP)
+	stmt := `INSERT INTO post (id, text, thread_id, sage, browser_fingerprint, ip, op_marker) VALUES ($1, $2, $3, $4, $5, $6, $7)`
+	_, err := r.db.Exec(stmt, post.ID, post.Text, post.ThreadID, post.Sage, post.BrowserFingerprint, post.IP, post.OpMarker)
 	return err
 }
 

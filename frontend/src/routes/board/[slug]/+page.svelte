@@ -258,7 +258,7 @@
 	</Draggable>
 {/if}
 
-<div class="grid grid-cols-2 gap-4">
+<div class="grid grid-cols-2 gap-4 pb-2">
 	{#each data.board.threads as thread}
 		<Card.Root>
 			<Card.Header>

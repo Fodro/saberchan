@@ -1,7 +1,11 @@
 <script lang="ts">
 	import Separator from "$lib/components/ui/separator/separator.svelte";
 	import * as Card from "$lib/components/ui/card/index.js";
-	import { formatDateTime, insertTagAtCursor, scrollIntoView } from "$lib/helpers.js";
+	import {
+		formatDateTime,
+		insertTagAtCursor,
+		scrollIntoView,
+	} from "$lib/helpers.js";
 	import Badge from "$lib/components/ui/badge/badge.svelte";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import DoubleArrowDown from "svelte-radix/DoubleArrowDown.svelte";
@@ -10,19 +14,37 @@
 	import { Textarea } from "$lib/components/ui/textarea/index.js";
 	import { Label } from "$lib/components/ui/label/index.js";
 	import { Checkbox } from "$lib/components/ui/checkbox/index.js";
-	import { onMount } from "svelte";
+	import { getContext, onMount } from "svelte";
 	import { toast } from "svelte-sonner";
-    import { FontBold, FontItalic, Underline, Overline, TextNone, CaretUp, CaretDown, TransparencyGrid, CaretRight } from "svelte-radix";
+	import {
+		FontBold,
+		FontItalic,
+		Underline,
+		Overline,
+		TextNone,
+		CaretUp,
+		CaretDown,
+		TransparencyGrid,
+		CaretRight,
+	} from "svelte-radix";
+	import { invalidate } from "$app/navigation";
 
 	let newText = $state("");
 	let newSage = $state(false);
+	let newOP = $state(false);
 	let isReplyOpen = $state(false);
 	let hash = $state("");
+	let counter: () => number = getContext("counter");
 
 	const { data } = $props();
 
 	$effect(() => {
 		scrollIntoView(hash);
+	});
+
+	$effect(() => {
+		counter();
+		invalidate("thread:id");
 	});
 
 	onMount(() => {
@@ -56,8 +78,11 @@
 		{/if}
 	</Button>
 	<Separator />
-	<div class="grid grid-cols-1 gap-4">
-		<Card.Root id={`#${data.thread.original_post.number}`} class={`${hash === `#${data.thread.original_post.number}` ? 'border-sky-500' : ''} ${data.thread.original_post.is_author ? 'outline' : ''}`}>
+	<div class="grid grid-cols-1 gap-4 pb-2">
+		<Card.Root
+			id={`#${data.thread.original_post.number}`}
+			class={`${hash === `#${data.thread.original_post.number}` ? "border-sky-500" : ""} ${data.thread.original_post.is_author ? "outline" : ""}`}
+		>
 			<Card.Header>
 				<Card.Title
 					>anon #{data.thread.original_post.number}
@@ -108,7 +133,10 @@
 			</Card.Footer>
 		</Card.Root>
 		{#each data.thread.posts as post}
-			<Card.Root id={`#${post.number}`} class={`${hash === `#${post.number}` ? 'border-sky-500' : ''} ${post.is_author ? 'outline' : ''}`}>
+			<Card.Root
+				id={`#${post.number}`}
+				class={`${hash === `#${post.number}` ? "border-sky-500" : ""} ${post.is_author ? "outline" : ""}`}
+			>
 				<Card.Header>
 					<Card.Title
 						>anon #{post.number}
@@ -157,7 +185,7 @@
 						<Button
 							variant="outline"
 							on:click={async () => {
-								const base = window.location.href.split('#');
+								const base = window.location.href.split("#");
 								const link = `${base[0]}#${post.number}`;
 								await navigator.clipboard.writeText(link);
 								toast.success($t("common.copied"));
@@ -186,6 +214,16 @@
 							{$t("common.fields.sage")}
 						</Label>
 					</div>
+					{#if data.thread.original_post.is_author}
+						<div
+							class="flex flex-row justify-start items-center gap-2"
+						>
+							<Checkbox id="op" bind:checked={newOP} />
+							<Label>
+								{$t("common.op")}
+							</Label>
+						</div>
+					{/if}
 					<div class="flex flex-col justify-start items-start gap-3">
 						<div
 							class="flex flex-row justify-start items-center gap-2"
@@ -196,7 +234,7 @@
 								variant="outline"
 								on:click={() => {
 									const field = document.getElementById(
-										"new-thread-area",
+										"new-post-area",
 									) as HTMLTextAreaElement;
 									insertTagAtCursor(field, "[b]", "[/b]");
 								}}
@@ -208,7 +246,7 @@
 								variant="outline"
 								on:click={() => {
 									const field = document.getElementById(
-										"new-thread-area",
+										"new-post-area",
 									) as HTMLTextAreaElement;
 									insertTagAtCursor(field, "[i]", "[/i]");
 								}}
@@ -220,7 +258,7 @@
 								variant="outline"
 								on:click={() => {
 									const field = document.getElementById(
-										"new-thread-area",
+										"new-post-area",
 									) as HTMLTextAreaElement;
 									insertTagAtCursor(field, "[u]", "[/u]");
 								}}
@@ -232,7 +270,7 @@
 								variant="outline"
 								on:click={() => {
 									const field = document.getElementById(
-										"new-thread-area",
+										"new-post-area",
 									) as HTMLTextAreaElement;
 									insertTagAtCursor(field, "[o]", "[/o]");
 								}}
@@ -244,7 +282,7 @@
 								variant="outline"
 								on:click={() => {
 									const field = document.getElementById(
-										"new-thread-area",
+										"new-post-area",
 									) as HTMLTextAreaElement;
 									insertTagAtCursor(field, "[s]", "[/s]");
 								}}
@@ -256,7 +294,7 @@
 								variant="outline"
 								on:click={() => {
 									const field = document.getElementById(
-										"new-thread-area",
+										"new-post-area",
 									) as HTMLTextAreaElement;
 									insertTagAtCursor(field, "[sup]", "[/sup]");
 								}}
@@ -268,7 +306,7 @@
 								variant="outline"
 								on:click={() => {
 									const field = document.getElementById(
-										"new-thread-area",
+										"new-post-area",
 									) as HTMLTextAreaElement;
 									insertTagAtCursor(field, "[sub]", "[/sub]");
 								}}
@@ -280,7 +318,7 @@
 								variant="outline"
 								on:click={() => {
 									const field = document.getElementById(
-										"new-thread-area",
+										"new-post-area",
 									) as HTMLTextAreaElement;
 									insertTagAtCursor(
 										field,
@@ -296,19 +334,16 @@
 								variant="outline"
 								on:click={() => {
 									const field = document.getElementById(
-										"new-thread-area",
+										"new-post-area",
 									) as HTMLTextAreaElement;
-									insertTagAtCursor(
-										field,
-										"\n>",
-										"\n",
-									);
+									insertTagAtCursor(field, "\n>", "\n");
 								}}
 							>
 								<CaretRight />
 							</Button>
 						</div>
 						<Textarea
+							id="new-post-area"
 							placeholder={$t("common.fields.text_placeholder")}
 							rows={10}
 							class="min-h-[70%] w-full resize-none"
@@ -332,7 +367,18 @@
 					</Button>
 					<Button
 						on:click={async () => {
+							await fetch("/api/post", {
+								method: "POST",
+								body: JSON.stringify({
+									thread_id: data.thread.id,
+									text: newText,
+									sage: newSage,
+									op_marker: newOP,
+								}),
+							});
 							newText = "";
+							newSage = false;
+							newOP = false;
 							isReplyOpen = false;
 						}}
 					>
