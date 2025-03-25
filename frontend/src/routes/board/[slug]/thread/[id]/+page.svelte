@@ -28,6 +28,7 @@
 		CaretRight,
 	} from "svelte-radix";
 	import { invalidate } from "$app/navigation";
+	import PostBody from "$lib/components/custom/PostBody.svelte";
 
 	let newText = $state("");
 	let newSage = $state(false);
@@ -39,7 +40,7 @@
 	const { data } = $props();
 
 	$effect(() => {
-		scrollIntoView(hash);
+		scrollIntoView(hash.replaceAll("#", ""));
 	});
 
 	$effect(() => {
@@ -48,6 +49,7 @@
 	});
 
 	onMount(() => {
+		console.log(window.location.hash);
 		hash = window.location.hash;
 	});
 </script>
@@ -80,7 +82,7 @@
 	<Separator />
 	<div class="grid grid-cols-1 gap-4 pb-2">
 		<Card.Root
-			id={`#${data.thread.original_post.number}`}
+			id={`${data.thread.original_post.number}`}
 			class={`${hash === `#${data.thread.original_post.number}` ? "border-sky-500" : ""} ${data.thread.original_post.is_author ? "outline" : ""}`}
 		>
 			<Card.Header>
@@ -98,9 +100,7 @@
 			</Card.Header>
 			<Card.Content>
 				<div class="flex flex-col justify-center items-start gap-2">
-					<p class="leading-7 whitespace-pre-wrap">
-						{data.thread.original_post.text}
-					</p>
+					<PostBody text={data.thread.original_post.text} />
 				</div>
 			</Card.Content>
 			<Card.Footer>
@@ -134,7 +134,7 @@
 		</Card.Root>
 		{#each data.thread.posts as post}
 			<Card.Root
-				id={`#${post.number}`}
+				id={`${post.number}`}
 				class={`${hash === `#${post.number}` ? "border-sky-500" : ""} ${post.is_author ? "outline" : ""}`}
 			>
 				<Card.Header>
@@ -161,9 +161,7 @@
 				</Card.Header>
 				<Card.Content>
 					<div class="flex flex-col justify-center items-start gap-2">
-						<p class="leading-7 whitespace-pre-wrap">
-							{post.text}
-						</p>
+						<PostBody text={post.text} />
 					</div>
 				</Card.Content>
 				<Card.Footer>

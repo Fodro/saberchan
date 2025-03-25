@@ -1,3 +1,5 @@
+import type { Attachment } from "./attachment";
+
 export type Post = {
 	id: string;
 	number: number;
@@ -8,6 +10,6 @@ export type Post = {
 	browser_fingerprint: string;
 	ip: string;
 	created_at: string;
-	attachments: null;
+	attachments: Attachment[];
 	is_author: boolean;
 };

@@ -24,6 +24,7 @@
 		TransparencyGrid,
 		Underline,
 	} from "svelte-radix";
+	import PostBody from "$lib/components/custom/PostBody.svelte";
 
 	let { data } = $props();
 
@@ -194,11 +195,7 @@
 									const field = document.getElementById(
 										"new-thread-area",
 									) as HTMLTextAreaElement;
-									insertTagAtCursor(
-										field,
-										"\n>",
-										"\n",
-									);
+									insertTagAtCursor(field, "\n>", "\n");
 								}}
 							>
 								<CaretRight />
@@ -280,9 +277,7 @@
 			</Card.Header>
 			<Card.Content>
 				{#if thread.original_post.text.length <= 400}
-					<p class="leading-7 whitespace-pre-wrap">
-						{thread.original_post.text}
-					</p>
+					<PostBody text={thread.original_post.text} />
 				{/if}
 				{#if thread.original_post.text.length > 400}
 					<p class="leading-7 whitespace-pre-wrap">
