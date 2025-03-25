@@ -1,6 +1,8 @@
 package board
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 )
 
@@ -11,7 +13,7 @@ type Service interface {
 	DeleteBoard(id uuid.UUID) error
 	UpdateBoard(board *Board) error
 
-	CreateThread(thread *Thread) error
+	CreateThread(thread *Thread) (*Thread, error)
 	GetThreadWithPosts(id uuid.UUID) (*Thread, error)
 	DeleteThread(id uuid.UUID) error
 
@@ -49,6 +51,7 @@ type (
 		OpMarker bool `json:"op_marker"`
 		BrowserFingerprint string `json:"browser_fingerprint"`
 		IP string `json:"ip"`
+		CreatedAt time.Time `json:"created_at"`
 		Attachments []Attachment `json:"attachments"`
 	}
 

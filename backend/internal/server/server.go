@@ -110,8 +110,14 @@ func (s *Server) CreateThread(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if err := s.board.CreateThread(&thread); err != nil {
+	res, err := s.board.CreateThread(&thread)
+	if err != nil {
 		log.Printf("failed to create thread: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if err := json.NewEncoder(w).Encode(res); err != nil {
+		log.Printf("failed to encode response: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

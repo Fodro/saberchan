@@ -52,7 +52,7 @@ func (s *service) CreatePost(threadID uuid.UUID, post *Post) error {
 	return nil
 }
 
-func (s *service) CreateThread(thread *Thread) error {
+func (s *service) CreateThread(thread *Thread) (*Thread, error) {
 	threadDB := &database.Thread{
 		ID:      uuid.New(),
 		BoardID: thread.BoardID,
@@ -61,10 +61,24 @@ func (s *service) CreateThread(thread *Thread) error {
 
 	err := s.repo.AddThread(threadDB)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return s.CreatePost(threadDB.ID, thread.OriginalPost)
+	err = s.CreatePost(threadDB.ID, thread.OriginalPost)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Thread{
+		ID:           threadDB.ID,
+		BoardID:      threadDB.BoardID,
+		Title:        threadDB.Title,
+		OriginalPost: nil,
+		Locked:       threadDB.Locked,
+		UpdatedAt:    "",
+		Posts:        []*Post{},
+		RepliesCount: 0,
+	}, nil
 }
 
 func (s *service) DeleteBoard(id uuid.UUID) error {
@@ -112,6 +126,7 @@ func (s *service) GetBoardWithThreads(alias string) (*Board, error) {
 				OpMarker:           opPostDB.OpMarker,
 				BrowserFingerprint: opPostDB.BrowserFingerprint,
 				IP:                 opPostDB.IP,
+				CreatedAt:          opPostDB.CreatedAt,
 				Attachments:        nil, //TODO: add attachments
 			},
 			RepliesCount: repliesCount,
@@ -169,6 +184,7 @@ func (s *service) GetThreadWithPosts(id uuid.UUID) (*Thread, error) {
 				OpMarker:           postDB.OpMarker,
 				BrowserFingerprint: postDB.BrowserFingerprint,
 				IP:                 postDB.IP,
+				CreatedAt:          postDB.CreatedAt,
 				Attachments:        nil, //TODO: add attachments
 			}
 			continue
@@ -182,6 +198,7 @@ func (s *service) GetThreadWithPosts(id uuid.UUID) (*Thread, error) {
 			OpMarker:           postDB.OpMarker,
 			BrowserFingerprint: postDB.BrowserFingerprint,
 			IP:                 postDB.IP,
+			CreatedAt:          postDB.CreatedAt,
 			Attachments:        nil, //TODO: add attachments
 		})
 	}
