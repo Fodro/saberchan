@@ -49,12 +49,12 @@ func (s *Server) Start() error {
 
 	r.Route("/api", func(r chi.Router) {
 		r.Route("/v1", func(r chi.Router) {
-			
+
 			r.Route("/board", func(r chi.Router) {
 				r.Get("/", s.GetBoards)
 				r.Get("/{alias}", s.GetBoardByAlias)
 			})
-			
+
 			r.Route("/thread", func(r chi.Router) {
 				r.Post("/", s.CreateThread)
 				r.Get("/{id}", s.GetThread)
@@ -70,6 +70,7 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) GetBoards(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Access-Control-Allow-Origin", "*")
 	boards, err := s.board.GetBoards()
 	if err != nil {
 		log.Printf("failed to get boards: %v", err)
@@ -85,6 +86,7 @@ func (s *Server) GetBoards(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetBoardByAlias(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Access-Control-Allow-Origin", "*")
 	alias := chi.URLParam(r, "alias")
 	board, err := s.board.GetBoardWithThreads(alias)
 	if err != nil {
@@ -101,14 +103,21 @@ func (s *Server) GetBoardByAlias(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) CreateThread(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Access-Control-Allow-Origin", "*")
 	var thread board.Thread
 	if err := json.NewDecoder(r.Body).Decode(&thread); err != nil {
 		log.Printf("failed to decode thread: %v", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if err := s.board.CreateThread(&thread); err != nil {
+	res, err := s.board.CreateThread(&thread)
+	if err != nil {
 		log.Printf("failed to create thread: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if err := json.NewEncoder(w).Encode(res); err != nil {
+		log.Printf("failed to encode response: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -116,6 +125,7 @@ func (s *Server) CreateThread(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetThread(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Access-Control-Allow-Origin", "*")
 	id := chi.URLParam(r, "id")
 	convertedId, err := uuid.Parse(id)
 	if err != nil {
@@ -138,6 +148,7 @@ func (s *Server) GetThread(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) CreatePost(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Access-Control-Allow-Origin", "*")
 	threadID := chi.URLParam(r, "thread_id")
 	convertedThreadID, err := uuid.Parse(threadID)
 	if err != nil {

@@ -28,7 +28,7 @@ func (r *repo) GetBoardByAlias(alias string) (*database.Board, error) {
 }
 
 func (r *repo) GetBoards() ([]database.Board, error) {
-	stmt := `SELECT id, alias, name, description FROM board ORDER BY alias DESC`
+	stmt := `SELECT id, alias, name, description FROM board ORDER BY created_at ASC`
 	rows, err := r.db.Query(stmt)
 	if err != nil {
 		return nil, err
