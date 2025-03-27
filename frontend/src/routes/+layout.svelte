@@ -8,14 +8,17 @@
 	import Home from "svelte-radix/Home.svelte";
 	import { toggleMode } from "mode-watcher";
 	import { Button } from "$lib/components/ui/button/index.js";
-	import { goto, invalidate } from "$app/navigation";
+	import { goto, invalidate, invalidateAll } from "$app/navigation";
 	import { onMount, setContext } from "svelte";
 	import { t } from "$lib/translations";
+	import { CounterClockwiseClock, Update } from "svelte-radix";
 
 	let intervals = [1, 5, 10, 15, 30, 60];
 
 	let counter = $state(0);
 	let interval: number | undefined = $state(9999);
+
+	let localeLoading = $state(false);
 
 	setContext("counter", () => {
 		return counter;
@@ -72,22 +75,31 @@
 				<Home class="absolute h-[1.2rem] w-[1.2rem]" />
 			</Button>
 		</div>
-		<div class="flex flex-row-reverse basis-1/2 gap-3">
+		<div
+			class="flex flex-row-reverse basis-1/2 gap-3 justify-start items-center"
+		>
 			<!-- TODO: make a select -->
 			{#if data.i18n.locale === "ru"}
 				<Button
 					variant="secondary"
 					class="cursor-pointer"
 					on:click={async () => {
+						localeLoading = true;
 						await fetch("/locale", {
 							method: "POST",
 							body: JSON.stringify({
 								locale: "en",
 							}),
 						});
+						localeLoading = false;
+						invalidateAll();
 					}}
 				>
-					RU
+					{#if localeLoading}
+						<CounterClockwiseClock />
+					{:else}
+						RU
+					{/if}
 				</Button>
 			{/if}
 			{#if data.i18n.locale === "en"}
@@ -95,15 +107,22 @@
 					variant="secondary"
 					class="cursor-pointer"
 					on:click={async () => {
+						localeLoading = true;
 						await fetch("/locale", {
 							method: "POST",
 							body: JSON.stringify({
 								locale: "ru",
 							}),
 						});
+						localeLoading = false;
+						invalidateAll();
 					}}
 				>
-					EN
+					{#if localeLoading}
+						<CounterClockwiseClock />
+					{:else}
+						EN
+					{/if}
 				</Button>
 			{/if}
 			<Button on:click={toggleMode} size="icon" class="cursor-pointer">
@@ -114,6 +133,24 @@
 					class="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
 				/>
 			</Button>
+			{#if !data.signed}
+				<Button href={data.loginUrl}>{$t("common.login")}</Button>
+			{:else}
+				<Button variant="destructive" href="/admin/auth/signOut">
+					[BETA] {$t("common.clearTokens")}
+				</Button>
+				<Button
+					href={data.idToken
+						? `${data.logoutUrl}&id_token_hint=${data.idToken}`
+						: data.logoutUrl}
+				>
+					{$t("common.logout")}
+				</Button>
+				<p class="text-muted-foreground">
+					[ADMIN] {$t("common.logged_in")}
+					{data.username}
+				</p>
+			{/if}
 		</div>
 	</div>
 	<Menubar.Root>
@@ -185,6 +222,16 @@
 				{/each}
 			</Menubar.Content>
 		</Menubar.Menu>
+		<Button
+			variant="ghost"
+			size="icon"
+			class="cursor-pointer"
+			on:click={() => {
+				invalidateAll();
+			}}
+		>
+			<Update class="w-4 h-4" />
+		</Button>
 	</Menubar.Root>
 
 	{@render children()}

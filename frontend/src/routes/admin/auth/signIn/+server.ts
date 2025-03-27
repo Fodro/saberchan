@@ -11,7 +11,7 @@ export const GET: RequestHandler = async ({request, cookies}) => {
 	const refreshToken = tokens.refreshToken();
 
 	cookies.set("accessToken", accessToken, {
-		path: '/admin',
+		path: '/',
 		httpOnly: true,
 		maxAge: accessTokenExpiresAt.getTime() - Date.now(),
 		secure: true,
@@ -20,7 +20,7 @@ export const GET: RequestHandler = async ({request, cookies}) => {
 	})
 	
 	cookies.set("idToken", tokens.idToken(), {
-		path: '/admin',
+		path: '/',
 		httpOnly: true,
 		secure: true,
 		sameSite: 'strict',
@@ -29,7 +29,7 @@ export const GET: RequestHandler = async ({request, cookies}) => {
 	if ("refresh_expires_in" in tokens.data && typeof tokens.data.refresh_expires_in === "number") {
 		const refreshTokenExpiresIn = new Date (tokens.data.refresh_expires_in * 1000);
 		cookies.set("refreshToken", refreshToken, {
-			path: '/admin',
+			path: '/',
 			httpOnly: true,
 			secure: true,
 			sameSite: 'strict',
@@ -38,12 +38,12 @@ export const GET: RequestHandler = async ({request, cookies}) => {
 		})
 	} else {
 		cookies.set("refreshToken", refreshToken, {
-			path: '/admin',
+			path: '/',
 			httpOnly: true,
 			secure: true,
 			sameSite: 'strict',
 		})
 	}
 
-	redirect(302, '/admin');
+	redirect(302, '/');
 }; 
