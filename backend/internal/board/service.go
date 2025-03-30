@@ -17,6 +17,7 @@ func (s *service) CreateBoard(board *Board) error {
 		Alias:       board.Alias,
 		Name:        board.Name,
 		Description: board.Description,
+		Author: board.Author,
 	}
 
 	err := s.repo.AddBoard(boardDB)

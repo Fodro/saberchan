@@ -29,6 +29,7 @@ type (
 		Description string `json:"description"`
 		Locked bool `json:"locked"`
 		Threads []*Thread `json:"threads"`
+		Author string `json:"author"`
 	}
 
 	Thread struct {

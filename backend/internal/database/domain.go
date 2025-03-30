@@ -49,6 +49,7 @@ type (
 		Name        string
 		Description string
 		Locked      bool
+		Author string
 	}
 
 	Thread struct {
