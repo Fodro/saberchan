@@ -11,6 +11,10 @@
 	"op": "OP",
 	"copy_link": "Copy Link",
 	"copied": "Link copied!",
+	"login": "Login as admin",
+	"logout": "Logout",
+	"clearTokens": "Clear Tokens",
+	"logged_in": "Signed in as",
 	"threads": {
 		"new": "New Thread"
 	},

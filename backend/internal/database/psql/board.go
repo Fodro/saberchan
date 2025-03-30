@@ -6,8 +6,8 @@ import (
 )
 
 func (r *repo) AddBoard(board *database.Board) error {
-	stmt := `INSERT INTO boards (id, alias, name, description) VALUES ($1, $2, $3, $4)`
-	_, err := r.db.Exec(stmt, board.ID, board.Alias, board.Name, board.Description)
+	stmt := `INSERT INTO boards (id, alias, name, description, author) VALUES ($1, $2, $3, $4, $5)`
+	_, err := r.db.Exec(stmt, board.ID, board.Alias, board.Name, board.Description, board.Author)
 	return err
 }
 
