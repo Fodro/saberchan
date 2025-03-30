@@ -10,7 +10,13 @@ export const load: PageServerLoad = async ({ params, depends, fetch, cookies }) 
 	const fingerprint = cookies.get('fingerprint');
 
 	const resThread = await fetch(`${MAIN_BACKEND_URL}/api/v1/thread/${id}`);
-	const thread: Thread = await resThread.json();
+	let thread: Thread;
+	try {
+	 thread = await resThread.json();
+	} catch (error) {
+		console.error({error, id});
+		return { slug }
+	}
 
 	if (thread.original_post.browser_fingerprint === fingerprint) {
 		thread.original_post.is_author = true;

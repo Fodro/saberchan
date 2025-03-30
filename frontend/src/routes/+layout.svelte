@@ -57,10 +57,10 @@
 
 <ModeWatcher />
 <div class="p-4 h-screen">
-	<div class="flex flex-row">
-		<div class="flex flex-row basis-1/2 gap-3">
+	<div class="flex flex-row justify-start items-center">
+		<div class="flex flex-row basis-1/2 gap-3 justify-start items-center pb-4">
 			<h2
-				class="mt-10 scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight transition-colors first:mt-0"
+				class="mt-10 scroll-m-20 text-3xl font-semibold tracking-tight transition-colors first:mt-0"
 			>
 				Saberchan
 			</h2>

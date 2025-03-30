@@ -6,5 +6,6 @@ export type Board  = {
 	name: string;
 	description: string;
 	locked: boolean;
+	author: string;
 	threads: Thread[];
 }
