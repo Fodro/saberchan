@@ -1,10 +1,7 @@
 <script lang="ts">
 	import Separator from "$lib/components/ui/separator/separator.svelte";
 	import * as Card from "$lib/components/ui/card/index.js";
-	import {
-		formatDateTime,
-		insertTagAtCursor,
-	} from "$lib/helpers.js";
+	import { formatDateTime, insertTagAtCursor } from "$lib/helpers.js";
 	import Badge from "$lib/components/ui/badge/badge.svelte";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import DoubleArrowDown from "svelte-radix/DoubleArrowDown.svelte";
@@ -28,6 +25,8 @@
 	} from "svelte-radix";
 	import { invalidate } from "$app/navigation";
 	import PostBody from "$lib/components/custom/PostBody.svelte";
+	import PostCard from "$lib/components/custom/PostCard.svelte";
+	import { redirect } from "@sveltejs/kit";
 
 	let newText = $state("");
 	let newSage = $state(false);
@@ -36,6 +35,22 @@
 	let counter: () => number = getContext("counter");
 
 	const { data } = $props();
+
+	if (!data.thread) {
+		redirect(302, "/404");
+	}
+
+	const checkIsInText = (txt: string): boolean => {
+		return newText.includes(txt);
+	};
+
+	const addToText = (txt: string) => {
+		newText += txt;
+	};
+
+	const setReplyOpen = (value: boolean) => {
+		isReplyOpen = value;
+	};
 
 	$effect(() => {
 		counter();
@@ -70,121 +85,22 @@
 		{/if}
 	</Button>
 	<Separator />
-	<div class="grid grid-cols-1 gap-4 pb-2">
-		<Card.Root
-			id={`${data.thread.original_post.number}`}
-			class="target:border-sky-500"
-		>
-			<Card.Header>
-				<Card.Title
-					>anon #{data.thread.original_post.number}
-					{$t("common.posts.at")}
-					{formatDateTime(data.thread.original_post.created_at)}
-				</Card.Title>
-				<div class="flex flex-row justify-start items-center gap-2">
-					{#if data.thread.original_post.is_author}
-						<Badge>{$t("common.you")}</Badge>
-					{/if}
-					<Badge>{$t("common.op")}</Badge>
-				</div>
-			</Card.Header>
-			<Card.Content>
-				<div class="flex flex-col justify-center items-start gap-2">
-					<PostBody text={data.thread.original_post.text} />
-				</div>
-			</Card.Content>
-			<Card.Footer>
-				<div
-					class="flex flex-row justify-start items-center gap-4 w-full h-full"
-				>
-					<Button
-						class="cursor-pointer"
-						variant="secondary"
-						on:click={() => {
-							const toAppend = `>>${data.thread.original_post.number}\n`;
-							if (!newText.includes(toAppend)) {
-								newText += toAppend;
-							}
-							isReplyOpen = true;
-						}}
-					>
-						{$t("common.reply")}
-					</Button>
-					<Button
-						class="cursor-pointer"
-						variant="outline"
-						on:click={async () => {
-							const link = `${window.location.href}#${data.thread.original_post.number}`;
-							await navigator.clipboard.writeText(link);
-							toast.success($t("common.copied"));
-						}}
-					>
-						{$t("common.copy_link")}
-					</Button>
-				</div>
-			</Card.Footer>
-		</Card.Root>
+	<div class="grid grid-cols-1 gap-4 pb-2 w-[100%]">
+		<PostCard
+			post={data.thread.original_post}
+			{addToText}
+			{checkIsInText}
+			{setReplyOpen}
+			isSigned={data.signed}
+		/>
 		{#each data.thread.posts as post}
-			<Card.Root id={`${post.number}`} class="target:border-sky-500">
-				<Card.Header>
-					<Card.Title
-						>anon #{post.number}
-						{$t("common.posts.at")}
-						{formatDateTime(post.created_at)}
-					</Card.Title>
-					<div class="flex flex-row justify-start items-center gap-2">
-						{#if post.is_author}
-							<Badge>{$t("common.you")}</Badge>
-						{/if}
-						{#if post.op_marker}
-							<Badge>{$t("common.op")}</Badge>
-						{/if}
-						{#if post.sage}
-							<Badge variant="destructive">
-								<DoubleArrowDown
-									class="h-[1.2rem] w-[1.2rem]"
-								/>
-							</Badge>
-						{/if}
-					</div>
-				</Card.Header>
-				<Card.Content>
-					<div class="flex flex-col justify-center items-start gap-2">
-						<PostBody text={post.text} />
-					</div>
-				</Card.Content>
-				<Card.Footer>
-					<div
-						class="flex flex-row justify-start items-center gap-4 w-full h-full"
-					>
-						<Button
-							class="cursor-pointer"
-							variant="secondary"
-							on:click={() => {
-								const toAppend = `>>${post.number}\n`;
-								if (!newText.includes(toAppend)) {
-									newText += toAppend;
-								}
-								isReplyOpen = true;
-							}}
-						>
-							{$t("common.reply")}
-						</Button>
-						<Button
-							class="cursor-pointer"
-							variant="outline"
-							on:click={async () => {
-								const base = window.location.href.split("#");
-								const link = `${base[0]}#${post.number}`;
-								await navigator.clipboard.writeText(link);
-								toast.success($t("common.copied"));
-							}}
-						>
-							{$t("common.copy_link")}
-						</Button>
-					</div>
-				</Card.Footer>
-			</Card.Root>
+			<PostCard
+				{post}
+				{addToText}
+				{checkIsInText}
+				{setReplyOpen}
+				isSigned={data.signed}
+			/>
 		{/each}
 	</div>
 </div>

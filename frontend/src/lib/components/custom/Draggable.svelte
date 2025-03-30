@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { DrawingPin, DrawingPinFilled } from "svelte-radix";
+	import { t } from "$lib/translations";
 	import Button from "../ui/button/button.svelte";
 
 	export let left = 100;
@@ -50,7 +51,7 @@
 				<DrawingPin />
 			{/if}
 		</Button>
-		<p class="text-muted-foreground">Окно можно передвигать и закреплять</p>
+		<p class="text-muted-foreground">{$t("common.draggable")}</p>
 	</div>
 	<slot></slot>
 </section>
