@@ -36,6 +36,9 @@ func (s *Server) Start() error {
 	s.srv.Handler = r
 
 	// healtcheck
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
 	r.Get("/liveness", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
