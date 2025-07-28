@@ -8,6 +8,7 @@ import { codeVerifier, keycloak } from "$lib/auth";
 import * as arctic from "arctic";
 import { redirect } from '@sveltejs/kit';
 import { jwtDecode, type JwtPayload } from 'jwt-decode';
+import { verifyExp } from '$lib/helpers';
 
 export const load: LayoutServerLoad = async ({ fetch, cookies, depends }) => {
 	const boardsRes = await fetch(`${MAIN_BACKEND_URL}/api/v1/board`);
@@ -65,11 +66,3 @@ export const load: LayoutServerLoad = async ({ fetch, cookies, depends }) => {
 		idToken,
 	 };
 };
-
-const verifyExp = (exp: number | undefined): boolean => {
-	if (!exp) {
-		return true;
-	}
-
-	return Date.now() > exp * 1000;
-}

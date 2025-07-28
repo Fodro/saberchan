@@ -35,7 +35,11 @@
 	},
 	"boards": {
 		"list_title": "Boards",
-		"noRecent": "No recent boards..."
+		"noRecent": "No recent boards...",
+		"name": "Name",
+		"alias": "Alias",
+		"description": "Description",
+		"locked": "Lock board for anonymous users"
 	},
 	"posts": {
 		"replies": "replies",

@@ -7,7 +7,7 @@ import (
 )
 
 type Service interface {
-	CreateBoard(board *Board) error
+	CreateBoard(board *BoardInput) error
 	GetBoardWithThreads(alias string) (*Board, error)
 	GetBoards() ([]*Board, error)
 	DeleteBoard(id uuid.UUID) error
@@ -29,6 +29,14 @@ type (
 		Description string `json:"description"`
 		Locked bool `json:"locked"`
 		Threads []*Thread `json:"threads"`
+		Author string `json:"author"`
+	}
+
+	BoardInput struct {
+		Alias string `json:"alias"`
+		Name string `json:"name"`
+		Description string `json:"description"`
+		Locked bool `json:"locked"`
 		Author string `json:"author"`
 	}
 
