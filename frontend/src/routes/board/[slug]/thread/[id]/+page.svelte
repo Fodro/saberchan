@@ -56,6 +56,10 @@
 		counter();
 		invalidate("thread:id");
 	});
+
+	$effect(() => {
+		console.log(newText);
+	});
 </script>
 
 <svelte:head>

@@ -11,13 +11,14 @@ type service struct {
 	conf *config.Config
 }
 
-func (s *service) CreateBoard(board *Board) error {
+func (s *service) CreateBoard(board *BoardInput) error {
 	boardDB := &database.Board{
 		ID:          uuid.New(),
 		Alias:       board.Alias,
 		Name:        board.Name,
 		Description: board.Description,
 		Author: board.Author,
+		Locked: board.Locked,
 	}
 
 	err := s.repo.AddBoard(boardDB)

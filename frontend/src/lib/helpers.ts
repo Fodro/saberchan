@@ -16,12 +16,21 @@ export const scrollIntoView = (id: string) => {
 	});
 }
 
-export const insertTagAtCursor = (myField: HTMLTextAreaElement, open: string, close: string) => {
-	if (myField.selectionStart || myField.selectionStart === 0) {
-		const startPos = myField.selectionStart;
-		const endPos = myField.selectionEnd;
-		myField.value = myField.value.substring(0, startPos) + open + myField.value.substring(startPos, endPos) + close + myField.value.substring(endPos, myField.value.length);
+export const insertTagAtCursor = (field: HTMLTextAreaElement, open: string, close: string) => {
+	if (field.selectionStart || field.selectionStart === 0) {
+		const startPos = field.selectionStart;
+		const endPos = field.selectionEnd;
+		field.value = field.value.substring(0, startPos) + open + field.value.substring(startPos, endPos) + close + field.value.substring(endPos, field.value.length);
 	} else {
-		myField.value += open + close;
+		field.value += open + close;
 	}
+	field.dispatchEvent(new Event('input', {}));
+}
+
+export const verifyExp = (exp: number | undefined): boolean => {
+	if (!exp) {
+		return true;
+	}
+
+	return Date.now() > exp * 1000;
 }

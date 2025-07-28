@@ -54,6 +54,7 @@ func (s *Server) Start() error {
 		r.Route("/v1", func(r chi.Router) {
 
 			r.Route("/board", func(r chi.Router) {
+				r.Post("/", s.CreateBoard)
 				r.Get("/", s.GetBoards)
 				r.Get("/{alias}", s.GetBoardByAlias)
 			})
@@ -70,6 +71,25 @@ func (s *Server) Start() error {
 	})
 
 	return s.srv.ListenAndServe()
+}
+
+
+func (s *Server) CreateBoard(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Access-Control-Allow-Origin", "*")
+	var board board.BoardInput
+	if err := json.NewDecoder(r.Body).Decode(&board); err != nil {
+		log.Printf("failed to decode board: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	err := s.board.CreateBoard(&board)
+	if err != nil {
+		log.Printf("failed to create board: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 }
 
 func (s *Server) GetBoards(w http.ResponseWriter, r *http.Request) {

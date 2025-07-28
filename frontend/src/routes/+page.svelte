@@ -7,10 +7,14 @@
 	import type { Board } from "$lib/types/board.js";
 	import * as Dialog from "$lib/components/ui/dialog/index.js";
 	import { buttonVariants } from "$lib/components/ui/button/index.js";
-    import { Label } from "$lib/components/ui/label/index.js";
-    import { Input } from "$lib/components/ui/input/index.js";
+	import { Label } from "$lib/components/ui/label/index.js";
+	import { Input } from "$lib/components/ui/input/index.js";
+	import Checkbox from "$lib/components/ui/checkbox/checkbox.svelte";
 
-	let newBoard: Board | undefined = $state(undefined);
+	let newAlias: string | undefined = $state(undefined);
+	let newName: string | undefined = $state(undefined);
+	let newDescription: string | undefined = $state(undefined);
+	let newLocked: boolean = $state(false);
 
 	let { data } = $props();
 </script>
@@ -34,25 +38,91 @@
 				</Dialog.Header>
 				<div class="grid gap-4 py-4">
 					<div class="grid grid-cols-4 items-center gap-4">
-						<Label for="name" class="text-right">Name</Label>
+						<Label for="name" class="text-right"
+							>{$t("common.boards.name")}</Label
+						>
 						<Input
 							id="name"
-							value="Pedro Duarte"
 							class="col-span-3"
+							bind:value={newName}
 						/>
 					</div>
 					<div class="grid grid-cols-4 items-center gap-4">
-						<Label for="username" class="text-right">Username</Label
+						<Label for="alias" class="text-right"
+							>{$t("common.boards.alias")}</Label
 						>
 						<Input
-							id="username"
-							value="@peduarte"
+							id="alias"
 							class="col-span-3"
+							bind:value={newAlias}
+						/>
+					</div>
+					<div class="grid grid-cols-4 items-center gap-4">
+						<Label for="description" class="text-right"
+							>{$t("common.boards.description")}</Label
+						>
+						<Input
+							id="description"
+							class="col-span-3"
+							bind:value={newDescription}
+						/>
+					</div>
+					<div class="grid grid-cols-4 items-center gap-4">
+						<Label for="locked" class="text-center col-span-3"
+							>{$t("common.boards.locked")}</Label
+						>
+						<Checkbox
+							id="locked"
+							class="col-span-1"
+							bind:checked={newLocked}
 						/>
 					</div>
 				</div>
 				<Dialog.Footer>
-					<Button type="submit">{$t("common.save")}</Button>
+					<div
+						class="flex flex-row justify-start items-center gap-4 w-full h-full"
+					>
+						<Dialog.Close asChild>
+							<Button class="cursor-pointer" variant="secondary">
+								{$t("common.cancel")}
+							</Button>
+						</Dialog.Close>
+						<Dialog.Close asChild>
+							<Button
+								class="cursor-pointer"
+								on:click={async () => {
+									if (
+										newName &&
+										newAlias &&
+										newDescription &&
+										data.username
+									) {
+										const board: Board = {
+											id: "",
+											name: newName,
+											alias: newAlias,
+											description: newDescription,
+											locked: newLocked,
+											author: data.username,
+											threads: [],
+										};
+										await fetch("/api/board", {
+											method: "POST",
+											body: JSON.stringify(board),
+										});
+
+										await window.open(
+											"/",
+											"_self",
+											"noopener",
+										);
+									}
+								}}
+							>
+								{$t("common.save")}
+							</Button>
+						</Dialog.Close>
+					</div>
 				</Dialog.Footer>
 			</Dialog.Content>
 		</Dialog.Root>
