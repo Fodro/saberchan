@@ -2,16 +2,18 @@ package config
 
 import (
 	"log"
+	"time"
 
 	"github.com/caarlos0/env"
 )
 
 type Config struct {
-	Port    string  `env:"PORT" envDefault:"8080"`
-	StoreIp bool `env:"STORE_IP" envDefault:"false"`
-	Secret string `env:"SECRET" envDefault:"dontuseme"`
+	Port    string `env:"PORT" envDefault:"8080"`
+	StoreIp bool   `env:"STORE_IP" envDefault:"false"`
+	Secret  string `env:"SECRET" envDefault:"dontuseme"`
 
-	DB *Database
+	Redis *Redis
+	DB    *Database
 }
 
 type Database struct {
@@ -24,6 +26,14 @@ type Database struct {
 	SSLMode string `env:"SSL_MODE"`
 }
 
+type Redis struct {
+	Host     string        `env:"REDIS_HOST"`
+	Port     string           `env:"REDIS_PORT"`
+	User     string        `env:"REDIS_USER"`
+	Password string        `env:"REDIS_PASS"`
+	Expires  time.Duration `env:"REDIS_EXPIRES" envDefault:"1m"`
+}
+
 func ParseConfig() *Config {
 	cfg := &Config{}
 	if err := env.Parse(cfg); err != nil {
@@ -34,5 +44,10 @@ func ParseConfig() *Config {
 		log.Fatalf("failed to parse env: %v", err)
 	}
 	cfg.DB = db
+	redis := &Redis{}
+	if err := env.Parse(redis); err != nil {
+		log.Fatalf("failed to parse env: %v", err)
+	}
+	cfg.Redis = redis
 	return cfg
 }
