@@ -1,2 +1,4 @@
 .env
 main
+redis.conf
+startredis

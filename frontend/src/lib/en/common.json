@@ -45,5 +45,9 @@
 		"replies": "replies",
 		"at": "at",
 		"new": "New Post"
+	},
+	"captcha": {
+		"show": "Show captcha",
+		"placeholder": "Type text here..."
 	}
 }

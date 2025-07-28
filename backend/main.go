@@ -13,12 +13,14 @@ import (
 
 	"github.com/Fodro/saberchan/config"
 	"github.com/Fodro/saberchan/internal/board"
+	"github.com/Fodro/saberchan/internal/captcha"
 	"github.com/Fodro/saberchan/internal/database"
 	"github.com/Fodro/saberchan/internal/database/psql"
 	"github.com/Fodro/saberchan/internal/health"
 	"github.com/Fodro/saberchan/internal/server"
 	_ "github.com/lib/pq"
 	"github.com/pressly/goose"
+	"github.com/redis/go-redis/v9"
 )
 
 func main() {
@@ -49,9 +51,17 @@ func main() {
 		return
 	}
 
+	redisClient := redis.NewClient(&redis.Options{
+		Addr: conf.Redis.Host+":"+conf.Redis.Port,
+		Username: conf.Redis.User,
+		Password: conf.Redis.Password,
+	})
+
+	captcha := captcha.NewService(redisClient, conf.Redis.Expires)
+
 	board := board.NewService(repo, conf)
 	health := health.NewService(repo)
-	server := server.NewServer(conf, board, health)
+	server := server.NewServer(conf, board, captcha, health)
 	log.Println("starting server on port", conf.Port)
 
 	go func() {

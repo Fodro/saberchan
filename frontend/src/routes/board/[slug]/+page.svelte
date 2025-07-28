@@ -25,6 +25,7 @@
 		Underline,
 	} from "svelte-radix";
 	import PostBody from "$lib/components/custom/PostBody.svelte";
+	import Captcha from "$lib/components/custom/Captcha.svelte";
 
 	let { data } = $props();
 
@@ -34,6 +35,17 @@
 
 	let newTitle: string | null = $state(null);
 	let newText: string | null = $state(null);
+
+	let captchaInput = $state("");
+	let captchaToken = $state("");
+
+	const setCaptchaInput = (input: string) => {
+		captchaInput = input;
+	};
+
+	const setCaptchaToken = (token: string) => {
+		captchaToken = token;
+	};
 
 	$effect(() => {
 		counter();
@@ -71,7 +83,7 @@
 
 {#if isReplyOpen}
 	<Draggable>
-		<Card.Root class="w-[50vw] h-[50vh]">
+		<Card.Root class="w-[100%] h-[95%]">
 			<Card.Header>
 				<Card.Title>{$t("common.threads.new")}</Card.Title>
 			</Card.Header>
@@ -218,10 +230,10 @@
 							class="min-h-[70%] w-full resize-none"
 							bind:value={newText}
 						/>
+						<Captcha {setCaptchaInput} {setCaptchaToken} />
 					</div>
 				</div>
 			</Card.Content>
-			<!-- TODO: add captcha -->
 			<Card.Footer>
 				<div
 					class="flex flex-row justify-start items-center gap-4 w-full h-full"
@@ -245,6 +257,10 @@
 									title: newTitle,
 									original_post: {
 										text: newText,
+									},
+									captcha: {
+										input: captchaInput,
+										token: captchaToken,
 									},
 								}),
 							});

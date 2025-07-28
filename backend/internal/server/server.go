@@ -8,6 +8,7 @@ import (
 
 	"github.com/Fodro/saberchan/config"
 	"github.com/Fodro/saberchan/internal/board"
+	"github.com/Fodro/saberchan/internal/captcha"
 	"github.com/Fodro/saberchan/internal/health"
 	chi "github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -17,16 +18,18 @@ type Server struct {
 	srv    *http.Server
 	conf   *config.Config
 	board  board.Service
+	captcha captcha.Service
 	health health.Service
 }
 
-func NewServer(conf *config.Config, board board.Service, health health.Service) *Server {
+func NewServer(conf *config.Config, board board.Service, captcha captcha.Service, health health.Service) *Server {
 	return &Server{
 		srv: &http.Server{
 			Addr: ":" + conf.Port,
 		},
 		conf:   conf,
 		board:  board,
+		captcha: captcha,
 		health: health,
 	}
 }
@@ -66,6 +69,11 @@ func (s *Server) Start() error {
 
 			r.Route("/post", func(r chi.Router) {
 				r.Post("/{thread_id}", s.CreatePost)
+			})
+
+			r.Route("/captcha", func(r chi.Router) {
+				r.Get("/", s.GenerateCaptcha)
+				r.Post("/", s.ValidateCaptcha)
 			})
 		})
 	})
@@ -191,6 +199,35 @@ func (s *Server) CreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
+}
+
+func (s *Server) GenerateCaptcha(w http.ResponseWriter, r *http.Request) {
+	data, token, err := s.captcha.Generate(r.Context())
+	if err != nil {
+		log.Printf("failed to generate captcha: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	w.Header().Add("x-captcha-token", token)
+	data.WriteImage(w)
+}
+
+func (s *Server) ValidateCaptcha(w http.ResponseWriter, r *http.Request) {
+	var captchaReq captcha.CaptchaValidateReq
+	if err := json.NewDecoder(r.Body).Decode(&captchaReq); err != nil {
+		log.Printf("failed to decode captcha req: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	passed, _ := s.captcha.Validate(r.Context(), captchaReq.Input, captchaReq.Token)
+
+	resp := captcha.CaptchaValidateResp{
+		Passed: passed,
+	}
+
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		log.Printf("failed to encode response: %v", err)
+	}
 }
 
 func (s *Server) Stop(ctx context.Context) error {

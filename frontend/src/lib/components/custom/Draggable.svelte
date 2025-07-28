@@ -33,9 +33,9 @@
 <section
 	on:mousedown={onMouseDown}
 	style="left: {left}px; top: {top}px;"
-	class="draggable w-auto h-auto"
+	class="draggable w-[50vw] h-[70vh]"
 >
-	<div class="flex flex-row-reverse items-center">
+	<div class="flex flex-row-reverse items-center h-[5%]">
 		<Button
 			class="cursor-pointer"
 			variant="ghost"
