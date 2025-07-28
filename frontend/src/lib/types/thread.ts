@@ -1,3 +1,4 @@
+import type { Captcha } from "./captcha";
 import type { Post } from "./post";
 
 export type Thread = {
@@ -9,4 +10,5 @@ export type Thread = {
 	posts: Post[];
 	is_author?: boolean;
 	replies_count: number;
+	captcha: Captcha | undefined;
 }

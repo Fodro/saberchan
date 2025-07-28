@@ -36,6 +36,17 @@
 	let newTitle: string | null = $state(null);
 	let newText: string | null = $state(null);
 
+	let captchaInput = $state("");
+	let captchaToken = $state("");
+
+	const setCaptchaInput = (input: string) => {
+		captchaInput = input;
+	};
+
+	const setCaptchaToken = (token: string) => {
+		captchaToken = token;
+	};
+
 	$effect(() => {
 		counter();
 		invalidate("board:slug");
@@ -219,14 +230,7 @@
 							class="min-h-[70%] w-full resize-none"
 							bind:value={newText}
 						/>
-						<Captcha
-							setCaptchaInput={(input: string) => {
-								console.log(input);
-							}}
-							setCaptchaToken={(input: string) => {
-								console.log(input);
-							}}
-						/>
+						<Captcha {setCaptchaInput} {setCaptchaToken} />
 					</div>
 				</div>
 			</Card.Content>
@@ -253,6 +257,10 @@
 									title: newTitle,
 									original_post: {
 										text: newText,
+									},
+									captcha: {
+										input: captchaInput,
+										token: captchaToken,
 									},
 								}),
 							});

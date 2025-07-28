@@ -33,6 +33,8 @@
 	let newSage = $state(false);
 	let newOP = $state(false);
 	let isReplyOpen = $state(false);
+	let captchaInput = $state("");
+	let captchaToken = $state("");
 	let counter: () => number = getContext("counter");
 
 	const { data } = $props();
@@ -53,13 +55,17 @@
 		isReplyOpen = value;
 	};
 
+	const setCaptchaInput = (input: string) => {
+		captchaInput = input;
+	};
+
+	const setCaptchaToken = (token: string) => {
+		captchaToken = token;
+	};
+
 	$effect(() => {
 		counter();
 		invalidate("thread:id");
-	});
-
-	$effect(() => {
-		console.log(newText);
 	});
 </script>
 
@@ -280,14 +286,7 @@
 							class="min-h-[70%] w-full resize-none"
 							bind:value={newText}
 						/>
-						<Captcha
-							setCaptchaInput={(input: string) => {
-								console.log(input);
-							}}
-							setCaptchaToken={(input: string) => {
-								console.log(input);
-							}}
-						/>
+						<Captcha {setCaptchaInput} {setCaptchaToken} />
 					</div>
 				</div>
 			</Card.Content>
@@ -314,6 +313,10 @@
 									text: newText,
 									sage: newSage,
 									op_marker: newOP,
+									captcha: {
+										input: captchaInput,
+										token: captchaToken,
+									},
 								}),
 							});
 							newText = "";

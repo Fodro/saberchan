@@ -1,4 +1,5 @@
 import type { Attachment } from "./attachment";
+import type { Captcha } from "./captcha";
 
 export type Post = {
 	id: string;
@@ -12,4 +13,5 @@ export type Post = {
 	created_at: string;
 	attachments: Attachment[];
 	is_author: boolean;
+	captcha: Captcha | undefined;
 };
