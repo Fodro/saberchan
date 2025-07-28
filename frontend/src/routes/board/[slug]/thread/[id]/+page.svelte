@@ -27,6 +27,7 @@
 	import PostBody from "$lib/components/custom/PostBody.svelte";
 	import PostCard from "$lib/components/custom/PostCard.svelte";
 	import { redirect } from "@sveltejs/kit";
+	import Captcha from "$lib/components/custom/Captcha.svelte";
 
 	let newText = $state("");
 	let newSage = $state(false);
@@ -111,36 +112,40 @@
 
 {#if isReplyOpen}
 	<Draggable>
-		<Card.Root class="w-[50vw] h-[50vh]">
+		<Card.Root class="w-[100%] h-[95%]">
 			<Card.Header>
 				<Card.Title>{$t("common.posts.new")}</Card.Title>
 			</Card.Header>
 			<Card.Content>
 				<div class="grid grid-cols-1 w-full items-center gap-4">
 					<div class="flex flex-row justify-start items-center gap-2">
-						<Checkbox
-							id="sage"
-							bind:checked={newSage}
-							class="cursor-pointer"
-						/>
-						<Label>
-							{$t("common.fields.sage")}
-						</Label>
-					</div>
-					{#if data.thread.original_post.is_author}
 						<div
 							class="flex flex-row justify-start items-center gap-2"
 						>
 							<Checkbox
-								id="op"
-								bind:checked={newOP}
+								id="sage"
+								bind:checked={newSage}
 								class="cursor-pointer"
 							/>
 							<Label>
-								{$t("common.op")}
+								{$t("common.fields.sage")}
 							</Label>
 						</div>
-					{/if}
+						{#if data.thread.original_post.is_author}
+							<div
+								class="flex flex-row justify-start items-center gap-2"
+							>
+								<Checkbox
+									id="op"
+									bind:checked={newOP}
+									class="cursor-pointer"
+								/>
+								<Label>
+									{$t("common.op")}
+								</Label>
+							</div>
+						{/if}
+					</div>
 					<div class="flex flex-col justify-start items-start gap-3">
 						<div
 							class="flex flex-row justify-start items-center gap-2"
@@ -275,10 +280,17 @@
 							class="min-h-[70%] w-full resize-none"
 							bind:value={newText}
 						/>
+						<Captcha
+							setCaptchaInput={(input: string) => {
+								console.log(input);
+							}}
+							setCaptchaToken={(input: string) => {
+								console.log(input);
+							}}
+						/>
 					</div>
 				</div>
 			</Card.Content>
-			<!-- TODO: add captcha -->
 			<Card.Footer>
 				<div
 					class="flex flex-row justify-start items-center gap-4 w-full h-full"

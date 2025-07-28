@@ -2,6 +2,7 @@ package captcha
 
 import (
 	"context"
+	"image/color"
 	"time"
 
 	"github.com/google/uuid"
@@ -9,14 +10,15 @@ import (
 	generator "github.com/steambap/captcha"
 )
 
-type service struct{
+type service struct {
 	expires time.Duration
-	rdb *redis.Client
+	rdb     *redis.Client
 }
 
 func (s *service) Generate(ctx context.Context) (*generator.Data, string, error) {
 	data, err := generator.New(150, 50, func(o *generator.Options) {
 		o.TextLength = 5
+		o.BackgroundColor = color.White
 	})
 	if err != nil {
 		return nil, "", err
