@@ -2,9 +2,9 @@ services:
   frontend:
     build: 
       context: frontend
-      dockerfile: ./Dockerfile
+      dockerfile: ../frontend.Dockerfile
 
   backend:
     build: 
       context: backend
-      dockerfile: ./Dockerfile
+      dockerfile: ../backend.Dockerfile
