@@ -1,19 +1,9 @@
 services:
-  frontend:
-    build: 
-      dockerfile: frontend.Dockerfile
-    ports:
-      - "3000"
-    environment:
-      MAIN_BACKEND_URL: http://backend:8888
-      OIDC_REALM: ${OIDC_REALM}
-      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID}
-      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET}
-      AUTH_HOST: ${AUTH_HOST}
-
   backend:
     build: 
       dockerfile: backend.Dockerfile
+    ports:
+      - "8888:8888"
     environment:
       DB_TYPE: ${DB_TYPE}
       DB_HOST: ${DB_HOST}
@@ -26,5 +16,17 @@ services:
       REDIS_PASS: ${REDIS_PASS}
       REDIS_HOST: ${REDIS_HOST}
       REDIS_PORT: ${REDIS_PORT}
+
+  frontend:
+    build: 
+      dockerfile: frontend.Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      MAIN_BACKEND_URL: http://backend:8888
+      OIDC_REALM: ${OIDC_REALM}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET}
+      AUTH_HOST: ${AUTH_HOST}
 
     
