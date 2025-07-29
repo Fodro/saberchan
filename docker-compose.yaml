@@ -1,4 +1,4 @@
 services:
   backend:
     build: 
-      dockerfile: example.Dockerfile
+      dockerfile: backend.Dockerfile
