@@ -1,3 +1,5 @@
 services:
-  frontend:
-    image: alpine
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: ../backend.Dockerfile
