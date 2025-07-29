@@ -7,6 +7,10 @@ services:
     environment:
       MAIN_BACKEND_URL: http://backend:8888
       PORT: 5127
+      OIDC_REALM: ${OIDC_REALM}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET}
+      AUTH_HOST: ${AUTH_HOST}
 
   backend:
      build: 
