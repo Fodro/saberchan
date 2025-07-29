@@ -33,5 +33,5 @@ COPY --from=builder --chown=node:node /app/node_modules ./node_modules
 
 COPY --from=builder --chown=node:node /app/package.json .
 
-EXPOSE 5127
+EXPOSE 3000
 CMD ["node","build"]
