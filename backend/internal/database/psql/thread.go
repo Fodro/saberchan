@@ -53,3 +53,16 @@ func (r *repo) BumpThread(id uuid.UUID) error {
 	_, err := r.db.Exec(stmt, time.Now(), id)
 	return err
 }
+
+func (r *repo) CheckIfThreadBelowBumpLimit(id uuid.UUID) (bool, error) {
+	stmt := `SELECT t.id FROM thread t 
+			JOIN post p on p.thread_id = t.id
+			WHERE t.id = $1
+			GROUP BY t.id
+			HAVING count(p.id) < 500`
+	if err := r.db.QueryRow(stmt, id).Scan(&id); err != nil {
+		return false, nil
+	}
+
+	return true, nil
+}

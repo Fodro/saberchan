@@ -306,7 +306,7 @@
 					<Button
 						class="cursor-pointer"
 						on:click={async () => {
-							await fetch("/api/post", {
+							const res = await fetch("/api/post", {
 								method: "POST",
 								body: JSON.stringify({
 									thread_id: data.thread.id,
@@ -319,6 +319,11 @@
 									},
 								}),
 							});
+							if (res.status != 201 && res.status != 200) {
+								toast.error(await res.text());
+								return;
+							}
+
 							newText = "";
 							newSage = false;
 							newOP = false;

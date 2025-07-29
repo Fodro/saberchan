@@ -6,8 +6,8 @@ import (
 )
 
 func (r *repo) AddBoard(board *database.Board) error {
-	stmt := `INSERT INTO board (id, alias, name, description, author) VALUES ($1, $2, $3, $4, $5)`
-	_, err := r.db.Exec(stmt, board.ID, board.Alias, board.Name, board.Description, board.Author)
+	stmt := `INSERT INTO board (id, alias, name, description, author, locked) VALUES ($1, $2, $3, $4, $5, $6)`
+	_, err := r.db.Exec(stmt, board.ID, board.Alias, board.Name, board.Description, board.Author, board.Locked)
 	return err
 }
 
@@ -25,6 +25,21 @@ func (r *repo) GetBoardByAlias(alias string) (*database.Board, error) {
 		return nil, err
 	}
 	return &board, nil
+}
+
+func (r *repo) GetBoardById(id uuid.UUID) (*database.Board, error) {
+	if id == uuid.Nil {
+		return nil, nil
+	}
+
+	stmt := `SELECT id, alias, name, description, locked FROM board WHERE id = $1`
+	row := r.db.QueryRow(stmt, id)
+	var board database.Board
+	if err := row.Scan(&board.ID, &board.Alias, &board.Name, &board.Description, &board.Locked); err != nil {
+		return nil, err
+	}
+	return &board, nil
+
 }
 
 func (r *repo) GetBoards() ([]database.Board, error) {

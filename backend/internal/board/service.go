@@ -17,8 +17,8 @@ func (s *service) CreateBoard(board *BoardInput) error {
 		Alias:       board.Alias,
 		Name:        board.Name,
 		Description: board.Description,
-		Author: board.Author,
-		Locked: board.Locked,
+		Author:      board.Author,
+		Locked:      board.Locked,
 	}
 
 	err := s.repo.AddBoard(boardDB)
@@ -49,19 +49,31 @@ func (s *service) CreatePost(threadID uuid.UUID, post *Post) error {
 	}
 
 	if !post.Sage {
-		return s.repo.BumpThread(threadID)
+		shouldBump, _ := s.repo.CheckIfThreadBelowBumpLimit(threadID)
+		if shouldBump {
+			return s.repo.BumpThread(threadID)
+		}
 	}
 	return nil
 }
 
 func (s *service) CreateThread(thread *Thread) (*Thread, error) {
+	board, err := s.repo.GetBoardById(thread.BoardID)
+	if err != nil {
+		return nil, err
+	}
+
+	if board.Locked && !thread.IsAdmin {
+		return nil, ErrBoardLocked
+	}
+
 	threadDB := &database.Thread{
 		ID:      uuid.New(),
 		BoardID: thread.BoardID,
 		Title:   thread.Title,
 	}
 
-	err := s.repo.AddThread(threadDB)
+	err = s.repo.AddThread(threadDB)
 	if err != nil {
 		return nil, err
 	}

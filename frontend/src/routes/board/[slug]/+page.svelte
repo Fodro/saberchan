@@ -26,6 +26,7 @@
 	} from "svelte-radix";
 	import PostBody from "$lib/components/custom/PostBody.svelte";
 	import Captcha from "$lib/components/custom/Captcha.svelte";
+    import { toast } from "svelte-sonner";
 
 	let { data } = $props();
 
@@ -264,10 +265,15 @@
 									},
 								}),
 							});
+							if (res.status != 201 && res.status != 200) {
+								toast.error(await res.text());
+								return;
+							}
 							const thread: Thread = await res.json();
 							newText = null;
 							newTitle = null;
 							isReplyOpen = false;
+
 							await window.open(
 								`/board/${data.slug}/thread/${thread.id}`,
 								"_blank",

@@ -11,4 +11,5 @@ export type Thread = {
 	is_author?: boolean;
 	replies_count: number;
 	captcha: Captcha | undefined;
+	is_admin: boolean;
 }
