@@ -16,6 +16,7 @@ type Repository interface {
 	//board
 	AddBoard(board *Board) error
 	GetBoardByAlias(alias string) (*Board, error)
+	GetBoardById(id uuid.UUID) (*Board, error)
 	GetBoards() ([]Board, error)
 	DeleteBoard(id uuid.UUID) error
 	UpdateBoard(board *Board) error
@@ -26,6 +27,7 @@ type Repository interface {
 	GetThreads(boardID uuid.UUID) ([]Thread, error)
 	DeleteThread(id uuid.UUID) error
 	BumpThread(id uuid.UUID) error
+	CheckIfThreadBelowBumpLimit(id uuid.UUID) (bool, error)
 
 	//post
 	AddPost(post *Post) error
@@ -49,15 +51,15 @@ type (
 		Name        string
 		Description string
 		Locked      bool
-		Author string
+		Author      string
 	}
 
 	Thread struct {
-		ID                 uuid.UUID
-		BoardID            uuid.UUID
-		Title              string
-		Locked             bool
-		UpdatedAt          time.Time
+		ID        uuid.UUID
+		BoardID   uuid.UUID
+		Title     string
+		Locked    bool
+		UpdatedAt time.Time
 	}
 
 	Post struct {
@@ -69,23 +71,23 @@ type (
 		OpMarker           bool
 		BrowserFingerprint string
 		IP                 string
-		HasAttachment 	bool
-		CreatedAt time.Time
+		HasAttachment      bool
+		CreatedAt          time.Time
 	}
 
 	Attachment struct {
-		ID       uuid.UUID
-		PostID   uuid.UUID
-		Link    string
+		ID     uuid.UUID
+		PostID uuid.UUID
+		Link   string
 		Name   string
-		Type  string
+		Type   string
 	}
 
 	Config struct {
 		Nickname  string
 		BumpLimit uint
 		Current   bool
-		SiteName string
+		SiteName  string
 		CreatedAt time.Time
 	}
 )

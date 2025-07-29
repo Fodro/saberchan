@@ -10,6 +10,7 @@
 	import { Label } from "$lib/components/ui/label/index.js";
 	import { Input } from "$lib/components/ui/input/index.js";
 	import Checkbox from "$lib/components/ui/checkbox/checkbox.svelte";
+	import { toast } from "svelte-sonner";
 
 	let newAlias: string | undefined = $state(undefined);
 	let newName: string | undefined = $state(undefined);
@@ -83,11 +84,6 @@
 						class="flex flex-row justify-start items-center gap-4 w-full h-full"
 					>
 						<Dialog.Close asChild>
-							<Button class="cursor-pointer" variant="secondary">
-								{$t("common.cancel")}
-							</Button>
-						</Dialog.Close>
-						<Dialog.Close asChild>
 							<Button
 								class="cursor-pointer"
 								on:click={async () => {
@@ -106,11 +102,17 @@
 											author: data.username,
 											threads: [],
 										};
-										await fetch("/api/board", {
+										const res = await fetch("/api/board", {
 											method: "POST",
 											body: JSON.stringify(board),
 										});
-
+										if (
+											res.status != 201 &&
+											res.status != 200
+										) {
+											toast.error(await res.text());
+											return;
+										}
 										await window.open(
 											"/",
 											"_self",

@@ -1,6 +1,7 @@
 package board
 
 import (
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -49,6 +50,7 @@ type (
 		UpdatedAt string `json:"updated_at"`
 		Posts []*Post `json:"posts"`
 		RepliesCount uint64 `json:"replies_count"`
+		IsAdmin bool `json:"is_admin,omitempty"`
 	}
 
 	Post struct {
@@ -71,4 +73,8 @@ type (
 		Name string `json:"name"`
 		Type string `json:"type"`
 	}
+)
+
+var (
+	ErrBoardLocked = errors.New("board is locked")
 )

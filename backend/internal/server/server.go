@@ -145,6 +145,7 @@ func (s *Server) CreateThread(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("failed to create thread: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
 		return
 	}
 	if err := json.NewEncoder(w).Encode(res); err != nil {
