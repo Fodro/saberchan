@@ -3,7 +3,7 @@ services:
     build: 
       dockerfile: frontend.Dockerfile
     ports:
-      - "3000:80"
+      - "3000"
     environment:
       MAIN_BACKEND_URL: http://backend:8888
       OIDC_REALM: ${OIDC_REALM}
