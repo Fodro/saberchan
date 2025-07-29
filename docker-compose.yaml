@@ -1,4 +1,16 @@
 services:
-  backend:
+  frontend:
     build: 
-      dockerfile: backend.Dockerfile
+      dockerfile: frontend.Dockerfile
+    ports:
+      - "5127:80"
+    environment:
+      MAIN_BACKEND_URL: http://backend:8888
+      PORT: 5127
+
+  backend:
+     build: 
+       dockerfile: backend.Dockerfile
+     environment:
+       PORT: 8888
+    
