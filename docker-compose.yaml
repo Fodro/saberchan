@@ -2,8 +2,6 @@ services:
   frontend:
     build: 
       dockerfile: frontend.Dockerfile
-    ports:
-      - "5127:80"
     environment:
       MAIN_BACKEND_URL: http://backend:8888
       PORT: 5127
@@ -16,5 +14,17 @@ services:
      build: 
        dockerfile: backend.Dockerfile
      environment:
-       PORT: 8888
+      PORT: 8888
+      DB_TYPE: ${DB_TYPE}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      DB_NAME: ${DB_NAME}
+      SSL_MODE: ${SSL_MODE}
+      REDIS_USER: ${REDIS_USER}
+      REDIS_PASS: ${REDIS_PASS}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      
     
