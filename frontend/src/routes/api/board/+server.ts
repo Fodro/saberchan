@@ -1,4 +1,4 @@
-import { MAIN_BACKEND_URL } from "$env/dynamic/private";
+import { MAIN_BACKEND_URL } from "$env/static/private";
 // import { verifyExp } from "$lib/helpers";
 import type { Board } from "$lib/types/board";
 // import { jwtDecode } from "jwt-decode";
