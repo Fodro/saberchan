@@ -1,4 +1,4 @@
-// import { OIDC_REALM, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, AUTH_HOST } from "$env/static/private";
+// import { OIDC_REALM, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET, AUTH_HOST } from "$env/dynamic/private";
 // import * as arctic from "arctic";
 
 // export const codeVerifier = arctic.generateCodeVerifier();

@@ -1,9 +1,9 @@
-import { MAIN_BACKEND_URL } from '$env/static/private';
+import { MAIN_BACKEND_URL } from '$env/dynamic/private';
 import { loadTranslations, translations } from '$lib/translations';
 import type { Board } from '$lib/types/board';
 import type { Metadata } from '$lib/types/metadata';
 import type { LayoutServerLoad } from './$types';
-import { AUTH_HOST, OIDC_CLIENT_ID, OIDC_REALM } from "$env/static/private";
+import { AUTH_HOST, OIDC_CLIENT_ID, OIDC_REALM } from "$env/dynamic/private";
 // import { codeVerifier, keycloak } from "$lib/auth";
 // import * as arctic from "arctic";
 // import { redirect } from '@sveltejs/kit';

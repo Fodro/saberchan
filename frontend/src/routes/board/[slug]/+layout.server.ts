@@ -1,4 +1,4 @@
-import { MAIN_BACKEND_URL } from '$env/static/private';
+import { MAIN_BACKEND_URL } from '$env/dynamic/private';
 import type { Board } from '$lib/types/board';
 import type { LayoutServerLoad } from './$types';
 

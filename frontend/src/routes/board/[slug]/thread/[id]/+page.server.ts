@@ -1,4 +1,4 @@
-import { MAIN_BACKEND_URL } from '$env/static/private';
+import { MAIN_BACKEND_URL } from '$env/dynamic/private';
 import type { Thread } from '$lib/types/thread';
 import type { PageServerLoad } from './$types';
 

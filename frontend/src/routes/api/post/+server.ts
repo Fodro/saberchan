@@ -1,4 +1,4 @@
-import { MAIN_BACKEND_URL } from "$env/static/private";
+import { MAIN_BACKEND_URL } from "$env/dynamic/private";
 import type { Post } from "$lib/types/post";
 import { error } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
