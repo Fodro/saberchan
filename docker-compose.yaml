@@ -1,7 +1,8 @@
 services:
   frontend:
-    build: 
-      dockerfile: frontend.Dockerfile
+    build:
+      context: frontend
+      dockerfile: ../frontend.Dockerfile
     ports:
       - "3000:3000"
     environment:
@@ -9,14 +10,15 @@ services:
       OIDC_REALM: ${OIDC_REALM}
       OIDC_CLIENT_ID: ${OIDC_CLIENT_ID}
       OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET}
-      AUTH_HOST: ${AUTH_HOST}   
+      AUTH_HOST: ${AUTH_HOST}
       AUTH_SECRET: ${AUTH_SECRET}
       OIDC_REDIRECT_URI: ${OIDC_REDIRECT_URI}
       OIDC_LOGOUT_REDIRECT_URI: ${OIDC_LOGOUT_REDIRECT_URI}
 
   backend:
-    build: 
-      dockerfile: backend.Dockerfile
+    build:
+      context: backend
+      dockerfile: ../backend.Dockerfile
     ports:
       - "8888:8888"
     environment:
@@ -41,8 +43,6 @@ services:
       KC_DB_USERNAME: ${KC_DB_USERNAME}
       KC_DB_PASSWORD: ${KC_DB_PASSWORD}
 
-      KC_HOSTNAME: ${KC_HOSTNAME}
-      KC_HOSTNAME_PORT: ${KC_HOSTNAME_PORT}
       KC_HOSTNAME_STRICT: false
       KC_HOSTNAME_STRICT_HTTPS: false
 
@@ -51,6 +51,6 @@ services:
       KC_HEALTH_ENABLED: true
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
-    command: start --optimized
+    command: start-dev
     ports:
       - 9090:8080
