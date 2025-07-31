@@ -8,7 +8,12 @@
 	import Label from "$lib/components/ui/label/label.svelte";
 	import { Separator } from "$lib/components/ui/separator/index.js";
 	import { Textarea } from "$lib/components/ui/textarea/index.js";
-	import { formatDateTime, insertTagAtCursor } from "$lib/helpers.js";
+	import type { Attachment, File as FileType } from "$lib/types/attachment";
+	import {
+		bufferToBase64,
+		formatDateTime,
+		insertTagAtCursor,
+	} from "$lib/helpers.js";
 	import { trackBoard } from "$lib/tracking";
 	import type { Thread } from "$lib/types/thread.js";
 	import { getContext, onMount } from "svelte";
@@ -26,7 +31,8 @@
 	} from "svelte-radix";
 	import PostBody from "$lib/components/custom/PostBody.svelte";
 	import Captcha from "$lib/components/custom/Captcha.svelte";
-    import { toast } from "svelte-sonner";
+	import { toast } from "svelte-sonner";
+	import FileUploader from "$lib/components/custom/FileUploader.svelte";
 
 	let { data } = $props();
 
@@ -36,6 +42,8 @@
 
 	let newTitle: string | null = $state(null);
 	let newText: string | null = $state(null);
+
+	let filesList: FileType[] = $state([]);
 
 	let captchaInput = $state("");
 	let captchaToken = $state("");
@@ -231,6 +239,7 @@
 							class="min-h-[70%] w-full resize-none"
 							bind:value={newText}
 						/>
+						<FileUploader bind:value={filesList} />
 						<Captcha {setCaptchaInput} {setCaptchaToken} />
 					</div>
 				</div>
@@ -251,6 +260,18 @@
 					<Button
 						class="cursor-pointer"
 						on:click={async () => {
+							const attachments: Attachment[] = [];
+							filesList.forEach((value) => {
+								attachments.push({
+									id: undefined,
+									post_id: undefined,
+									link: undefined,
+									name: value.name,
+									type: "image",
+									body: bufferToBase64(value.blob),
+								});
+							});
+
 							const res = await fetch("/api/thread", {
 								method: "POST",
 								body: JSON.stringify({
@@ -258,6 +279,7 @@
 									title: newTitle,
 									original_post: {
 										text: newText,
+										attachments: attachments,
 									},
 									captcha: {
 										input: captchaInput,
@@ -273,6 +295,7 @@
 							newText = null;
 							newTitle = null;
 							isReplyOpen = false;
+							filesList = [];
 
 							await window.open(
 								`/board/${data.slug}/thread/${thread.id}`,

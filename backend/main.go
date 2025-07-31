@@ -16,6 +16,7 @@ import (
 	"github.com/Fodro/saberchan/internal/captcha"
 	"github.com/Fodro/saberchan/internal/database"
 	"github.com/Fodro/saberchan/internal/database/psql"
+	"github.com/Fodro/saberchan/internal/file/s3service"
 	"github.com/Fodro/saberchan/internal/health"
 	"github.com/Fodro/saberchan/internal/server"
 	_ "github.com/lib/pq"
@@ -59,7 +60,8 @@ func main() {
 
 	captcha := captcha.NewService(redisClient, conf.Redis.Expires)
 
-	board := board.NewService(repo, conf)
+	file := s3service.NewService(conf)
+	board := board.NewService(repo, file, conf)
 	health := health.NewService(repo)
 	server := server.NewServer(conf, board, captcha, health)
 	log.Println("starting server on port", conf.Port)

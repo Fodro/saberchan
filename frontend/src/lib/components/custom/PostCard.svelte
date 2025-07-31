@@ -8,6 +8,7 @@
 	import PostBody from "./PostBody.svelte";
 	import * as Card from "$lib/components/ui/card/index.js";
 	import type { Post } from "$lib/types/post";
+	import Image from "./Image.svelte";
 
 	const {
 		post,
@@ -54,7 +55,12 @@
 		</Card.Title>
 	</Card.Header>
 	<Card.Content>
-		<div class="flex flex-col justify-center items-start gap-2">
+		<div class="flex flex-row justify-start items-start gap-2">
+			<div class="grid auto-cols-auto auto-rows-auto items-center gap-2">
+				{#each post.attachments as file}
+					<Image link={file.link ?? ""} name={file.name ?? ""} />
+				{/each}
+			</div>
 			<PostBody text={post.text} />
 		</div>
 	</Card.Content>

@@ -72,6 +72,7 @@ type (
 		PostID uuid.UUID `json:"post_id"`
 		Name string `json:"name"`
 		Type string `json:"type"`
+		Body string `json:"body"`
 	}
 )
 

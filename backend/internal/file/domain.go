@@ -8,7 +8,6 @@ import (
 
 type Service interface {
 	UploadFile(ctx context.Context, file *FileReq) (*FileResp, error)
-	ClearFilesForPost(ctx context.Context, postID uuid.UUID) error
 }
 
 type (
