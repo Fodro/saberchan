@@ -2,7 +2,7 @@ import { MAIN_BACKEND_URL } from "$env/static/private";
 import type { Thread } from "$lib/types/thread";
 import { error } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
-import { verifyExp } from "$lib/helpers";
+import { base64ToArrayBuffer, verifyExp } from "$lib/helpers";
 import { jwtDecode } from "jwt-decode";
 
 export const POST: RequestHandler = async ({request, cookies, fetch}) => {
@@ -27,6 +27,15 @@ export const POST: RequestHandler = async ({request, cookies, fetch}) => {
 	body.original_post.ip = '0.0.0.0';
 	body.original_post.sage = false;
 	body.original_post.op_marker = true;
+
+	body.original_post.attachments.forEach((attachment) => {
+		const buf = base64ToArrayBuffer(attachment.body);
+		if (buf.byteLength > 2097152) {
+			error(413, {
+				"message": "File too large"
+			})
+		}
+	});
 
 	const token = cookies.get("accessToken");
 	

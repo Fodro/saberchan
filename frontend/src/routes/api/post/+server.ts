@@ -2,6 +2,7 @@ import { MAIN_BACKEND_URL } from "$env/static/private";
 import type { Post } from "$lib/types/post";
 import { error } from "@sveltejs/kit";
 import type { RequestHandler } from "./$types";
+import { base64ToArrayBuffer } from "$lib/helpers";
 
 export const POST: RequestHandler = async ({request, cookies, fetch}) => {
 	const body: Post = await request.json();
@@ -23,6 +24,15 @@ export const POST: RequestHandler = async ({request, cookies, fetch}) => {
 
 	body.browser_fingerprint = fingerprint || '';
 	body.ip = '0.0.0.0';
+
+	body.attachments.forEach((attachment) => {
+		const buf = base64ToArrayBuffer(attachment.body);
+		if (buf.byteLength > 2097152) {
+			error(413, {
+				"message": "File too large"
+			})
+		}
+	});
 
 	const res = await fetch(`${MAIN_BACKEND_URL}/api/v1/post/${body.thread_id}`, {
 		method: 'POST',

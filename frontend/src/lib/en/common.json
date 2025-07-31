@@ -49,5 +49,11 @@
 	"captcha": {
 		"show": "Show captcha",
 		"placeholder": "Type text here..."
+	},
+	"file": {
+		"add": "Add file",
+		"remove": "Remove",
+		"limitCount": "Maximum file count is 4",
+		"limitSize": "Maximum file size is 2MB"
 	}
 }

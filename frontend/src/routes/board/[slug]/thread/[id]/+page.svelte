@@ -1,16 +1,15 @@
 <script lang="ts">
 	import Separator from "$lib/components/ui/separator/separator.svelte";
+	import type { Attachment, File as FileType } from "$lib/types/attachment";
 	import * as Card from "$lib/components/ui/card/index.js";
-	import { formatDateTime, insertTagAtCursor } from "$lib/helpers.js";
-	import Badge from "$lib/components/ui/badge/badge.svelte";
+	import { bufferToBase64, insertTagAtCursor } from "$lib/helpers.js";
 	import { Button } from "$lib/components/ui/button/index.js";
-	import DoubleArrowDown from "svelte-radix/DoubleArrowDown.svelte";
 	import { t } from "$lib/translations";
 	import Draggable from "$lib/components/custom/Draggable.svelte";
 	import { Textarea } from "$lib/components/ui/textarea/index.js";
 	import { Label } from "$lib/components/ui/label/index.js";
 	import { Checkbox } from "$lib/components/ui/checkbox/index.js";
-	import { getContext, onMount } from "svelte";
+	import { getContext } from "svelte";
 	import { toast } from "svelte-sonner";
 	import {
 		FontBold,
@@ -24,10 +23,10 @@
 		CaretRight,
 	} from "svelte-radix";
 	import { invalidate } from "$app/navigation";
-	import PostBody from "$lib/components/custom/PostBody.svelte";
 	import PostCard from "$lib/components/custom/PostCard.svelte";
 	import { redirect } from "@sveltejs/kit";
 	import Captcha from "$lib/components/custom/Captcha.svelte";
+	import FileUploader from "$lib/components/custom/FileUploader.svelte";
 
 	let newText = $state("");
 	let newSage = $state(false);
@@ -35,6 +34,7 @@
 	let isReplyOpen = $state(false);
 	let captchaInput = $state("");
 	let captchaToken = $state("");
+	let filesList: FileType[] = $state([]);
 	let counter: () => number = getContext("counter");
 
 	const { data } = $props();
@@ -286,6 +286,7 @@
 							class="min-h-[70%] w-full resize-none"
 							bind:value={newText}
 						/>
+						<FileUploader bind:value={filesList} />
 						<Captcha {setCaptchaInput} {setCaptchaToken} />
 					</div>
 				</div>
@@ -306,6 +307,17 @@
 					<Button
 						class="cursor-pointer"
 						on:click={async () => {
+							const attachments: Attachment[] = [];
+							filesList.forEach((value) => {
+								attachments.push({
+									id: undefined,
+									post_id: undefined,
+									link: undefined,
+									name: value.name,
+									type: "image",
+									body: bufferToBase64(value.blob),
+								});
+							});
 							const res = await fetch("/api/post", {
 								method: "POST",
 								body: JSON.stringify({
@@ -313,6 +325,7 @@
 									text: newText,
 									sage: newSage,
 									op_marker: newOP,
+									attachments: attachments,
 									captcha: {
 										input: captchaInput,
 										token: captchaToken,
@@ -328,6 +341,7 @@
 							newSage = false;
 							newOP = false;
 							isReplyOpen = false;
+							filesList = [];
 						}}
 					>
 						{$t("common.post")}

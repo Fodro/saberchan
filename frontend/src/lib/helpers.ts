@@ -34,3 +34,29 @@ export const verifyExp = (exp: number | undefined): boolean => {
 
 	return Date.now() > exp * 1000;
 }
+
+export const bufferToBase64 = (buf: string | ArrayBuffer | null): string => {
+	if (!buf) {
+		return "";
+	}
+	if (typeof buf === 'string') {
+		return buf
+	}
+	const chunks = [];
+	const uint8 = new Uint8Array(buf);
+	const chunkSize = 0x8000;
+	for (let i = 0; i < uint8.length; i += chunkSize) {
+		const chunk = uint8.subarray(i, Math.min(i + chunkSize, uint8.length));
+		chunks.push(String.fromCharCode(...chunk));
+	}
+	return btoa(chunks.join(''));
+}
+
+export const  base64ToArrayBuffer = (base64: string)  => {
+	const binaryString = atob(base64);
+	const bytes = new Uint8Array(binaryString.length);
+	for (let i = 0; i < binaryString.length; i++) {
+		bytes[i] = binaryString.charCodeAt(i);
+	}
+	return bytes.buffer;
+}
