@@ -39,6 +39,23 @@ func (s *service) CreatePost(threadID uuid.UUID, post *Post) error {
 	hasAttachment := len(post.Attachments) > 0
 	postID := uuid.New()
 
+	postDB := &database.Post{
+		ID:                 postID,
+		Text:               post.Text,
+		ThreadID:           threadID,
+		Sage:               post.Sage,
+		OpMarker:           post.OpMarker,
+		BrowserFingerprint: post.BrowserFingerprint,
+		IP:                 ip,
+		HasAttachment:      hasAttachment,
+	}
+
+	err := s.repo.AddPost(postDB)
+
+	if err != nil {
+		return err
+	}
+
 	if hasAttachment {
 		for _, attachment := range post.Attachments {
 			fileResp, err := s.file.UploadFile(context.Background(), &file.FileReq{
@@ -61,23 +78,6 @@ func (s *service) CreatePost(threadID uuid.UUID, post *Post) error {
 				log.Printf("error saving attachment %s to db: %v", fileResp.Link, err)
 			}
 		}
-	}
-
-	postDB := &database.Post{
-		ID:                 postID,
-		Text:               post.Text,
-		ThreadID:           threadID,
-		Sage:               post.Sage,
-		OpMarker:           post.OpMarker,
-		BrowserFingerprint: post.BrowserFingerprint,
-		IP:                 ip,
-		HasAttachment:      hasAttachment,
-	}
-
-	err := s.repo.AddPost(postDB)
-
-	if err != nil {
-		return err
 	}
 
 	if !post.Sage {

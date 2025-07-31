@@ -6,15 +6,16 @@ import (
 	"encoding/base64"
 	"fmt"
 	"log"
+	"net/url"
 	"time"
 
+	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/Fodro/saberchan/config"
 	"github.com/Fodro/saberchan/internal/file"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/google/uuid"
 )
 
 type service struct {
@@ -26,8 +27,8 @@ type service struct {
 }
 
 func (s *service) UploadFile(ctx context.Context, f *file.FileReq) (*file.FileResp, error) {
-	id := uuid.New()
-	key := id.String() + "-" + f.Name
+	id := nanoid.Must(5)
+	key := id+"-"+url.QueryEscape(f.Name)
 
 	var expires *time.Time
 	if s.shouldExpire {
@@ -36,7 +37,7 @@ func (s *service) UploadFile(ctx context.Context, f *file.FileReq) (*file.FileRe
 		expires = nil
 	}
 
-	body, err := base64.URLEncoding.DecodeString(f.Body)
+	body, err := base64.StdEncoding.DecodeString(f.Body)
 	if err != nil {
 		log.Printf("failed to decode body: %s", err)
 		return nil, err
