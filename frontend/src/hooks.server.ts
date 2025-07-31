@@ -1,3 +1,3 @@
-import { MAIN_BACKEND_URL } from '$env/static/private';
+import { MAIN_BACKEND_URL, OIDC_REALM } from '$env/static/private';
 
-console.log({MAIN_BACKEND_URL})
+console.log({ MAIN_BACKEND_URL, OIDC_REALM })

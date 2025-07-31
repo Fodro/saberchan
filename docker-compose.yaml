@@ -3,17 +3,17 @@ services:
     build:
       context: frontend
       dockerfile: ../frontend.Dockerfile
+      args:
+        MAIN_BACKEND_URL: http://backend:8888
+        OIDC_REALM: ${OIDC_REALM}
+        OIDC_CLIENT_ID: ${OIDC_CLIENT_ID}
+        OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET}
+        AUTH_HOST: ${AUTH_HOST}
+        AUTH_SECRET: ${AUTH_SECRET}
+        OIDC_REDIRECT_URI: ${OIDC_REDIRECT_URI}
+        OIDC_LOGOUT_REDIRECT_URI: ${OIDC_LOGOUT_REDIRECT_URI}
     ports:
       - "3000:3000"
-    environment:
-      MAIN_BACKEND_URL: http://backend:8888
-      OIDC_REALM: ${OIDC_REALM}
-      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID}
-      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET}
-      AUTH_HOST: ${AUTH_HOST}
-      AUTH_SECRET: ${AUTH_SECRET}
-      OIDC_REDIRECT_URI: ${OIDC_REDIRECT_URI}
-      OIDC_LOGOUT_REDIRECT_URI: ${OIDC_LOGOUT_REDIRECT_URI}
 
   backend:
     build:
