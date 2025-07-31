@@ -1,13 +1,20 @@
 package board
 
 import (
+	"context"
+	"database/sql"
+	"errors"
+	"log"
+
 	"github.com/Fodro/saberchan/config"
 	"github.com/Fodro/saberchan/internal/database"
+	"github.com/Fodro/saberchan/internal/file"
 	"github.com/google/uuid"
 )
 
 type service struct {
 	repo database.Repository
+	file file.Service
 	conf *config.Config
 }
 
@@ -30,9 +37,34 @@ func (s *service) CreatePost(threadID uuid.UUID, post *Post) error {
 	ip := post.IP
 	//TODO: add ip hashing
 	hasAttachment := len(post.Attachments) > 0
-	//TODO: add save attachments
+	postID := uuid.New()
+
+	if hasAttachment {
+		for _, attachment := range post.Attachments {
+			fileResp, err := s.file.UploadFile(context.Background(), &file.FileReq{
+				PostID: postID,
+				Name:   attachment.Name,
+				Body:   attachment.Body,
+			})
+			if err != nil {
+				log.Printf("error uploading file: %v", err)
+			}
+			err = s.repo.AddAttachment(&database.Attachment{
+				ID:     uuid.New(),
+				PostID: postID,
+				Link:   fileResp.Link,
+				Name:   attachment.Name,
+				Type:   attachment.Type,
+			})
+
+			if err != nil {
+				log.Printf("error saving attachment %s to db: %v", fileResp.Link, err)
+			}
+		}
+	}
+
 	postDB := &database.Post{
-		ID:                 uuid.New(),
+		ID:                 postID,
 		Text:               post.Text,
 		ThreadID:           threadID,
 		Sage:               post.Sage,
@@ -54,6 +86,7 @@ func (s *service) CreatePost(threadID uuid.UUID, post *Post) error {
 			return s.repo.BumpThread(threadID)
 		}
 	}
+
 	return nil
 }
 
@@ -188,6 +221,14 @@ func (s *service) GetThreadWithPosts(id uuid.UUID) (*Thread, error) {
 	var op *Post
 	posts := make([]*Post, 0, len(postsDB))
 	for i, postDB := range postsDB {
+		var attachments []Attachment
+		if postDB.HasAttachment {
+			attachments, err = s.getAttachmentsForPost(postDB.ID)
+			if err != nil {
+				log.Printf("error while getting attachments for post %s: %s", postDB.ID, err)
+			}
+		}
+
 		if i == 0 {
 			op = &Post{
 				ID:                 postDB.ID,
@@ -199,7 +240,7 @@ func (s *service) GetThreadWithPosts(id uuid.UUID) (*Thread, error) {
 				BrowserFingerprint: postDB.BrowserFingerprint,
 				IP:                 postDB.IP,
 				CreatedAt:          postDB.CreatedAt,
-				Attachments:        nil, //TODO: add attachments
+				Attachments:        attachments,
 			}
 			continue
 		}
@@ -213,7 +254,7 @@ func (s *service) GetThreadWithPosts(id uuid.UUID) (*Thread, error) {
 			BrowserFingerprint: postDB.BrowserFingerprint,
 			IP:                 postDB.IP,
 			CreatedAt:          postDB.CreatedAt,
-			Attachments:        nil, //TODO: add attachments
+			Attachments:        attachments,
 		})
 	}
 	return &Thread{
@@ -227,10 +268,33 @@ func (s *service) GetThreadWithPosts(id uuid.UUID) (*Thread, error) {
 	}, nil
 }
 
+func (s *service) getAttachmentsForPost(id uuid.UUID) ([]Attachment, error) {
+	attachmentsDB, err := s.repo.GetAttachments(id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		} else {
+			return nil, err
+		}
+	}
+	var attachments []Attachment
+	for _, attachmentDB := range attachmentsDB {
+		attachement := Attachment{
+			ID:   attachmentDB.ID,
+			Name: attachmentDB.Name,
+			Type: attachmentDB.Type,
+			Link: attachmentDB.Link,
+		}
+		attachments = append(attachments, attachement)
+	}
+
+	return attachments, nil
+}
+
 func (s *service) UpdateBoard(board *Board) error {
 	panic("unimplemented")
 }
 
-func NewService(repo database.Repository, conf *config.Config) Service {
-	return &service{repo: repo, conf: conf}
+func NewService(repo database.Repository, file file.Service, conf *config.Config) Service {
+	return &service{repo: repo, file: file, conf: conf}
 }
