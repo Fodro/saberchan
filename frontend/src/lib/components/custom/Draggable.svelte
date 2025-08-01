@@ -11,8 +11,6 @@
 		initialTop: number;
 	} = $props();
 
-	console.log({ initialLeft, initialTop });
-
 	let left = $state(initialLeft + 100);
 	let top = $state(initialTop + 100);
 
