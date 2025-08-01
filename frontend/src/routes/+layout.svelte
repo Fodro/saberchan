@@ -56,7 +56,7 @@
 </script>
 
 <ModeWatcher />
-<div class="p-4 h-screen">
+<div class="flex flex-col p-4 h-screen gap-2">
 	<div class="flex flex-row justify-start items-center">
 		<div class="flex flex-row basis-1/2 gap-3 justify-start items-center pb-4">
 			<h2

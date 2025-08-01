@@ -23,6 +23,10 @@
 		checkIsInText: (txt: string) => boolean;
 		isSigned: boolean;
 	} = $props();
+
+	const colsCount = !post.attachments ? 0 : post.attachments.length < 2 ? 1 : 2
+	const rowsCount = !post.attachments ? 0 : post.attachments.length < 3 ? 1 : 2
+	const imageFlex = !post.attachments ? 0 : 1
 </script>
 
 <Card.Root id={`${post.number}`} class="target:border-sky-500">
@@ -55,8 +59,8 @@
 		</Card.Title>
 	</Card.Header>
 	<Card.Content>
-		<div class="flex flex-row justify-start items-start gap-2">
-			<div class="grid auto-cols-auto auto-rows-auto items-center gap-2">
+		<div class="flex flex-row justify-start items-start gap-3">
+			<div class={`grid grid-cols-${colsCount} grid-rows-${rowsCount} items-center gap-2 flex-${imageFlex} p-2 border-r-7`}>
 				{#each post.attachments as file}
 					<Image link={file.link ?? ""} name={file.name ?? ""} />
 				{/each}

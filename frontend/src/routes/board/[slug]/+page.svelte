@@ -8,6 +8,7 @@
 	import Label from "$lib/components/ui/label/label.svelte";
 	import { Separator } from "$lib/components/ui/separator/index.js";
 	import { Textarea } from "$lib/components/ui/textarea/index.js";
+	import Image from "$lib/components/custom/Image.svelte";
 	import type { Attachment, File as FileType } from "$lib/types/attachment";
 	import {
 		bufferToBase64,
@@ -333,14 +334,30 @@
 				</Card.Description>
 			</Card.Header>
 			<Card.Content>
-				{#if thread.original_post.text.length <= 400}
-					<PostBody text={thread.original_post.text} />
-				{/if}
-				{#if thread.original_post.text.length > 400}
-					<p class="leading-7 whitespace-pre-wrap">
-						{thread.original_post.text.substring(0, 400)}...
-					</p>
-				{/if}
+				<div class="flex flex-row justify-start items-start gap-3">
+					{#if thread.original_post.attachments && thread.original_post.attachments.length > 0}
+						<div
+							class={`grid grid-cols-1 grid-rows-1 items-center gap-2 flex-1 p-2 border-r-7 flex-1`}
+						>
+							<Image
+								link={thread.original_post.attachments[0]
+									.link ?? ""}
+								name={thread.original_post.attachments[0]
+									.name ?? ""}
+							/>
+						</div>
+					{/if}
+					<div class="flex-2">
+						{#if thread.original_post.text.length <= 300}
+							<PostBody text={thread.original_post.text} />
+						{/if}
+						{#if thread.original_post.text.length > 300}
+							<p class="leading-7 whitespace-pre-wrap">
+								{thread.original_post.text.substring(0, 300)}...
+							</p>
+						{/if}
+					</div>
+				</div>
 			</Card.Content>
 			<Card.Footer>
 				<Button

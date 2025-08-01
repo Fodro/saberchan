@@ -155,6 +155,15 @@ func (s *service) GetBoardWithThreads(alias string) (*Board, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		var attachments []Attachment
+		if opPostDB.HasAttachment {
+			attachments, err = s.getAttachmentsForPost(opPostDB.ID)
+			if err != nil {
+				log.Printf("error while getting attachments for op post %s: %s", opPostDB.ID, err)
+			}
+		}
+
 		repliesCount, err := s.repo.GetRepliesForThread(threadDB.ID)
 		if err != nil {
 			return nil, err
@@ -174,7 +183,7 @@ func (s *service) GetBoardWithThreads(alias string) (*Board, error) {
 				BrowserFingerprint: opPostDB.BrowserFingerprint,
 				IP:                 opPostDB.IP,
 				CreatedAt:          opPostDB.CreatedAt,
-				Attachments:        nil, //TODO: add attachments
+				Attachments:        attachments,
 			},
 			RepliesCount: repliesCount,
 		})

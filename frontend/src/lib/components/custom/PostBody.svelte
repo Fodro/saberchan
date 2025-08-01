@@ -49,25 +49,28 @@
 		.replaceAll("[/sub]", "</span>");
 
 	let lines = styledText.split("\n");
+	const textSize = text.length > 1000 ? "text-sm" : "text-base";
 </script>
 
-{#each lines as line}
-	{#if line.trim().charAt(0) === ">" && line.trim().charAt(1) === ">"}
-		<!-- svelte-ignore event_directive_deprecated -->
-		<a
-			class="text-orange-500 hover:underline cursor-pointer"
-			href={`#${line.trim().replaceAll(">>", "")}`}
-			data-sveltekit-reload
-		>
-			<Render html={line.trim()} options={sanitizeOpts} />
-		</a>
-	{:else if line.trim().charAt(0) === ">"}
-		<p class="text-green-500">
-			<Render html={line.trim()} options={sanitizeOpts} />
-		</p>
-	{:else}
-		<p>
-			<Render html={line.trim()} options={sanitizeOpts} />
-		</p>
-	{/if}
-{/each}
+<div class="flex-2">
+	{#each lines as line}
+		{#if line.trim().charAt(0) === ">" && line.trim().charAt(1) === ">"}
+			<!-- svelte-ignore event_directive_deprecated -->
+			<a
+				class={`text-orange-500 hover:underline cursor-pointer ${textSize}`}
+				href={`#${line.trim().replaceAll(">>", "")}`}
+				data-sveltekit-reload
+			>
+				<Render html={line.trim()} options={sanitizeOpts} />
+			</a>
+		{:else if line.trim().charAt(0) === ">"}
+			<p class={`text-green-500 ${textSize}`}>
+				<Render html={line.trim()} options={sanitizeOpts} />
+			</p>
+		{:else}
+			<p class={`${textSize} break-normal`}>
+				<Render html={line.trim()} options={sanitizeOpts} />
+			</p>
+		{/if}
+	{/each}
+</div>
