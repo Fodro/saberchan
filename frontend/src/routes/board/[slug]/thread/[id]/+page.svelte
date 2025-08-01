@@ -37,6 +37,9 @@
 	let filesList: FileType[] = $state([]);
 	let counter: () => number = getContext("counter");
 
+	let formX = $state(0);
+	let formY = $state(0);
+
 	const { data } = $props();
 
 	if (!data.thread) {
@@ -78,6 +81,8 @@
 	</title>
 </svelte:head>
 
+<svelte:window bind:scrollX={formX} bind:scrollY={formY} />
+
 <div class="flex flex-col justify-center items-start gap-2">
 	<h3 class="mt-8 scroll-m-20 text-2xl font-semibold tracking-tight mb-5">
 		{data.thread.title}
@@ -117,7 +122,7 @@
 </div>
 
 {#if isReplyOpen}
-	<Draggable>
+	<Draggable initialLeft={formX} initialTop={formY}>
 		<Card.Root class="w-[100%] h-[95%]">
 			<Card.Header>
 				<Card.Title>{$t("common.posts.new")}</Card.Title>

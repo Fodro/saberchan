@@ -3,12 +3,20 @@
 	import { t } from "$lib/translations";
 	import Button from "../ui/button/button.svelte";
 
-	export let left = 100;
-	export let top = 100;
+	const {
+		initialLeft,
+		initialTop,
+	}: {
+		initialLeft: number;
+		initialTop: number;
+	} = $props();
 
-	let pinned = false;
+	let left = $state(initialLeft + 100);
+	let top = $state(initialTop + 100);
 
-	let moving = false;
+	let pinned = $state(false);
+
+	let moving = $state(false);
 
 	function onMouseDown() {
 		if (pinned) {
@@ -30,6 +38,8 @@
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
+<!-- svelte-ignore slot_element_deprecated -->
+<!-- svelte-ignore event_directive_deprecated -->
 <section
 	on:mousedown={onMouseDown}
 	style="left: {left}px; top: {top}px;"
