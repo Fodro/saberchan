@@ -60,3 +60,25 @@ export const  base64ToArrayBuffer = (base64: string)  => {
 	}
 	return bytes.buffer;
 }
+
+const insertStringAtIndex = (originalString: string, stringToInsert: string, index: number): string => {
+	const firstPart = originalString.slice(0, index);
+
+	const secondPart = originalString.slice(index);
+
+	return firstPart + stringToInsert + secondPart;
+}
+
+
+export const trimLargeWords = (str: string): string => {
+	const words = str.split(' ');
+	const trimmedWords = words.map(word => {
+		if (word.length > 50) {
+			for (let i = 49; i < word.length; i+=50) {
+				word = insertStringAtIndex(word, '\n', i);
+			}
+		}
+		return word;
+	});
+	return trimmedWords.join(' ');
+}

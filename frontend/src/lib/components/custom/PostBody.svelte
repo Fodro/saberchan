@@ -68,7 +68,7 @@
 				<Render html={line.trim()} options={sanitizeOpts} />
 			</p>
 		{:else}
-			<p class={`${textSize}`}>
+			<p class={`${textSize} break-normal`}>
 				<Render html={line.trim()} options={sanitizeOpts} />
 			</p>
 		{/if}
