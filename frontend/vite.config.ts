@@ -4,5 +4,5 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
 	plugins: [tailwindcss(), sveltekit()],
-	ssr: { noExternal: ['@jill64/svelte-sanitize'] }
+	ssr: { noExternal: ['@jill64/svelte-sanitize', 'nanoid'] }
 });
