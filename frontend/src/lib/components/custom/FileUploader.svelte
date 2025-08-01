@@ -61,7 +61,7 @@
 				reader.onload = (readerEvent) => {
 					if (!readerEvent.target) {
 						toast.error("Something wrong with file");
-						return
+						return;
 					}
 					const content = readerEvent.target.result; // this is the content!
 					value.push({
