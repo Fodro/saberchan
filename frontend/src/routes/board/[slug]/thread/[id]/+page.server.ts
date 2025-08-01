@@ -34,7 +34,7 @@ export const load: PageServerLoad = async ({ params, depends, fetch, cookies }) 
 			post.is_author = true;
 		}
 		if (post.text.length > 50) {
-			post.text = trimLargeWords(thread.original_post.text)
+			post.text = trimLargeWords(post.text)
 		}
 		post.browser_fingerprint = ""
 	})
