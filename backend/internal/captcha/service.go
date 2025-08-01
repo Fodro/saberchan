@@ -16,10 +16,11 @@ type service struct {
 }
 
 func (s *service) Generate(ctx context.Context) (*generator.Data, string, error) {
-	data, err := generator.New(150, 50, func(o *generator.Options) {
-		o.TextLength = 5
+	data, err := generator.NewMathExpr(150, 50, func(o *generator.Options) {
 		o.BackgroundColor = color.White
+		o.TextLength = 6
 	})
+
 	if err != nil {
 		return nil, "", err
 	}
