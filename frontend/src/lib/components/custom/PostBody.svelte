@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto, invalidateAll } from "$app/navigation";
 	import { Render } from "@jill64/svelte-sanitize";
 
 	const sanitizeOpts = {
@@ -26,7 +25,7 @@
 		},
 	};
 
-	let { text }: { text: string } = $props();
+	let { text, additionalClass }: { text: string, additionalClass: string } = $props();
 	let styledText = text
 		.replaceAll("[b]", `<span class="font-bold">`)
 		.replaceAll("[/b]", "</span>")
@@ -57,18 +56,18 @@
 		{#if line.trim().charAt(0) === ">" && line.trim().charAt(1) === ">"}
 			<!-- svelte-ignore event_directive_deprecated -->
 			<a
-				class={`text-orange-500 hover:underline cursor-pointer ${textSize}`}
+				class={`text-orange-500 hover:underline cursor-pointer ${textSize} ${additionalClass}`}
 				href={`#${line.trim().replaceAll(">>", "")}`}
 				data-sveltekit-reload
 			>
 				<Render html={line.trim()} options={sanitizeOpts} />
 			</a>
 		{:else if line.trim().charAt(0) === ">"}
-			<p class={`text-green-500 ${textSize}`}>
+			<p class={`text-green-500 ${textSize} ${additionalClass}`}>
 				<Render html={line.trim()} options={sanitizeOpts} />
 			</p>
 		{:else}
-			<p class={`${textSize} break-normal`}>
+			<p class={`${textSize} break-normal ${additionalClass}`}>
 				<Render html={line.trim()} options={sanitizeOpts} />
 			</p>
 		{/if}

@@ -354,12 +354,19 @@
 					{/if}
 					<div class="flex-2">
 						{#if thread.original_post.text.length <= 300}
-							<PostBody text={thread.original_post.text} />
+							<PostBody
+								text={thread.original_post.text}
+								additionalClass=""
+							/>
 						{/if}
 						{#if thread.original_post.text.length > 300}
-							<p class="leading-7 whitespace-pre-wrap">
-								{thread.original_post.text.substring(0, 300)}...
-							</p>
+							<PostBody
+								text={thread.original_post.text.substring(
+									0,
+									300,
+								) + "..."}
+								additionalClass="leading-7 whitespace-pre-wrap"
+							/>
 						{/if}
 					</div>
 				</div>
