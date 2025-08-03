@@ -6,15 +6,16 @@ import (
 	"encoding/base64"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
-	nanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/Fodro/saberchan/config"
 	"github.com/Fodro/saberchan/internal/file"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	nanoid "github.com/matoous/go-nanoid/v2"
 )
 
 type service struct {
@@ -26,7 +27,9 @@ type service struct {
 }
 
 func (s *service) UploadFile(ctx context.Context, f *file.FileReq) (*file.FileResp, error) {
-	id := nanoid.Must(15)
+	fileArray := strings.Split(f.Name, ".")
+	fileExt := fileArray[len(fileArray)-1]
+	id := nanoid.Must(15)+"."+fileExt
 	key := id
 
 	var expires *time.Time
