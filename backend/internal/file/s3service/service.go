@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"log"
-	"net/url"
 	"time"
 
 	nanoid "github.com/matoous/go-nanoid/v2"
@@ -27,8 +26,8 @@ type service struct {
 }
 
 func (s *service) UploadFile(ctx context.Context, f *file.FileReq) (*file.FileResp, error) {
-	id := nanoid.Must(5)
-	key := id+"-"+url.QueryEscape(f.Name)
+	id := nanoid.Must(15)
+	key := id
 
 	var expires *time.Time
 	if s.shouldExpire {
