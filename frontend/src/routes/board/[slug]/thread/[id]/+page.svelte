@@ -41,7 +41,7 @@
 
 	let formX = $state(0);
 	let formY = $state(0);
-	let formPinned = $state(false);
+	let formPinned = $state(true);
 
 	const { data } = $props();
 

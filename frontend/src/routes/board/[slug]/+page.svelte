@@ -45,7 +45,7 @@
 
 	let formX = $state(0);
 	let formY = $state(0);
-	let formPinned = $state(false);
+	let formPinned = $state(true);
 
 	let newTitle: string | null = $state(null);
 	let newText: string | null = $state(null);

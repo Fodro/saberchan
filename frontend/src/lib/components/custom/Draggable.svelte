@@ -13,8 +13,16 @@
 		children: Snippet<[]>;
 	} = $props();
 
-	let left = $state(initialLeft + 100);
-	let top = $state(initialTop + 100);
+	let leftMod = 300;
+	let topMod = 100;
+
+	if (window) {
+		leftMod = window.innerWidth / 4
+		topMod = window.innerHeight / 4
+	}
+
+	let left = $state(initialLeft + leftMod);
+	let top = $state(initialTop + topMod);
 
 	let moving = $state(false);
 
@@ -41,7 +49,7 @@
 <section
 	onmousedown={onMouseDown}
 	style="left: {left}px; top: {top}px;"
-	class="draggable w-[50vw] h-[70vh]"
+	class={`draggable w-[50vw] h-[70vh]${pinned? '' : ' cursor-move'}`}
 >
 	{@render children()}
 </section>
@@ -51,7 +59,6 @@
 <style>
 	.draggable {
 		user-select: none;
-		cursor: move;
 		position: absolute;
 	}
 </style>

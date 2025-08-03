@@ -16,7 +16,7 @@
 	"logout": "Logout",
 	"clearTokens": "Clear Tokens",
 	"logged_in": "Signed in as",
-	"draggable": "Click button in top-right corner to pin window",
+	"draggable": "Click button in top-right corner to unpin and move window",
 	"ban": "Ban",
 	"admin": {
 		"add_board": "Add Board"
