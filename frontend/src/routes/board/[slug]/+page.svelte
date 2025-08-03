@@ -23,6 +23,8 @@
 		CaretDown,
 		CaretRight,
 		CaretUp,
+		DrawingPin,
+		DrawingPinFilled,
 		FontBold,
 		FontItalic,
 		Overline,
@@ -43,6 +45,7 @@
 
 	let formX = $state(0);
 	let formY = $state(0);
+	let formPinned = $state(false);
 
 	let newTitle: string | null = $state(null);
 	let newText: string | null = $state(null);
@@ -97,10 +100,40 @@
 <Separator class="my-4" />
 
 {#if isReplyOpen}
-	<Draggable initialLeft={formX} initialTop={formY}>
-		<Card.Root class="w-[100%] h-[95%]">
+	<Draggable initialLeft={formX} initialTop={formY} pinned={formPinned}>
+		<Card.Root class="w-[100%] h-[100%]">
 			<Card.Header>
-				<Card.Title>{$t("common.threads.new")}</Card.Title>
+				<Card.Title>
+					<div class="flex flex-row items-center h-[5%]">
+						<div class="flex flex-row flex-1">
+							<p class="text-muted-foreground">
+								{$t("common.threads.new")}
+							</p>
+						</div>
+						<div class="flex flex-row-reverse flex-1">
+							<Button
+								class="cursor-pointer"
+								variant="secondary"
+								size="icon"
+								on:click={() => {
+									formPinned = !formPinned;
+								}}
+							>
+								{#if formPinned}
+									<DrawingPinFilled />
+								{/if}
+								{#if !formPinned}
+									<DrawingPin />
+								{/if}
+							</Button>
+						</div>
+					</div>
+				</Card.Title>
+				<Card.Description>
+					<p class="text-muted-foreground">
+						{$t("common.draggable")}
+					</p>
+				</Card.Description>
 			</Card.Header>
 			<Card.Content>
 				<div class="grid grid-cols-1 w-full items-center gap-2">
@@ -318,7 +351,7 @@
 	</Draggable>
 {/if}
 
-<div class="grid grid-cols-2 gap-4 pb-2">
+<div class="grid md:grid-cols-2 grid-cols-1 gap-4 pb-2">
 	{#each data.board.threads as thread}
 		<Card.Root>
 			<Card.Header>

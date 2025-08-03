@@ -57,7 +57,7 @@
 
 <ModeWatcher />
 <div class="flex flex-col p-4 h-screen gap-2">
-	<div class="flex flex-row justify-start items-center">
+	<div class="flex md:flex-row flex-col justify-start items-center">
 		<div class="flex flex-row basis-1/2 gap-3 justify-start items-center pb-4">
 			<h2
 				class="mt-10 scroll-m-20 text-3xl font-semibold tracking-tight transition-colors first:mt-0"

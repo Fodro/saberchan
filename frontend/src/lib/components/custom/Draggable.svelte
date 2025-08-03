@@ -6,15 +6,15 @@
 	const {
 		initialLeft,
 		initialTop,
+		pinned,
 	}: {
 		initialLeft: number;
 		initialTop: number;
+		pinned: boolean;
 	} = $props();
 
 	let left = $state(initialLeft + 100);
 	let top = $state(initialTop + 100);
-
-	let pinned = $state(false);
 
 	let moving = $state(false);
 
@@ -45,24 +45,6 @@
 	style="left: {left}px; top: {top}px;"
 	class="draggable w-[50vw] h-[70vh]"
 >
-	<div class="flex flex-row-reverse items-center h-[5%]">
-		<Button
-			class="cursor-pointer"
-			variant="ghost"
-			size="icon"
-			on:click={() => {
-				pinned = !pinned;
-			}}
-		>
-			{#if pinned}
-				<DrawingPinFilled />
-			{/if}
-			{#if !pinned}
-				<DrawingPin />
-			{/if}
-		</Button>
-		<p class="text-muted-foreground">{$t("common.draggable")}</p>
-	</div>
 	<slot></slot>
 </section>
 
