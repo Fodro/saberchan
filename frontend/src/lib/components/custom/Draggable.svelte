@@ -1,11 +1,11 @@
 <script lang="ts">
-    import type { Snippet } from "svelte";
+	import type { Snippet } from "svelte";
 
 	const {
 		initialLeft,
 		initialTop,
 		pinned,
-		children
+		children,
 	}: {
 		initialLeft: number;
 		initialTop: number;
@@ -17,8 +17,12 @@
 	let topMod = 100;
 
 	if (window) {
-		leftMod = window.innerWidth / 4
-		topMod = window.innerHeight / 4
+		leftMod = window.innerWidth / 4;
+		topMod = window.innerHeight / 4;
+		if(window.innerWidth < 770) {
+			leftMod = 0
+			topMod = 0
+		}
 	}
 
 	let left = $state(initialLeft + leftMod);
@@ -49,7 +53,7 @@
 <section
 	onmousedown={onMouseDown}
 	style="left: {left}px; top: {top}px;"
-	class={`draggable w-[50vw] h-[70vh]${pinned? '' : ' cursor-move'}`}
+	class={`md:draggable absolute w-[100%] md:w-[50vw] md:h-[70vh]${pinned ? "" : " cursor-move"}`}
 >
 	{@render children()}
 </section>
@@ -59,6 +63,5 @@
 <style>
 	.draggable {
 		user-select: none;
-		position: absolute;
 	}
 </style>

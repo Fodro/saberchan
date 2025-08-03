@@ -60,12 +60,14 @@
 	</Card.Header>
 	<Card.Content>
 		<div class="flex flex-row justify-start items-start gap-3">
+			{#if post.attachments}
 			<div class={`grid grid-cols-${colsCount} grid-rows-${rowsCount} items-center gap-2 flex-${imageFlex} p-2 border-r-7`}>
 				{#each post.attachments as file}
 					<Image link={file.link ?? ""} name={file.name ?? ""} />
 				{/each}
 			</div>
-			<PostBody text={post.text} />
+			{/if}
+			<PostBody text={post.text} additionalClass="" />
 		</div>
 	</Card.Content>
 	<Card.Footer>
