@@ -137,7 +137,7 @@
 					</div>
 					<div class="flex flex-row-reverse flex-1">
 						<Button
-							class="cursor-pointer"
+							class="cursor-pointer md:flex hidden"
 							variant="outline"
 							size="icon"
 							on:click={() => {
@@ -156,14 +156,14 @@
 			</Card.Title>
 			<Card.Description>
 				<div class="flex flex-row items-center h-[5%] flex-1 pl-6">
-					<p class="text-muted-foreground">
+					<p class="text-muted-foreground md:flex hidden">
 						{$t("common.draggable")}
 					</p>
 				</div>
 			</Card.Description>
 			<Card.Content>
 				<div class="grid grid-cols-1 w-full items-center gap-4">
-					<div class="flex flex-row justify-start items-center gap-2">
+					<div class="flex md:flex-row flex-col justify-start md:items-center items-start gap-2">
 						<div
 							class="flex flex-row justify-start items-center gap-2"
 						>
@@ -192,10 +192,10 @@
 						{/if}
 					</div>
 					<div class="flex flex-col justify-start items-start gap-3">
+						<Label>{$t("common.fields.text")}</Label>
 						<div
-							class="flex flex-row justify-start items-center gap-2"
+							class="md:flex md:flex-row md:justify-start md:items-center grid grid-cols-3 gap-2"
 						>
-							<Label>{$t("common.fields.text")}</Label>
 							<Button
 								class="cursor-pointer"
 								size="icon"
