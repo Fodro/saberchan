@@ -113,7 +113,7 @@
 						<div class="flex flex-row-reverse flex-1">
 							<Button
 								class="cursor-pointer"
-								variant="secondary"
+								variant="outline"
 								size="icon"
 								on:click={() => {
 									formPinned = !formPinned;
