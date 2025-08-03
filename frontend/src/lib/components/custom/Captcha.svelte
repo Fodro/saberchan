@@ -2,7 +2,7 @@
 	import { t } from "$lib/translations";
 	import Button from "../ui/button/button.svelte";
 	import { Update } from "svelte-radix";
-    import Input from "../ui/input/input.svelte";
+	import Input from "../ui/input/input.svelte";
 
 	let isOpened: boolean = $state(false);
 	let text: string = $state("");
@@ -11,9 +11,11 @@
 	const {
 		setCaptchaInput,
 		setCaptchaToken,
+		counter,
 	}: {
 		setCaptchaInput: (input: string) => void;
 		setCaptchaToken: (token: string) => void;
+		counter: number;
 	} = $props();
 
 	const fetchCaptcha = async () => {
@@ -25,6 +27,12 @@
 
 	$effect(() => {
 		setCaptchaInput(text);
+	});
+
+	$effect(() => {
+		counter;
+		fetchCaptcha();
+		text = "";
 	})
 </script>
 
@@ -34,6 +42,7 @@
 			on:click={async () => {
 				await fetchCaptcha();
 				isOpened = true;
+				text = "";
 			}}
 		>
 			{$t("common.captcha.show")}
@@ -44,6 +53,7 @@
 			size="icon"
 			on:click={async () => {
 				await fetchCaptcha();
+				text = "";
 			}}
 			class="flex-1"
 		>
@@ -54,6 +64,6 @@
 			placeholder={$t("common.captcha.placeholder")}
 			class="flex-4"
 			bind:value={text}
-		 />
+		/>
 	{/if}
 </div>

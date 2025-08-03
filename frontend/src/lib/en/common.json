@@ -48,7 +48,8 @@
 	},
 	"captcha": {
 		"show": "Show captcha",
-		"placeholder": "Type text here..."
+		"placeholder": "Type text here...",
+		"failed": "Wrong captcha!"
 	},
 	"file": {
 		"add": "Add file",

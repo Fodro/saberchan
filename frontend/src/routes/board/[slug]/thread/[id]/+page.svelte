@@ -36,6 +36,7 @@
 	let isReplyOpen = $state(false);
 	let captchaInput = $state("");
 	let captchaToken = $state("");
+	let captchaCounter = $state(0);
 	let filesList: FileType[] = $state([]);
 	let counter: () => number = getContext("counter");
 
@@ -325,7 +326,7 @@
 							bind:value={newText}
 						/>
 						<FileUploader bind:value={filesList} />
-						<Captcha {setCaptchaInput} {setCaptchaToken} />
+						<Captcha {setCaptchaInput} {setCaptchaToken} counter={captchaCounter} />
 					</div>
 				</div>
 			</Card.Content>
@@ -370,6 +371,11 @@
 									},
 								}),
 							});
+							if (res.status == 403) {
+								toast.error($t("common.captcha.failed"))
+								captchaCounter += 1
+								return;
+							}
 							if (res.status != 201 && res.status != 200) {
 								toast.error(await res.text());
 								return;
