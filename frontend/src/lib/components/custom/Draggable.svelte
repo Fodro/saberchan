@@ -1,20 +1,28 @@
 <script lang="ts">
-	import { DrawingPin, DrawingPinFilled } from "svelte-radix";
-	import { t } from "$lib/translations";
-	import Button from "../ui/button/button.svelte";
+    import type { Snippet } from "svelte";
 
 	const {
 		initialLeft,
 		initialTop,
+		pinned,
+		children
 	}: {
 		initialLeft: number;
 		initialTop: number;
+		pinned: boolean;
+		children: Snippet<[]>;
 	} = $props();
 
-	let left = $state(initialLeft + 100);
-	let top = $state(initialTop + 100);
+	let leftMod = 300;
+	let topMod = 100;
 
-	let pinned = $state(false);
+	if (window) {
+		leftMod = window.innerWidth / 4
+		topMod = window.innerHeight / 4
+	}
+
+	let left = $state(initialLeft + leftMod);
+	let top = $state(initialTop + topMod);
 
 	let moving = $state(false);
 
@@ -38,32 +46,12 @@
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<!-- svelte-ignore slot_element_deprecated -->
-<!-- svelte-ignore event_directive_deprecated -->
 <section
-	on:mousedown={onMouseDown}
+	onmousedown={onMouseDown}
 	style="left: {left}px; top: {top}px;"
-	class="draggable w-[50vw] h-[70vh]"
+	class={`draggable w-[50vw] h-[70vh]${pinned? '' : ' cursor-move'}`}
 >
-	<div class="flex flex-row-reverse items-center h-[5%]">
-		<Button
-			class="cursor-pointer"
-			variant="ghost"
-			size="icon"
-			on:click={() => {
-				pinned = !pinned;
-			}}
-		>
-			{#if pinned}
-				<DrawingPinFilled />
-			{/if}
-			{#if !pinned}
-				<DrawingPin />
-			{/if}
-		</Button>
-		<p class="text-muted-foreground">{$t("common.draggable")}</p>
-	</div>
-	<slot></slot>
+	{@render children()}
 </section>
 
 <svelte:window on:mouseup={onMouseUp} on:mousemove={onMouseMove} />
@@ -71,8 +59,6 @@
 <style>
 	.draggable {
 		user-select: none;
-		cursor: move;
-		border: solid 1px gray;
 		position: absolute;
 	}
 </style>

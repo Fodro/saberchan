@@ -21,6 +21,8 @@
 		CaretDown,
 		TransparencyGrid,
 		CaretRight,
+		DrawingPinFilled,
+		DrawingPin,
 	} from "svelte-radix";
 	import { invalidate } from "$app/navigation";
 	import PostCard from "$lib/components/custom/PostCard.svelte";
@@ -39,6 +41,7 @@
 
 	let formX = $state(0);
 	let formY = $state(0);
+	let formPinned = $state(true);
 
 	const { data } = $props();
 
@@ -122,11 +125,41 @@
 </div>
 
 {#if isReplyOpen}
-	<Draggable initialLeft={formX} initialTop={formY}>
-		<Card.Root class="w-[100%] h-[95%]">
-			<Card.Header>
-				<Card.Title>{$t("common.posts.new")}</Card.Title>
-			</Card.Header>
+	<Draggable initialLeft={formX} initialTop={formY} pinned={formPinned}>
+		<Card.Root class="w-[100%] h-[100%]">
+			<Card.Title>
+				<div class="flex flex-row items-center h-[5%] flex-1 pl-6 pt-4 pr-6">
+					<div class="flex flex-row flex-1">
+						<p class="text-muted-foreground">
+							{$t("common.posts.new")}
+						</p>
+					</div>
+					<div class="flex flex-row-reverse flex-1">
+						<Button
+							class="cursor-pointer"
+							variant="outline"
+							size="icon"
+							on:click={() => {
+								formPinned = !formPinned;
+							}}
+						>
+							{#if formPinned}
+								<DrawingPinFilled />
+							{/if}
+							{#if !formPinned}
+								<DrawingPin />
+							{/if}
+						</Button>
+					</div>
+				</div>
+			</Card.Title>
+			<Card.Description>
+				<div class="flex flex-row items-center h-[5%] flex-1 pl-6">
+					<p class="text-muted-foreground">
+						{$t("common.draggable")}
+					</p>
+				</div>
+			</Card.Description>
 			<Card.Content>
 				<div class="grid grid-cols-1 w-full items-center gap-4">
 					<div class="flex flex-row justify-start items-center gap-2">
