@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"log"
+	"net/url"
 	"strings"
 	"time"
 
@@ -29,7 +30,7 @@ type service struct {
 func (s *service) UploadFile(ctx context.Context, f *file.FileReq) (*file.FileResp, error) {
 	fileArray := strings.Split(f.Name, ".")
 	fileExt := fileArray[len(fileArray)-1]
-	id := nanoid.Must(15)+"."+fileExt
+	id := nanoid.Must(15) + "." + fileExt
 	key := id
 
 	var expires *time.Time
@@ -46,10 +47,12 @@ func (s *service) UploadFile(ctx context.Context, f *file.FileReq) (*file.FileRe
 	}
 
 	_, err = s.svc.PutObjectWithContext(ctx, &s3.PutObjectInput{
-		Bucket:  aws.String(s.bucket),
-		Key:     aws.String(key),
-		Body:    bytes.NewReader(body),
-		Expires: expires,
+		Bucket:       aws.String(s.bucket),
+		Key:          aws.String(key),
+		Body:         bytes.NewReader(body),
+		Expires:      expires,
+		CacheControl: aws.String("max-age=31536000"),
+		ContentDisposition: aws.String(fmt.Sprintf("attachment; filename*=UTF-8''%s", url.QueryEscape(f.Name))),
 	})
 	if err != nil {
 		log.Printf("failed to upload file: %s", err)
