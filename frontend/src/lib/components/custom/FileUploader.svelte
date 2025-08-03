@@ -4,9 +4,9 @@
 	import Button from "../ui/button/button.svelte";
 	import { t } from "$lib/translations";
 	import { toast } from "svelte-sonner";
-	import { nanoid } from "nanoid";
 
 	let { value = $bindable() }: { value: FileType[] } = $props();
+	let fileCurrentId = $state(0);
 </script>
 
 <div class="flex flex-row justify-start items-start gap-2">
@@ -41,16 +41,20 @@
 					return;
 				}
 				file = e.target.files[0];
-				const id = nanoid(5);
+				const id = fileCurrentId.toString()
+				fileCurrentId += 1
 
 				if (file.size > 2097152) {
 					toast.error($t("common.file.limitSize"));
 					return;
 				}
 				let name: string;
-				if (file.name.length > 10) {
-					const fileExt = file.name.split(".").pop();
-					name = id + "." + fileExt;
+				let fileExt = file.name.split(".").pop();
+				if (!fileExt) {
+					fileExt = ".jpg"
+				}
+				if (file.name.length > (10 + fileExt?.length)) {
+					name = file.name.substring(0, 8) + "." + fileExt;
 				} else {
 					name = file.name;
 				}
