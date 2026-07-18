@@ -3,7 +3,7 @@ import type { RequestHandler } from './$types';
 import { adminBackendHeaders, isAdminSession, proxyBackend } from '$lib/server/backend';
 
 export const POST: RequestHandler = async ({ params, fetch, cookies }) => {
-	if (!isAdminSession(cookies)) {
+	if (!(await isAdminSession(cookies))) {
 		error(401, { message: 'Unauthorized' });
 	}
 	const id = params.id;
@@ -11,6 +11,6 @@ export const POST: RequestHandler = async ({ params, fetch, cookies }) => {
 
 	return proxyBackend(fetch, `/api/v1/board/${id}/restore`, {
 		method: 'POST',
-		headers: adminBackendHeaders(cookies),
+		headers: await adminBackendHeaders(cookies),
 	});
 };

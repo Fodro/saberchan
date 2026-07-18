@@ -113,6 +113,7 @@ func (s *Server) CreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var post board.Post
+	var captchaInput, captchaToken string
 	if isMultipart(r) {
 		parsed, err := parseMultipartPost(r)
 		if err != nil {
@@ -121,9 +122,14 @@ func (s *Server) CreatePost(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		post = *parsed
-	} else if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
+		captchaInput = r.FormValue("captcha_input")
+		captchaToken = r.FormValue("captcha_token")
+	} else if captchaInput, captchaToken, err = decodeJSONWithCaptcha(r, &post); err != nil {
 		log.Printf("failed to decode post: %v", err)
 		writeJSONError(w, http.StatusBadRequest, err, "bad_request")
+		return
+	}
+	if !s.requireCaptcha(w, r, captchaInput, captchaToken) {
 		return
 	}
 	if s.checkBanned(w, r, post.BrowserFingerprint) {

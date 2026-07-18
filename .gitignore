@@ -2,3 +2,4 @@
 .vscode/
 .cursor/
 .env.local
+.env.prod

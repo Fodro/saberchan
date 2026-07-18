@@ -1,8 +1,11 @@
 .PHONY: ci backend-test backend-build backend-install-deps backend-mocks frontend-install \
-	frontend-check frontend-test frontend-build ensure-frontend-env local-up local-down local-logs local-ps help
+	frontend-check frontend-test frontend-build ensure-frontend-env \
+	local-up local-down local-logs local-ps \
+	prod-up prod-down prod-logs prod-ps help
 
 ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 COMPOSE_LOCAL := docker compose -f $(ROOT)docker-compose.local.yaml --env-file $(ROOT).env.local
+COMPOSE_PROD := docker compose -f $(ROOT)docker-compose.yaml --env-file $(ROOT).env.prod
 GOBIN := $(shell go env GOPATH)/bin
 
 ensure-frontend-env:
@@ -23,6 +26,10 @@ help:
 	@echo "  make local-down           stop local stack"
 	@echo "  make local-logs           follow local stack logs"
 	@echo "  make local-ps             show local stack status"
+	@echo "  make prod-up              start prod compose (external PG/Redis/S3)"
+	@echo "  make prod-down            stop prod compose"
+	@echo "  make prod-logs            follow prod compose logs"
+	@echo "  make prod-ps              show prod compose status"
 
 backend-install-deps:
 	@echo "Installing Go tools into $(GOBIN)"
@@ -74,3 +81,19 @@ local-logs:
 local-ps:
 	@test -f $(ROOT).env.local || (echo "Missing .env.local — copy from .env.local.dist" && exit 1)
 	$(COMPOSE_LOCAL) ps
+
+prod-up:
+	@test -f $(ROOT).env.prod || (echo "Missing .env.prod — copy from .env.prod.dist" && exit 1)
+	$(COMPOSE_PROD) up -d --build
+
+prod-down:
+	@test -f $(ROOT).env.prod || (echo "Missing .env.prod — copy from .env.prod.dist" && exit 1)
+	$(COMPOSE_PROD) down
+
+prod-logs:
+	@test -f $(ROOT).env.prod || (echo "Missing .env.prod — copy from .env.prod.dist" && exit 1)
+	$(COMPOSE_PROD) logs -f
+
+prod-ps:
+	@test -f $(ROOT).env.prod || (echo "Missing .env.prod — copy from .env.prod.dist" && exit 1)
+	$(COMPOSE_PROD) ps

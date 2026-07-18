@@ -9,7 +9,6 @@ import {
 	assertTitle,
 	fingerprintFromCookies,
 	proxyBackend,
-	validateCaptchaWithBackend,
 } from '$lib/server/backend';
 
 export const POST: RequestHandler = async ({ request, cookies, fetch }) => {
@@ -32,23 +31,21 @@ export const POST: RequestHandler = async ({ request, cookies, fetch }) => {
 	const files = form.getAll('files').filter((f): f is File => f instanceof File && f.size > 0);
 	assertMultipartFiles(files);
 
-	await validateCaptchaWithBackend(fetch, {
-		token: captcha.token,
-		input: captcha.input,
-	});
-
+	// Captcha is consumed once on the Go API — do not pre-validate here.
 	const out = new FormData();
 	out.set('board_id', boardId);
 	out.set('title', String(form.get('title') ?? ''));
 	out.set('text', String(form.get('text') ?? ''));
 	out.set('browser_fingerprint', fingerprintFromCookies(cookies));
+	out.set('captcha_token', captcha.token);
+	out.set('captcha_input', captcha.input);
 	for (const file of files) {
 		out.append('files', file, file.name);
 	}
 
 	return proxyBackend(fetch, '/api/v1/thread', {
 		method: 'POST',
-		headers: adminBackendHeaders(cookies),
+		headers: await adminBackendHeaders(cookies),
 		body: out,
 	});
 };

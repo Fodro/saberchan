@@ -9,7 +9,7 @@ import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async ({ fetch, cookies, depends }) => {
 	const boardsRes = await fetch(`${MAIN_BACKEND_URL}/api/v1/board`, {
-		headers: adminBackendHeaders(cookies),
+		headers: await adminBackendHeaders(cookies),
 	});
 	const boards: Board[] = await boardsRes.json();
 
@@ -34,7 +34,7 @@ export const load: LayoutServerLoad = async ({ fetch, cookies, depends }) => {
 
 	const { loginUrl, logoutUrl } = beginLogin(cookies);
 	const session = redirectIfNeedsRefresh(cookies);
-	const isAdmin = isAdminSession(cookies);
+	const isAdmin = await isAdminSession(cookies);
 
 	if (!session.signed) {
 		return {

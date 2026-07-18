@@ -51,6 +51,8 @@ func (s *Server) RestoreThread(w http.ResponseWriter, r *http.Request) {
 func (s *Server) CreateThread(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Access-Control-Allow-Origin", "*")
 	var thread board.Thread
+	var captchaInput, captchaToken string
+	var err error
 	if isMultipart(r) {
 		parsed, err := parseMultipartThread(r)
 		if err != nil {
@@ -59,9 +61,14 @@ func (s *Server) CreateThread(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		thread = *parsed
-	} else if err := json.NewDecoder(r.Body).Decode(&thread); err != nil {
+		captchaInput = r.FormValue("captcha_input")
+		captchaToken = r.FormValue("captcha_token")
+	} else if captchaInput, captchaToken, err = decodeJSONWithCaptcha(r, &thread); err != nil {
 		log.Printf("failed to decode thread: %v", err)
 		writeJSONError(w, http.StatusBadRequest, err, "bad_request")
+		return
+	}
+	if !s.requireCaptcha(w, r, captchaInput, captchaToken) {
 		return
 	}
 	// Never trust client is_admin — only the shared admin token grants privileges.

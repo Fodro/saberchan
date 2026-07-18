@@ -4,10 +4,10 @@
 
 | Environment | App | Postgres | Redis | Object storage | Auth |
 |-------------|-----|----------|-------|----------------|------|
-| **Production** | containers / k8s | external clustered | external | external S3-compatible | Keycloak (or managed OIDC) |
+| **Production** | `docker-compose.yaml` (+ optional Caddy) | external | external | external S3 | external Keycloak / OIDC |
 | **Local** | `docker-compose.local.yaml` | in compose | in compose | MinIO in compose | Keycloak in compose |
 
-Production keeps the data plane (DB, S3, Redis) outside the app compose file. Use [`docker-compose.yaml`](docker-compose.yaml) (or your cluster manifests) and point env vars at those services.
+Production keeps the data plane (DB, S3, Redis) and IdP outside the app compose file. Point env vars at those services via `.env.prod`.
 
 ## Prerequisites
 
@@ -33,7 +33,7 @@ make ci
 This runs:
 
 - `go test ./...` and `go build` in `backend/`
-- `npm ci`, `npm run check`, `npm run build` in `frontend/`
+- `npm ci`, `npm run check`, `npm test`, `npm run build` in `frontend/`
 
 Regenerate gomock mocks after interface changes:
 
@@ -56,7 +56,7 @@ Services (defaults from `.env.local.dist`):
 | Service | Host port |
 |---------|-----------|
 | Frontend | http://localhost:3000 |
-| Backend API | http://localhost:8888 |
+| Backend API | http://localhost:8888 (local only — debugging) |
 | Keycloak | http://localhost:9090 |
 | MinIO API | http://localhost:9000 |
 | MinIO console | http://localhost:9001 |
@@ -85,10 +85,12 @@ OIDC issuer URLs (local Docker):
 
 | Var | Example | Used for |
 |-----|---------|----------|
-| `OIDC_REALM` | `http://localhost:9090/realms/saberchan` | Browser authorize + logout links |
-| `OIDC_REALM_INTERNAL` | `http://keycloak:8080/realms/saberchan` | Token/refresh from the **frontend container** |
+| `OIDC_REALM` | `http://localhost:9090/realms/saberchan` | Browser authorize + logout links + JWT `iss` |
+| `OIDC_REALM_INTERNAL` | `http://keycloak:8080/realms/saberchan` | Token/refresh + JWKS from the **frontend container** |
 
 If `OIDC_REALM_INTERNAL` is missing, the callback hits `localhost:9090` *inside* the frontend container → `ECONNREFUSED` / HTTP 500.
+
+Admin UI actions require a **cryptographically verified** Keycloak access token (JWKS) before the BFF attaches `X-Admin-Token`.
 
 ### Request body size (posts with images)
 
@@ -99,6 +101,8 @@ BODY_SIZE_LIMIT=16M
 ```
 
 (already in `.env.local.dist` and `frontend.Dockerfile`). Client + BFF also pre-validate title/text/captcha/files and toast a clear error instead of a generic Internal Error.
+
+Captcha is enforced on the **Go API** for create post/thread (one-time Redis token). The BFF only checks that captcha fields are present and forwards them — it does not consume the token first.
 
 ### `ORIGIN` (required for multipart uploads)
 
@@ -130,17 +134,35 @@ Local defaults in `.env.local.dist`:
 | `S3_FORCE_PATH_STYLE` | `true` | path-style API (`/bucket/key`) |
 | `S3_PUBLIC_URL` | `http://localhost:9000` | browser-facing link prefix |
 
-Object links look like `http://localhost:9000/saberchan/<key>`. Production typically keeps `S3_USE_SSL=true`, `S3_FORCE_PATH_STYLE=false`, and leaves `S3_PUBLIC_URL` empty.
+Object links look like `http://localhost:9000/saberchan/<key>`. Production typically keeps `S3_USE_SSL=true`, `S3_FORCE_PATH_STYLE=false`, and leaves `S3_PUBLIC_URL` empty (or set to a CloudFront URL).
 
-## Production env
+## Production (AWS VPS + compose)
 
-Backend variables are listed in [`backend/.env.dist`](backend/.env.dist). Frontend build args / runtime env: `MAIN_BACKEND_URL`, `OIDC_*`, `AUTH_HOST`, `AUTH_SECRET`, `ADMIN_API_TOKEN`.
+```bash
+cp .env.prod.dist .env.prod
+# fill RDS / Redis / S3 / OIDC / ADMIN_API_TOKEN / AUTH_HOST=https://…
+make prod-up
+```
 
-`ADMIN_API_TOKEN` must be the **same** value on the Go API and the SvelteKit BFF. The BFF sends it as `X-Admin-Token` for admin mutations (create board, posting on locked boards). Leave it empty to disable admin API privileges (fail closed).
+What this starts:
 
-`PURGE_INTERVAL` (Go duration, default `10m`) controls how often the soft-delete S3 purge worker sweeps. Each sweep also soft-deletes threads not bumped for 30 days (cascading to posts); after the normal 24h restore window those posts are purged and their S3 media is deleted.
+| Service | Published | Notes |
+|---------|-----------|--------|
+| `frontend` | `${FRONTEND_PORT:-3000}` | Public app / BFF |
+| `backend` | **none** | Only on compose network at `http://backend:8888` |
+| `caddy` | 80/443 | Optional: `docker compose --env-file .env.prod --profile proxy up -d` |
 
-Health endpoints on the Go API:
+Edit [`deploy/caddy/Caddyfile`](deploy/caddy/Caddyfile) / set `CADDY_SITE` to your hostname. Put TLS on Caddy (or a host nginx) and set `ORIGIN` + `AUTH_HOST` to that HTTPS URL.
+
+**Security notes for prod:**
+
+- Never publish `:8888` — captcha is enforced on Go, but the BFF is still the intended public entrypoint.
+- `ADMIN_API_TOKEN` must match on Go + frontend; rotate requires rebuilding the frontend image (build-args bake `$env/static/private`).
+- Frontend image verifies TLS by default. Local-only: pass build-arg `ALLOW_INSECURE_TLS=0` if you must talk to a self-signed IdP (not used by default local HTTP Keycloak).
+
+`PURGE_INTERVAL` (default `10m`) sweeps soft-deleted rows after the 24h grace window (S3 media included) and soft-deletes threads not bumped for 30 days.
+
+Health endpoints on the Go API (compose network):
 
 - `GET /liveness` — process up
 - `GET /readiness` — DB ping
