@@ -6,6 +6,8 @@ import (
 	"github.com/google/uuid"
 )
 
+//go:generate mockgen -destination=mocks/mock_repository.go -package=mocks github.com/Fodro/saberchan/internal/database Repository
+
 type Repository interface {
 	//confg
 	AddConfig(config *Config) error

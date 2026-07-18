@@ -3,8 +3,8 @@ import { loadTranslations, translations } from '$lib/translations';
 import type { Board } from '$lib/types/board';
 import type { Metadata } from '$lib/types/metadata';
 import type { LayoutServerLoad } from './$types';
-import { AUTH_HOST, OIDC_CLIENT_ID, OIDC_REALM } from "$env/static/private";
-import { codeVerifier, keycloak } from "$lib/auth";
+import { AUTH_HOST, OIDC_CLIENT_ID } from "$env/static/private";
+import { codeVerifier, keycloakAuthorize, oidcRealmPublic } from "$lib/auth";
 import * as arctic from "arctic";
 import { redirect } from '@sveltejs/kit';
 import { jwtDecode, type JwtPayload } from 'jwt-decode';
@@ -32,8 +32,8 @@ export const load: LayoutServerLoad = async ({ fetch, cookies, depends }) => {
 
 	const state = arctic.generateState();
 	const scopes = ["openid", "profile"];
-	const url = keycloak.createAuthorizationURL(state, codeVerifier, scopes);
-	const logoutUrl = `${OIDC_REALM}/protocol/openid-connect/logout?post_logout_redirect_uri=${AUTH_HOST}/admin/auth/signOut&client_id=${OIDC_CLIENT_ID}`
+	const url = keycloakAuthorize.createAuthorizationURL(state, codeVerifier, scopes);
+	const logoutUrl = `${oidcRealmPublic}/protocol/openid-connect/logout?post_logout_redirect_uri=${AUTH_HOST}/admin/auth/signOut&client_id=${OIDC_CLIENT_ID}`
 
 	const token = cookies.get("accessToken");
 

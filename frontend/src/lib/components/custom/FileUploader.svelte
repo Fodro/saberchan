@@ -4,6 +4,7 @@
 	import Button from "../ui/button/button.svelte";
 	import { t } from "$lib/translations";
 	import { toast } from "svelte-sonner";
+	import { MAX_FILE_BYTES, MAX_FILES } from "$lib/limits";
 
 	let { value = $bindable() }: { value: FileType[] } = $props();
 	let fileCurrentId = $state(0);
@@ -26,7 +27,7 @@
 		size="icon"
 		title={$t("common.file.add")}
 		on:click={async () => {
-			if (value.length >= 4) {
+			if (value.length >= MAX_FILES) {
 				toast.error($t("common.file.limitCount"));
 				return;
 			}
@@ -44,7 +45,7 @@
 				const id = fileCurrentId.toString()
 				fileCurrentId += 1
 
-				if (file.size > 2097152) {
+				if (file.size > MAX_FILE_BYTES) {
 					toast.error($t("common.file.limitSize"));
 					return;
 				}

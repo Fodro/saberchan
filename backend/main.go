@@ -53,7 +53,7 @@ func main() {
 	}
 
 	redisClient := redis.NewClient(&redis.Options{
-		Addr: conf.Redis.Host+":"+conf.Redis.Port,
+		Addr:     conf.Redis.Host + ":" + conf.Redis.Port,
 		Username: conf.Redis.User,
 		Password: conf.Redis.Password,
 	})

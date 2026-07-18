@@ -7,6 +7,8 @@
 	let isOpened: boolean = $state(false);
 	let text: string = $state("");
 	let src: string = $state("");
+	let inflight: AbortController | undefined;
+	let lastRefresh = $state(0);
 
 	const {
 		setCaptchaInput,
@@ -19,30 +21,46 @@
 	} = $props();
 
 	const fetchCaptcha = async () => {
-		const res = await fetch("/api/captcha");
-		const blob = await res.blob();
-		src = URL.createObjectURL(blob);
-		setCaptchaToken(res.headers.get("x-captcha-token") ?? "");
+		inflight?.abort();
+		const ac = new AbortController();
+		inflight = ac;
+
+		try {
+			const res = await fetch("/api/captcha", { signal: ac.signal });
+			const blob = await res.blob();
+			if (ac.signal.aborted) return;
+
+			if (src) URL.revokeObjectURL(src);
+			src = URL.createObjectURL(blob);
+			setCaptchaToken(res.headers.get("x-captcha-token") ?? "");
+			text = "";
+			setCaptchaInput("");
+		} catch (err) {
+			if (err instanceof DOMException && err.name === "AbortError") return;
+			throw err;
+		}
 	};
 
-	$effect(() => {
-		setCaptchaInput(text);
-	});
+	const onInput = () => {
+		setCaptchaInput(text.trim());
+	};
 
+	// Refresh only when parent bumps counter after a failed submit — not on mount.
 	$effect(() => {
-		counter;
-		fetchCaptcha();
-		text = "";
-	})
+		if (counter > 0 && counter !== lastRefresh) {
+			lastRefresh = counter;
+			isOpened = true;
+			void fetchCaptcha();
+		}
+	});
 </script>
 
 <div class="flex flex-row justify-start items-center gap-2">
 	{#if !isOpened}
 		<Button
-			on:click={async () => {
+			onclick={async () => {
 				await fetchCaptcha();
 				isOpened = true;
-				text = "";
 			}}
 		>
 			{$t("common.captcha.show")}
@@ -51,9 +69,8 @@
 		<Button
 			variant="outline"
 			size="icon"
-			on:click={async () => {
+			onclick={async () => {
 				await fetchCaptcha();
-				text = "";
 			}}
 			class="flex-1"
 		>
@@ -64,6 +81,7 @@
 			placeholder={$t("common.captcha.placeholder")}
 			class="flex-4"
 			bind:value={text}
+			oninput={onInput}
 		/>
 	{/if}
 </div>

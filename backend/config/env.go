@@ -36,13 +36,16 @@ type Redis struct {
 }
 
 type S3 struct {
-	AccessKey string `env:"S3_ACCESS_KEY"`
-	SecretKey string `env:"S3_SECRET_KEY"`
-	Bucket    string `env:"S3_BUCKET"`
-	Region    string `env:"S3_REGION"`
-	Url 	 string `env:"S3_URL"`
-	EnableExpriration bool `env:"S3_ENABLE_EXPIRATION" envDefault:"false"`
-	FileExpire time.Duration `env:"S3_FILE_EXPIRE" envDefault:"3600s"`
+	AccessKey         string        `env:"S3_ACCESS_KEY"`
+	SecretKey         string        `env:"S3_SECRET_KEY"`
+	Bucket            string        `env:"S3_BUCKET"`
+	Region            string        `env:"S3_REGION"`
+	Url               string        `env:"S3_URL"`
+	PublicURL         string        `env:"S3_PUBLIC_URL"` // browser-facing base (e.g. http://localhost:9000); empty = derive from Url
+	UseSSL            bool          `env:"S3_USE_SSL" envDefault:"true"`
+	ForcePathStyle    bool          `env:"S3_FORCE_PATH_STYLE" envDefault:"false"`
+	EnableExpriration bool          `env:"S3_ENABLE_EXPIRATION" envDefault:"false"`
+	FileExpire        time.Duration `env:"S3_FILE_EXPIRE" envDefault:"3600s"`
 }
 
 

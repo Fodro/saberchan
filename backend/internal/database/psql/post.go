@@ -33,17 +33,9 @@ func (r *repo) GetPosts(threadID uuid.UUID) ([]database.Post, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	posts := make([]database.Post, 0)
-	for rows.Next() {
-		var post database.Post
-		if err := rows.Scan(&post.ID, &post.Number, &post.Text, &post.Sage, &post.OpMarker, &post.IP, &post.ThreadID, &post.CreatedAt, &post.BrowserFingerprint, &post.HasAttachment); err != nil {
-			return nil, err
-		}
-		posts = append(posts, post)
-	}
-	return posts, nil
+	return collectRows(rows, func(post *database.Post) error {
+		return rows.Scan(&post.ID, &post.Number, &post.Text, &post.Sage, &post.OpMarker, &post.IP, &post.ThreadID, &post.CreatedAt, &post.BrowserFingerprint, &post.HasAttachment)
+	})
 }
 
 func (r *repo) GetOPPost(threadID uuid.UUID) (*database.Post, error) {

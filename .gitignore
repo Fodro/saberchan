@@ -1,0 +1,4 @@
+.codegraph/
+.vscode/
+.cursor/
+.env.local

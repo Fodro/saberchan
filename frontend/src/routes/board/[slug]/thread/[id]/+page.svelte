@@ -1,8 +1,14 @@
 <script lang="ts">
 	import Separator from "$lib/components/ui/separator/separator.svelte";
-	import type { Attachment, File as FileType } from "$lib/types/attachment";
+	import type { File as FileType } from "$lib/types/attachment";
 	import * as Card from "$lib/components/ui/card/index.js";
-	import { bufferToBase64, insertTagAtCursor } from "$lib/helpers.js";
+	import { insertTagAtCursor } from "$lib/helpers.js";
+	import {
+		buildAttachments,
+		readApiError,
+		validateCompose,
+		type ComposeValidationError,
+	} from "$lib/composeValidate";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import { t } from "$lib/translations";
 	import Draggable from "$lib/components/custom/Draggable.svelte";
@@ -45,6 +51,27 @@
 	let formPinned = $state(true);
 
 	const { data } = $props();
+
+	const composeErrorMessage = (code: ComposeValidationError): string => {
+		switch (code) {
+			case "title_required":
+				return $t("common.compose.title_required");
+			case "title_too_long":
+				return $t("common.compose.title_too_long");
+			case "text_required":
+				return $t("common.compose.text_required");
+			case "text_too_long":
+				return $t("common.compose.text_too_long");
+			case "captcha_required":
+				return $t("common.captcha.required");
+			case "file_count":
+				return $t("common.file.limitCount");
+			case "file_size":
+				return $t("common.file.limitSize");
+			case "payload_too_large":
+				return $t("common.compose.payload_too_large");
+		}
+	};
 
 	if (!data.thread) {
 		redirect(302, "/404");
@@ -346,38 +373,44 @@
 					<Button
 						class="cursor-pointer"
 						on:click={async () => {
-							const attachments: Attachment[] = [];
-							filesList.forEach((value) => {
-								attachments.push({
-									id: undefined,
-									post_id: undefined,
-									link: undefined,
-									name: value.name,
-									type: "image",
-									body: bufferToBase64(value.blob),
-								});
+							const attachments = buildAttachments(filesList);
+							const payload = {
+								thread_id: data.thread.id,
+								text: newText,
+								sage: newSage,
+								op_marker: newOP,
+								attachments,
+								captcha: {
+									input: captchaInput,
+									token: captchaToken,
+								},
+							};
+
+							const invalid = validateCompose({
+								text: newText,
+								captchaInput,
+								captchaToken,
+								files: filesList,
+								attachments,
+								payload,
 							});
+							if (invalid) {
+								toast.error(composeErrorMessage(invalid));
+								return;
+							}
+
 							const res = await fetch("/api/post", {
 								method: "POST",
-								body: JSON.stringify({
-									thread_id: data.thread.id,
-									text: newText,
-									sage: newSage,
-									op_marker: newOP,
-									attachments: attachments,
-									captcha: {
-										input: captchaInput,
-										token: captchaToken,
-									},
-								}),
+								headers: { "Content-Type": "application/json" },
+								body: JSON.stringify(payload),
 							});
 							if (res.status == 403) {
-								toast.error($t("common.captcha.failed"))
-								captchaCounter += 1
+								toast.error($t("common.captcha.failed"));
+								captchaCounter += 1;
 								return;
 							}
 							if (res.status != 201 && res.status != 200) {
-								toast.error(await res.text());
+								toast.error(await readApiError(res));
 								return;
 							}
 

@@ -1,0 +1,170 @@
+# Full local stack: app + Postgres + Redis + MinIO + Keycloak.
+# Usage:
+#   cp .env.local.dist .env.local
+#   make local-up
+#
+# Production should use docker-compose.yaml (or k8s) with external clustered Postgres/S3.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - saberchan_pg_data:/var/lib/postgresql/data
+      - ./deploy/local/postgres-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_PUBLISH_PORT}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "${MINIO_API_PORT}:9000"
+      - "${MINIO_CONSOLE_PORT}:9001"
+    volumes:
+      - saberchan_minio_data:/data
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_started
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -e
+        i=0
+        until mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"; do
+          i=$$((i+1))
+          if [ "$$i" -gt 60 ]; then
+            echo "minio did not become ready" >&2
+            exit 1
+          fi
+          echo "waiting for minio..."
+          sleep 1
+        done
+        mc mb --ignore-existing local/"$${S3_BUCKET}"
+        mc anonymous set download local/"$${S3_BUCKET}"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      S3_BUCKET: ${S3_BUCKET}
+    restart: "no"
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.2
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: ${KC_DB_URL}
+      KC_DB_USERNAME: ${KC_DB_USERNAME}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+    command: start-dev
+    ports:
+      - "${KEYCLOAK_PORT}:8080"
+
+  backend:
+    build:
+      context: backend
+      dockerfile: ../backend.Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    ports:
+      - "${BACKEND_PORT}:8888"
+    environment:
+      DB_TYPE: ${DB_TYPE}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      DB_NAME: ${DB_NAME}
+      SSL_MODE: ${SSL_MODE}
+      STORE_IP: ${STORE_IP}
+      PORT: ${PORT}
+      SECRET: ${SECRET}
+      REDIS_USER: ${REDIS_USER}
+      REDIS_PASS: ${REDIS_PASS}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_EXPIRES: ${REDIS_EXPIRES}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      S3_REGION: ${S3_REGION}
+      S3_URL: ${S3_URL}
+      S3_BUCKET: ${S3_BUCKET}
+      S3_PUBLIC_URL: ${S3_PUBLIC_URL}
+      S3_USE_SSL: ${S3_USE_SSL}
+      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE}
+
+  frontend:
+    build:
+      context: frontend
+      dockerfile: ../frontend.Dockerfile
+      args:
+        MAIN_BACKEND_URL: ${MAIN_BACKEND_URL}
+        OIDC_REALM: ${OIDC_REALM}
+        OIDC_REALM_INTERNAL: ${OIDC_REALM_INTERNAL}
+        OIDC_CLIENT_ID: ${OIDC_CLIENT_ID}
+        OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET}
+        AUTH_HOST: ${AUTH_HOST}
+        AUTH_SECRET: ${AUTH_SECRET}
+        OIDC_REDIRECT_URI: ${OIDC_REDIRECT_URI}
+        OIDC_LOGOUT_REDIRECT_URI: ${OIDC_LOGOUT_REDIRECT_URI}
+    depends_on:
+      backend:
+        condition: service_started
+      keycloak:
+        condition: service_started
+    ports:
+      - "${FRONTEND_PORT}:3000"
+    environment:
+      MAIN_BACKEND_URL: ${MAIN_BACKEND_URL}
+      OIDC_REALM: ${OIDC_REALM}
+      OIDC_REALM_INTERNAL: ${OIDC_REALM_INTERNAL}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET}
+      AUTH_HOST: ${AUTH_HOST}
+      AUTH_SECRET: ${AUTH_SECRET}
+      OIDC_REDIRECT_URI: ${OIDC_REDIRECT_URI}
+      OIDC_LOGOUT_REDIRECT_URI: ${OIDC_LOGOUT_REDIRECT_URI}
+      PORT: "3000"
+      BODY_SIZE_LIMIT: ${BODY_SIZE_LIMIT:-16M}
+
+volumes:
+  saberchan_pg_data:
+  saberchan_minio_data:

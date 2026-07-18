@@ -6,6 +6,8 @@ import (
 	"github.com/google/uuid"
 )
 
+//go:generate mockgen -destination=mocks/mock_service.go -package=mocks github.com/Fodro/saberchan/internal/file Service
+
 type Service interface {
 	UploadFile(ctx context.Context, file *FileReq) (*FileResp, error)
 }

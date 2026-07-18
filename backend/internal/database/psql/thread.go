@@ -35,17 +35,9 @@ func (r *repo) GetThreads(boardID uuid.UUID) ([]database.Thread, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	threads := make([]database.Thread, 0)
-	for rows.Next() {
-		var thread database.Thread
-		if err := rows.Scan(&thread.ID, &thread.BoardID, &thread.Title, &thread.Locked, &thread.UpdatedAt); err != nil {
-			return nil, err
-		}
-		threads = append(threads, thread)
-	}
-	return threads, nil
+	return collectRows(rows, func(thread *database.Thread) error {
+		return rows.Scan(&thread.ID, &thread.BoardID, &thread.Title, &thread.Locked, &thread.UpdatedAt)
+	})
 }
 
 func (r *repo) BumpThread(id uuid.UUID) error {

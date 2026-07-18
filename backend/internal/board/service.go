@@ -56,29 +56,30 @@ func (s *service) CreatePost(threadID uuid.UUID, post *Post) error {
 		return err
 	}
 
-	if hasAttachment {
-		for _, attachment := range post.Attachments {
-			fileResp, err := s.file.UploadFile(context.Background(), &file.FileReq{
-				PostID: postID,
-				Name:   attachment.Name,
-				Body:   attachment.Body,
-			})
-			if err != nil {
-				log.Printf("error uploading file: %v", err)
-			}
-			err = s.repo.AddAttachment(&database.Attachment{
-				ID:     uuid.New(),
-				PostID: postID,
-				Link:   fileResp.Link,
-				Name:   attachment.Name,
-				Type:   attachment.Type,
-			})
-
-			if err != nil {
-				log.Printf("error saving attachment %s to db: %v", fileResp.Link, err)
+		if hasAttachment {
+			for _, attachment := range post.Attachments {
+				fileResp, err := s.file.UploadFile(context.Background(), &file.FileReq{
+					PostID: postID,
+					Name:   attachment.Name,
+					Body:   attachment.Body,
+				})
+				if err != nil {
+					log.Printf("error uploading file: %v", err)
+					return err
+				}
+				err = s.repo.AddAttachment(&database.Attachment{
+					ID:     uuid.New(),
+					PostID: postID,
+					Link:   fileResp.Link,
+					Name:   attachment.Name,
+					Type:   attachment.Type,
+				})
+				if err != nil {
+					log.Printf("error saving attachment %s to db: %v", fileResp.Link, err)
+					return err
+				}
 			}
 		}
-	}
 
 	if !post.Sage {
 		shouldBump, _ := s.repo.CheckIfThreadBelowBumpLimit(threadID)
@@ -91,9 +92,19 @@ func (s *service) CreatePost(threadID uuid.UUID, post *Post) error {
 }
 
 func (s *service) CreateThread(thread *Thread) (*Thread, error) {
+	if thread == nil {
+		return nil, errors.New("thread is required")
+	}
+	if thread.OriginalPost == nil {
+		return nil, errors.New("original_post is required")
+	}
+
 	board, err := s.repo.GetBoardById(thread.BoardID)
 	if err != nil {
 		return nil, err
+	}
+	if board == nil {
+		return nil, errors.New("board not found")
 	}
 
 	if board.Locked && !thread.IsAdmin {
