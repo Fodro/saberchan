@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Snippet } from "svelte";
+	import { untrack, type Snippet } from "svelte";
 
 	const {
 		initialLeft,
@@ -16,17 +16,18 @@
 	let leftMod = 300;
 	let topMod = 100;
 
-	if (window) {
+	if (typeof window !== "undefined") {
 		leftMod = window.innerWidth / 4;
 		topMod = window.innerHeight / 4;
-		if(window.innerWidth < 770) {
-			leftMod = 0
-			topMod = 0
+		if (window.innerWidth < 770) {
+			leftMod = 0;
+			topMod = 0;
 		}
 	}
 
-	let left = $state(initialLeft + leftMod);
-	let top = $state(initialTop + topMod);
+	// Seed once from props + viewport offset; drag mutates thereafter (not reactive to prop changes)
+	let left = $state(untrack(() => initialLeft + leftMod));
+	let top = $state(untrack(() => initialTop + topMod));
 
 	let moving = $state(false);
 
@@ -37,7 +38,7 @@
 		moving = true;
 	}
 
-	function onMouseMove(e: any) {
+	function onMouseMove(e: MouseEvent) {
 		if (moving) {
 			left += e.movementX;
 			top += e.movementY;
@@ -58,7 +59,7 @@
 	{@render children()}
 </section>
 
-<svelte:window on:mouseup={onMouseUp} on:mousemove={onMouseMove} />
+<svelte:window onmouseup={onMouseUp} onmousemove={onMouseMove} />
 
 <style>
 	.draggable {

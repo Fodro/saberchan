@@ -4,7 +4,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/caarlos0/env"
+	"github.com/caarlos0/env/v11"
 )
 
 type Config struct {
@@ -14,7 +14,7 @@ type Config struct {
 
 	Redis *Redis
 	DB    *Database
-	S3 *S3
+	S3    *S3
 }
 
 type Database struct {
@@ -29,7 +29,7 @@ type Database struct {
 
 type Redis struct {
 	Host     string        `env:"REDIS_HOST"`
-	Port     string           `env:"REDIS_PORT"`
+	Port     string        `env:"REDIS_PORT"`
 	User     string        `env:"REDIS_USER"`
 	Password string        `env:"REDIS_PASS"`
 	Expires  time.Duration `env:"REDIS_EXPIRES" envDefault:"1m"`
@@ -47,7 +47,6 @@ type S3 struct {
 	EnableExpriration bool          `env:"S3_ENABLE_EXPIRATION" envDefault:"false"`
 	FileExpire        time.Duration `env:"S3_FILE_EXPIRE" envDefault:"3600s"`
 }
-
 
 func ParseConfig() *Config {
 	cfg := &Config{}

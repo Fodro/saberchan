@@ -1,4 +1,6 @@
-FROM node:22-alpine AS builder
+# syntax=docker/dockerfile:1
+
+FROM node:24-alpine AS builder
 
 ARG OIDC_REALM
 ARG OIDC_REALM_INTERNAL
@@ -22,24 +24,26 @@ ENV AUTH_SECRET=${AUTH_SECRET}
 ENV OIDC_REDIRECT_URI=${OIDC_REDIRECT_URI}
 ENV OIDC_LOGOUT_REDIRECT_URI=${OIDC_LOGOUT_REDIRECT_URI}
 
+# Keep V8 under Colima/low-RAM Docker limits (adapter-node file tracing is hungry).
+ENV NODE_OPTIONS="--max-old-space-size=1536"
+ENV UV_THREADPOOL_SIZE=2
+
 WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
 COPY . ./
-
-RUN npm i
-
 RUN npm run build
+RUN npm prune --omit=dev
 
-RUN npm set strict-ssl false
-
-FROM node:22-alpine
+FROM node:24-alpine
 ENV NODE_ENV=production
 USER node
 WORKDIR /app
 
 COPY --from=builder --chown=node:node /app/build ./build
-
 COPY --from=builder --chown=node:node /app/node_modules ./node_modules
-
 COPY --from=builder --chown=node:node /app/package.json .
 
 ARG OIDC_REALM
@@ -64,8 +68,7 @@ ENV AUTH_SECRET=${AUTH_SECRET}
 ENV OIDC_REDIRECT_URI=${OIDC_REDIRECT_URI}
 ENV OIDC_LOGOUT_REDIRECT_URI=${OIDC_LOGOUT_REDIRECT_URI}
 ENV BODY_SIZE_LIMIT=16M
-
 ENV NODE_TLS_REJECT_UNAUTHORIZED=0
-RUN npm set strict-ssl false
+
 EXPOSE 3000
-CMD ["node","build"]
+CMD ["node", "build"]

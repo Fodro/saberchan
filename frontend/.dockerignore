@@ -1,0 +1,17 @@
+node_modules
+.svelte-kit
+build
+.output
+.git
+.gitignore
+.env
+.env.*
+!.env.dist
+!.env.example
+*.md
+.DS_Store
+.vscode
+.idea
+coverage
+**/*.test.ts
+**/*.spec.ts

@@ -24,9 +24,13 @@
 		isSigned: boolean;
 	} = $props();
 
-	const colsCount = !post.attachments ? 0 : post.attachments.length < 2 ? 1 : 2
-	const rowsCount = !post.attachments ? 0 : post.attachments.length < 3 ? 1 : 2
-	const imageFlex = !post.attachments ? 0 : 1
+	const colsCount = $derived(
+		!post.attachments ? 0 : post.attachments.length < 2 ? 1 : 2,
+	);
+	const rowsCount = $derived(
+		!post.attachments ? 0 : post.attachments.length < 3 ? 1 : 2,
+	);
+	const imageFlex = $derived(!post.attachments ? 0 : 1);
 </script>
 
 <Card.Root id={`${post.number}`} class="target:border-sky-500">
@@ -62,7 +66,7 @@
 		<div class="flex flex-row justify-start items-start gap-3">
 			{#if post.attachments}
 			<div class={`grid grid-cols-${colsCount} grid-rows-${rowsCount} items-center gap-2 flex-${imageFlex} p-2 border-r-7`}>
-				{#each post.attachments as file}
+				{#each post.attachments as file, i (file.link ?? i)}
 					<Image link={file.link ?? ""} name={file.name ?? ""} />
 				{/each}
 			</div>
@@ -77,7 +81,7 @@
 			<Button
 				class="cursor-pointer"
 				variant="secondary"
-				on:click={() => {
+				onclick={() => {
 					const toAppend = `>>${post.number}\n`;
 					if (!checkIsInText(toAppend)) {
 						addToText(toAppend);
@@ -90,7 +94,7 @@
 			<Button
 				class="cursor-pointer"
 				variant="outline"
-				on:click={async () => {
+				onclick={async () => {
 					const base = window.location.href.split("#");
 					const link = `${base[0]}#${post.number}`;
 					await navigator.clipboard.writeText(link);

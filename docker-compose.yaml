@@ -41,7 +41,7 @@ services:
       S3_BUCKET: ${S3_BUCKET}
 
   keycloak_web:
-    image: quay.io/keycloak/keycloak:latest
+    image: quay.io/keycloak/keycloak:26.2
     container_name: keycloak_web
     environment:
       KC_DB: postgres

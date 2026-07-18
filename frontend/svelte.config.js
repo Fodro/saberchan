@@ -8,7 +8,10 @@ const config = {
 	preprocess: vitePreprocess(),
 
 	kit: {
-		adapter: adapter()
+		adapter: adapter({
+			// Skip gzip/brotli during image builds — saves peak RAM on small Colima VMs.
+			precompress: false
+		})
 	}
 };
 

@@ -25,36 +25,38 @@
 		},
 	};
 
-	let { text, additionalClass }: { text: string, additionalClass: string } = $props();
-	let styledText = text
-		.replaceAll("[b]", `<span class="font-bold">`)
-		.replaceAll("[/b]", "</span>")
-		.replaceAll("[i]", `<span class="italic">`)
-		.replaceAll("[/i]", "</span>")
-		.replaceAll("[u]", `<span class="underline">`)
-		.replaceAll("[/u]", "</span>")
-		.replaceAll("[o]", `<span class="overline">`)
-		.replaceAll("[/o]", "</span>")
-		.replaceAll("[s]", `<span class="line-through">`)
-		.replaceAll("[/s]", "</span>")
-		.replaceAll("[sup]", `<span class="text-xs align-super">`)
-		.replaceAll("[/sup]", "</span>")
-		.replaceAll(
-			"[spoiler]",
-			`<span class="bg-zinc-500 text-zinc-500 hover:text-white">`,
-		)
-		.replaceAll("[/spoiler]", "</span>")
-		.replaceAll("[sub]", `<span class="text-xs align-sub">`)
-		.replaceAll("[/sub]", "</span>");
+	let { text, additionalClass }: { text: string; additionalClass: string } = $props();
 
-	let lines = styledText.split("\n");
-	const textSize = text.length > 1000 ? "text-sm" : "text-base";
+	const styledText = $derived.by(() =>
+		text
+			.replaceAll("[b]", `<span class="font-bold">`)
+			.replaceAll("[/b]", "</span>")
+			.replaceAll("[i]", `<span class="italic">`)
+			.replaceAll("[/i]", "</span>")
+			.replaceAll("[u]", `<span class="underline">`)
+			.replaceAll("[/u]", "</span>")
+			.replaceAll("[o]", `<span class="overline">`)
+			.replaceAll("[/o]", "</span>")
+			.replaceAll("[s]", `<span class="line-through">`)
+			.replaceAll("[/s]", "</span>")
+			.replaceAll("[sup]", `<span class="text-xs align-super">`)
+			.replaceAll("[/sup]", "</span>")
+			.replaceAll(
+				"[spoiler]",
+				`<span class="bg-zinc-500 text-zinc-500 hover:text-white">`,
+			)
+			.replaceAll("[/spoiler]", "</span>")
+			.replaceAll("[sub]", `<span class="text-xs align-sub">`)
+			.replaceAll("[/sub]", "</span>"),
+	);
+
+	const lines = $derived(styledText.split("\n"));
+	const textSize = $derived(text.length > 1000 ? "text-sm" : "text-base");
 </script>
 
 <div class="flex-2">
-	{#each lines as line}
+	{#each lines as line, i (i)}
 		{#if line.trim().charAt(0) === ">" && line.trim().charAt(1) === ">"}
-			<!-- svelte-ignore event_directive_deprecated -->
 			<a
 				class={`text-orange-500 hover:underline cursor-pointer ${textSize} ${additionalClass}`}
 				href={`#${line.trim().replaceAll(">>", "")}`}
