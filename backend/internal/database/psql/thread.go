@@ -201,6 +201,24 @@ WHERE thread_id IN (SELECT id FROM old)
 	return err
 }
 
+func (r *repo) ListStaleThreads(ctx context.Context, before time.Time) ([]database.Thread, error) {
+	rows, err := r.query(ctx, r.psqb.
+		Select("id", "board_id", "title", "locked", "updated_at", "deleted_at", "purged_at").
+		From("thread").
+		Where(squirrel.Lt{"updated_at": before}).
+		Where(squirrel.Eq{"deleted_at": nil}).
+		Where(squirrel.Eq{"purged_at": nil}),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (database.Thread, error) {
+		var thread database.Thread
+		err := row.Scan(&thread.ID, &thread.BoardID, &thread.Title, &thread.Locked, &thread.UpdatedAt, &thread.DeletedAt, &thread.PurgedAt)
+		return thread, err
+	})
+}
+
 func (r *repo) ListThreadsDueForPurge(ctx context.Context, before time.Time) ([]database.Thread, error) {
 	rows, err := r.query(ctx, r.psqb.
 		Select("id", "board_id", "title", "locked", "updated_at", "deleted_at", "purged_at").

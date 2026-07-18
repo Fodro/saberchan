@@ -17,6 +17,11 @@ import (
 // gracePeriod mirrors the 24h restore window enforced by board.Service.
 const gracePeriod = 24 * time.Hour
 
+// staleBumpAge is how long a thread may sit without a bump before the
+// worker soft-deletes it (cascading to posts). Media is removed by the
+// normal post purge pass after gracePeriod.
+const staleBumpAge = 30 * 24 * time.Hour
+
 // Run performs an immediate sweep, then repeats every interval until ctx is
 // cancelled. It is intended to be launched with `go purge.Run(...)` and
 // stopped by cancelling ctx during shutdown.
@@ -35,15 +40,33 @@ func Run(ctx context.Context, repo database.Repository, files file.Service, inte
 	}
 }
 
-// Sweep purges everything whose soft-delete grace period has elapsed:
+// Sweep soft-deletes threads that have not been bumped for staleBumpAge,
+// then purges everything whose soft-delete grace period has elapsed:
 // posts have their S3 attachments and attachment rows removed before being
 // marked purged; threads/boards are simply marked purged (their own posts
 // are purged independently by the post pass above).
 func Sweep(ctx context.Context, repo database.Repository, files file.Service) {
 	log.Print("purge: sweep started")
 
+	var postsPurged, threadsPurged, boardsPurged, staleSoftDeleted, errCount int
+
+	staleCutoff := time.Now().Add(-staleBumpAge)
+	stale, err := repo.ListStaleThreads(ctx, staleCutoff)
+	if err != nil {
+		log.Printf("purge: failed to list stale threads: %v", err)
+		errCount++
+	} else {
+		for _, thread := range stale {
+			if err := repo.SoftDeleteThread(ctx, thread.ID); err != nil {
+				log.Printf("purge: failed to soft-delete stale thread %s: %v", thread.ID, err)
+				errCount++
+				continue
+			}
+			staleSoftDeleted++
+		}
+	}
+
 	cutoff := time.Now().Add(-gracePeriod)
-	var postsPurged, threadsPurged, boardsPurged, errCount int
 
 	posts, err := repo.ListPostsDueForPurge(ctx, cutoff)
 	if err != nil {
@@ -87,7 +110,10 @@ func Sweep(ctx context.Context, repo database.Repository, files file.Service) {
 		boardsPurged++
 	}
 
-	log.Printf("purge: sweep completed posts=%d threads=%d boards=%d errors=%d", postsPurged, threadsPurged, boardsPurged, errCount)
+	log.Printf(
+		"purge: sweep completed stale_soft_deleted=%d posts=%d threads=%d boards=%d errors=%d",
+		staleSoftDeleted, postsPurged, threadsPurged, boardsPurged, errCount,
+	)
 }
 
 // purgePost deletes every S3 object attached to post, then the attachment

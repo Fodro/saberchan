@@ -42,10 +42,13 @@ type Repository interface {
 	BumpThread(ctx context.Context, id uuid.UUID) error
 		CheckIfThreadBelowBumpLimit(ctx context.Context, id uuid.UUID) (bool, error)
 		GetFollowThreadInfos(ctx context.Context, ids []uuid.UUID) ([]FollowThreadInfo, error)
-		SoftDeleteThread(ctx context.Context, id uuid.UUID) error
-		RestoreThread(ctx context.Context, id uuid.UUID) error
-		ListThreadsDueForPurge(ctx context.Context, before time.Time) ([]Thread, error)
-		MarkThreadPurged(ctx context.Context, id uuid.UUID) error
+			SoftDeleteThread(ctx context.Context, id uuid.UUID) error
+			RestoreThread(ctx context.Context, id uuid.UUID) error
+			// ListStaleThreads returns live threads whose last bump (updated_at)
+			// is strictly before the given cutoff (used for inactivity archival).
+			ListStaleThreads(ctx context.Context, before time.Time) ([]Thread, error)
+			ListThreadsDueForPurge(ctx context.Context, before time.Time) ([]Thread, error)
+			MarkThreadPurged(ctx context.Context, id uuid.UUID) error
 
 	//post
 	AddPost(ctx context.Context, post *Post) error

@@ -13,6 +13,10 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+func expectNoStale(repo *dbmocks.MockRepository) {
+	repo.EXPECT().ListStaleThreads(gomock.Any(), gomock.Any()).Return(nil, nil)
+}
+
 func TestKeyFromLink(t *testing.T) {
 	t.Parallel()
 	cases := map[string]string{
@@ -28,6 +32,23 @@ func TestKeyFromLink(t *testing.T) {
 	}
 }
 
+func TestSweep_SoftDeletesStaleThreads(t *testing.T) {
+	t.Parallel()
+	ctrl := gomock.NewController(t)
+	repo := dbmocks.NewMockRepository(ctrl)
+	files := filemocks.NewMockService(ctrl)
+
+	staleID := uuid.New()
+	repo.EXPECT().ListStaleThreads(gomock.Any(), gomock.Any()).Return([]database.Thread{{ID: staleID}}, nil)
+	repo.EXPECT().SoftDeleteThread(gomock.Any(), staleID).Return(nil)
+
+	repo.EXPECT().ListPostsDueForPurge(gomock.Any(), gomock.Any()).Return(nil, nil)
+	repo.EXPECT().ListThreadsDueForPurge(gomock.Any(), gomock.Any()).Return(nil, nil)
+	repo.EXPECT().ListBoardsDueForPurge(gomock.Any(), gomock.Any()).Return(nil, nil)
+
+	Sweep(context.Background(), repo, files)
+}
+
 func TestSweep_PurgesPostWithAttachments(t *testing.T) {
 	t.Parallel()
 	ctrl := gomock.NewController(t)
@@ -37,6 +58,7 @@ func TestSweep_PurgesPostWithAttachments(t *testing.T) {
 	postID := uuid.New()
 	post := database.Post{ID: postID}
 
+	expectNoStale(repo)
 	repo.EXPECT().ListPostsDueForPurge(gomock.Any(), gomock.Any()).Return([]database.Post{post}, nil)
 	repo.EXPECT().GetAttachments(gomock.Any(), postID).Return([]database.Attachment{
 		{ID: uuid.New(), PostID: postID, Key: "abc.jpg"},
@@ -62,6 +84,7 @@ func TestSweep_MarksThreadsAndBoardsPurged(t *testing.T) {
 	threadID := uuid.New()
 	boardID := uuid.New()
 
+	expectNoStale(repo)
 	repo.EXPECT().ListPostsDueForPurge(gomock.Any(), gomock.Any()).Return(nil, nil)
 	repo.EXPECT().ListThreadsDueForPurge(gomock.Any(), gomock.Any()).Return([]database.Thread{{ID: threadID}}, nil)
 	repo.EXPECT().MarkThreadPurged(gomock.Any(), threadID).Return(nil)
@@ -79,6 +102,7 @@ func TestSweep_ContinuesAfterPostPurgeError(t *testing.T) {
 
 	failingPostID := uuid.New()
 
+	expectNoStale(repo)
 	repo.EXPECT().ListPostsDueForPurge(gomock.Any(), gomock.Any()).Return([]database.Post{{ID: failingPostID}}, nil)
 	repo.EXPECT().GetAttachments(gomock.Any(), failingPostID).Return(nil, errors.New("db down"))
 	repo.EXPECT().ListThreadsDueForPurge(gomock.Any(), gomock.Any()).Return(nil, nil)
@@ -94,6 +118,7 @@ func TestRun_StopsOnContextCancel(t *testing.T) {
 	repo := dbmocks.NewMockRepository(ctrl)
 	files := filemocks.NewMockService(ctrl)
 
+	repo.EXPECT().ListStaleThreads(gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
 	repo.EXPECT().ListPostsDueForPurge(gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
 	repo.EXPECT().ListThreadsDueForPurge(gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
 	repo.EXPECT().ListBoardsDueForPurge(gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
