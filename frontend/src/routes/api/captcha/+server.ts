@@ -1,7 +1,5 @@
-import { MAIN_BACKEND_URL } from "$env/static/private";
+import { backendUrl } from '$lib/server/backend';
 
 export const GET = async () => {
-	const res = await fetch(`${MAIN_BACKEND_URL}/api/v1/captcha`);
-	
-	return res
+	return fetch(backendUrl('/api/v1/captcha'));
 };

@@ -10,13 +10,13 @@
 	let inflight: AbortController | undefined;
 	let lastRefresh = $state(0);
 
-	const {
-		setCaptchaInput,
-		setCaptchaToken,
+	let {
+		captchaInput = $bindable(""),
+		captchaToken = $bindable(""),
 		counter,
 	}: {
-		setCaptchaInput: (input: string) => void;
-		setCaptchaToken: (token: string) => void;
+		captchaInput?: string;
+		captchaToken?: string;
 		counter: number;
 	} = $props();
 
@@ -32,9 +32,9 @@
 
 			if (src) URL.revokeObjectURL(src);
 			src = URL.createObjectURL(blob);
-			setCaptchaToken(res.headers.get("x-captcha-token") ?? "");
+			captchaToken = res.headers.get("x-captcha-token") ?? "";
 			text = "";
-			setCaptchaInput("");
+			captchaInput = "";
 		} catch (err) {
 			if (err instanceof DOMException && err.name === "AbortError") return;
 			throw err;
@@ -42,7 +42,7 @@
 	};
 
 	const onInput = () => {
-		setCaptchaInput(text.trim());
+		captchaInput = text.trim();
 	};
 
 	// Refresh only when parent bumps counter after a failed submit — not on mount.

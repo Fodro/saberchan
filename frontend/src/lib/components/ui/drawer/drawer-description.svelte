@@ -3,15 +3,18 @@
 	import { cn } from "$lib/utils.js";
 
 	let {
-		el = $bindable(undefined),
+		ref = $bindable(null),
 		class: className,
+		children,
 		...restProps
 	}: DrawerPrimitive.DescriptionProps = $props();
 </script>
 
 <DrawerPrimitive.Description
-	bind:el
+	bind:ref
 	data-slot="drawer-description"
 	class={cn("text-muted-foreground text-sm", className)}
 	{...restProps}
-/>
+>
+	{@render children?.()}
+</DrawerPrimitive.Description>

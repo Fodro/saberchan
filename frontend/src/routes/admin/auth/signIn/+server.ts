@@ -1,10 +1,18 @@
-import { codeVerifier, cookieSecure, keycloak } from '$lib/auth';
-import { redirect } from '@sveltejs/kit';
+import { cookieSecure, keycloak } from '$lib/auth';
+import { PKCE_VERIFIER_COOKIE } from '$lib/server/auth';
+import { error, redirect } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ url, cookies }) => {
 	const code = url.searchParams.get('code') || '';
+	const codeVerifier = cookies.get(PKCE_VERIFIER_COOKIE);
+	if (!codeVerifier) {
+		error(400, { message: 'Missing PKCE verifier — restart login' });
+	}
+
 	const tokens = await keycloak.validateAuthorizationCode(code, codeVerifier);
+	cookies.delete(PKCE_VERIFIER_COOKIE, { path: '/' });
+
 	const accessToken = tokens.accessToken();
 	const accessTokenExpiresAt = tokens.accessTokenExpiresAt();
 	const refreshToken = tokens.refreshToken();

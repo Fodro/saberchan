@@ -3,6 +3,7 @@ package psql
 import (
 	"database/sql"
 	"log"
+	"time"
 
 	"github.com/Fodro/saberchan/internal/database"
 
@@ -18,6 +19,12 @@ func NewRepo(connStr string) database.Repository {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// Tuned for external clustered Postgres (compose/local still fine with these caps).
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxLifetime(30 * time.Minute)
+
 	return &repo{db: db}
 }
 

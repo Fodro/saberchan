@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { Drawer as DrawerPrimitive } from "vaul-svelte";
 
-	let { el = $bindable(undefined), ...restProps }: DrawerPrimitive.CloseProps = $props();
+	let { children, ...restProps }: DrawerPrimitive.CloseProps = $props();
 </script>
 
-<DrawerPrimitive.Close bind:el data-slot="drawer-close" {...restProps} />
+<DrawerPrimitive.Close data-slot="drawer-close" {...restProps}>
+	{@render children?.()}
+</DrawerPrimitive.Close>

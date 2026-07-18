@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { Drawer as DrawerPrimitive } from "vaul-svelte";
 
-	let { el = $bindable(undefined), ...restProps }: DrawerPrimitive.TriggerProps = $props();
+	let { children, ...restProps }: DrawerPrimitive.TriggerProps = $props();
 </script>
 
-<DrawerPrimitive.Trigger bind:el data-slot="drawer-trigger" {...restProps} />
+<DrawerPrimitive.Trigger data-slot="drawer-trigger" {...restProps}>
+	{@render children?.()}
+</DrawerPrimitive.Trigger>
