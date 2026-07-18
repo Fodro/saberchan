@@ -11,6 +11,7 @@ import (
 	"syscall"
 
 	"github.com/Fodro/saberchan/config"
+	"github.com/Fodro/saberchan/internal/ban"
 	"github.com/Fodro/saberchan/internal/board"
 	"github.com/Fodro/saberchan/internal/captcha"
 	"github.com/Fodro/saberchan/internal/database"
@@ -79,11 +80,12 @@ func main() {
 	})
 
 	captcha := captcha.NewService(redisClient, conf.Redis.Expires)
+	ban := ban.NewService(ban.NewRedisStore(redisClient), repo)
 
 	file := s3service.NewService(conf)
 	board := board.NewService(repo, file, conf)
 	health := health.NewService(repo)
-	server := server.NewServer(conf, board, captcha, health)
+	server := server.NewServer(conf, board, captcha, health, ban)
 	log.Println("starting server on port", conf.Port)
 
 	purgeCtx, cancelPurge := context.WithCancel(context.Background())

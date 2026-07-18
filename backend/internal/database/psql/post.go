@@ -24,12 +24,12 @@ func (r *repo) DeletePost(ctx context.Context, id uuid.UUID) error {
 
 func (r *repo) GetPost(ctx context.Context, id uuid.UUID) (*database.Post, error) {
 	row := r.queryRow(ctx, r.psqb.
-		Select("id", "number", "text", "thread_id", "sage", "op_marker", "ip", "created_at", "has_attachment", "deleted_at", "purged_at").
+		Select("id", "number", "text", "thread_id", "sage", "op_marker", "browser_fingerprint", "ip", "created_at", "has_attachment", "deleted_at", "purged_at").
 		From("post").
 		Where(squirrel.Eq{"id": id}),
 	)
 	var post database.Post
-	if err := row.Scan(&post.ID, &post.Number, &post.Text, &post.ThreadID, &post.Sage, &post.OpMarker, &post.IP, &post.CreatedAt, &post.HasAttachment, &post.DeletedAt, &post.PurgedAt); err != nil {
+	if err := row.Scan(&post.ID, &post.Number, &post.Text, &post.ThreadID, &post.Sage, &post.OpMarker, &post.BrowserFingerprint, &post.IP, &post.CreatedAt, &post.HasAttachment, &post.DeletedAt, &post.PurgedAt); err != nil {
 		return nil, err
 	}
 	return &post, nil

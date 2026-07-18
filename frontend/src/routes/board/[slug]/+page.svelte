@@ -112,6 +112,12 @@
 				files: filesList,
 				errorMessage: composeErrorMessage,
 				captchaFailedMessage: $t("common.captcha.failed"),
+				bannedMessage: (reason, until) =>
+					until
+						? $t("common.banned_until")
+								.replace("{until}", formatDateTime(until))
+								.replace("{reason}", reason)
+						: $t("common.banned").replace("{reason}", reason),
 			});
 
 			if (!result.ok) {

@@ -39,7 +39,7 @@ backend-build:
 
 # Requires mockgen from: make backend-install-deps
 backend-mocks: backend-install-deps
-	cd $(ROOT)backend && PATH="$(GOBIN):$$PATH" go generate ./internal/database ./internal/file ./internal/captcha
+	cd $(ROOT)backend && PATH="$(GOBIN):$$PATH" go generate ./internal/database ./internal/file ./internal/captcha ./internal/ban
 
 frontend-install:
 	cd $(ROOT)frontend && npm ci

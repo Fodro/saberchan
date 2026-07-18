@@ -9,8 +9,10 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Fodro/saberchan/config"
+	"github.com/Fodro/saberchan/internal/ban"
 	"github.com/Fodro/saberchan/internal/board"
 	"github.com/Fodro/saberchan/internal/captcha"
 	"github.com/Fodro/saberchan/internal/health"
@@ -25,9 +27,10 @@ type Server struct {
 	board   board.Service
 	captcha captcha.Service
 	health  health.Service
+	ban     ban.Service
 }
 
-func NewServer(conf *config.Config, board board.Service, captcha captcha.Service, health health.Service) *Server {
+func NewServer(conf *config.Config, board board.Service, captcha captcha.Service, health health.Service, ban ban.Service) *Server {
 	return &Server{
 		srv: &http.Server{
 			Addr: ":" + conf.Port,
@@ -36,6 +39,7 @@ func NewServer(conf *config.Config, board board.Service, captcha captcha.Service
 		board:   board,
 		captcha: captcha,
 		health:  health,
+		ban:     ban,
 	}
 }
 
@@ -45,6 +49,19 @@ func writeJSONError(w http.ResponseWriter, status int, err error, code string) {
 	_ = json.NewEncoder(w).Encode(map[string]string{
 		"error": err.Error(),
 		"code":  code,
+	})
+}
+
+// writeBannedError responds 403 with the ban's reason/until alongside the
+// usual error/code fields, so clients can show why they were blocked.
+func writeBannedError(w http.ResponseWriter, rec *ban.Record) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusForbidden)
+	_ = json.NewEncoder(w).Encode(map[string]string{
+		"error":  "banned",
+		"code":   "banned",
+		"reason": rec.Reason,
+		"until":  rec.Until.Format(time.RFC3339),
 	})
 }
 
@@ -58,6 +75,26 @@ func clientIP(r *http.Request) string {
 		return r.RemoteAddr
 	}
 	return host
+}
+
+// checkBanned reports whether the request's client IP or fingerprint is
+// banned, writing the 403 banned response and returning true if so. The IP
+// used for the ban check is always the real client IP (regardless of
+// StoreIp), since the ban gate must work even when IPs aren't persisted.
+func (s *Server) checkBanned(w http.ResponseWriter, r *http.Request, fingerprint string) bool {
+	if s.ban == nil {
+		return false
+	}
+	rec, err := s.ban.Check(r.Context(), clientIP(r), fingerprint)
+	if err != nil {
+		log.Printf("failed to check ban: %v", err)
+		return false
+	}
+	if rec == nil {
+		return false
+	}
+	writeBannedError(w, rec)
+	return true
 }
 
 func (s *Server) applyClientIP(r *http.Request, post *board.Post) {
@@ -112,6 +149,7 @@ func (s *Server) Start() error {
 				r.Post("/{thread_id}", s.CreatePost)
 				r.Delete("/{id}", s.DeletePost)
 				r.Post("/{id}/restore", s.RestorePost)
+				r.Post("/{id}/ban", s.BanPost)
 			})
 
 			r.Route("/captcha", func(r chi.Router) {
@@ -280,6 +318,61 @@ func (s *Server) RestorePost(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+type banPostRequest struct {
+	Reason   string `json:"reason"`
+	Duration string `json:"duration"`
+}
+
+// BanPost bans the author (IP if known, else fingerprint) of a post and
+// soft-deletes it. Admin only.
+func (s *Server) BanPost(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Access-Control-Allow-Origin", "*")
+	if !s.requireAdmin(w, r) {
+		return
+	}
+	id, err := parseIDParam(r)
+	if err != nil {
+		writeJSONError(w, http.StatusBadRequest, err, "bad_request")
+		return
+	}
+	var req banPostRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("failed to decode ban request: %v", err)
+		writeJSONError(w, http.StatusBadRequest, err, "bad_request")
+		return
+	}
+	duration, err := ban.ParseDuration(req.Duration)
+	if err != nil {
+		writeJSONError(w, http.StatusBadRequest, err, "bad_request")
+		return
+	}
+	if err := s.ban.BanPost(r.Context(), id, req.Reason, duration); err != nil {
+		log.Printf("failed to ban post %s: %v", id, err)
+		writeBanPostError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+// writeBanPostError maps ban.Service.BanPost's sentinel errors to HTTP
+// status codes.
+func writeBanPostError(w http.ResponseWriter, err error) {
+	status := http.StatusInternalServerError
+	code := "internal_error"
+	switch {
+	case errors.Is(err, ban.ErrPostNotFound):
+		status = http.StatusNotFound
+		code = "not_found"
+	case errors.Is(err, ban.ErrAlreadyDeleted):
+		status = http.StatusConflict
+		code = "already_deleted"
+	case errors.Is(err, ban.ErrReasonRequired), errors.Is(err, ban.ErrNoTarget), errors.Is(err, ban.ErrNoIdentifier):
+		status = http.StatusBadRequest
+		code = "bad_request"
+	}
+	writeJSONError(w, status, err, code)
+}
+
 func (s *Server) GetBoards(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Access-Control-Allow-Origin", "*")
 	includeDeleted := s.isAdminRequest(r)
@@ -347,6 +440,13 @@ func (s *Server) CreateThread(w http.ResponseWriter, r *http.Request) {
 	}
 	// Never trust client is_admin — only the shared admin token grants privileges.
 	thread.IsAdmin = s.isAdminRequest(r)
+	var fingerprint string
+	if thread.OriginalPost != nil {
+		fingerprint = thread.OriginalPost.BrowserFingerprint
+	}
+	if s.checkBanned(w, r, fingerprint) {
+		return
+	}
 	s.applyClientIP(r, thread.OriginalPost)
 	res, err := s.board.CreateThread(r.Context(), &thread)
 	if err != nil {
@@ -418,6 +518,9 @@ func (s *Server) CreatePost(w http.ResponseWriter, r *http.Request) {
 	} else if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
 		log.Printf("failed to decode post: %v", err)
 		writeJSONError(w, http.StatusBadRequest, err, "bad_request")
+		return
+	}
+	if s.checkBanned(w, r, post.BrowserFingerprint) {
 		return
 	}
 	s.applyClientIP(r, &post)

@@ -10,6 +10,7 @@
 	import ComposeForm from "$lib/components/custom/ComposeForm.svelte";
 	import PostCard from "$lib/components/custom/PostCard.svelte";
 	import { composeErrorMessageFactory, submitCompose } from "$lib/compose";
+	import { formatDateTime } from "$lib/helpers.js";
 	import { restoreDeleted, softDelete } from "$lib/adminModeration";
 	import { Trash, Update } from "svelte-radix";
 
@@ -90,6 +91,12 @@
 				files: filesList,
 				errorMessage: composeErrorMessage,
 				captchaFailedMessage: $t("common.captcha.failed"),
+				bannedMessage: (reason, until) =>
+					until
+						? $t("common.banned_until")
+								.replace("{until}", formatDateTime(until))
+								.replace("{reason}", reason)
+						: $t("common.banned").replace("{reason}", reason),
 			});
 
 			if (!result.ok) {

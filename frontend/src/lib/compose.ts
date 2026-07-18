@@ -33,7 +33,39 @@ export function composeErrorMessageFactory(t: (key: string) => string): ComposeE
 
 export type SubmitComposeResult =
 	| { ok: true; status: number; json: unknown }
-	| { ok: false; kind: 'captcha' | 'validation' | 'http'; message: string; bumpCaptcha?: boolean };
+	| {
+			ok: false;
+			kind: 'captcha' | 'validation' | 'http' | 'banned';
+			message: string;
+			bumpCaptcha?: boolean;
+	  };
+
+type BanPayload = { code?: string; reason?: string; until?: string; error?: string; message?: string };
+
+function parsePossiblyWrappedJson(raw: string): BanPayload | null {
+	try {
+		const outer = JSON.parse(raw) as BanPayload;
+		if (typeof outer.message === 'string' && outer.message.trim().startsWith('{')) {
+			try {
+				return JSON.parse(outer.message) as BanPayload;
+			} catch {
+				return outer;
+			}
+		}
+		return outer;
+	} catch {
+		return null;
+	}
+}
+
+function formatBannedMessage(
+	payload: BanPayload,
+	bannedMessage: (reason: string, until: string) => string,
+): string {
+	const reason = payload.reason?.trim() || payload.error || 'banned';
+	const until = payload.until?.trim() || '';
+	return bannedMessage(reason, until);
+}
 
 export async function submitCompose(opts: {
 	endpoint: '/api/thread' | '/api/post';
@@ -46,6 +78,7 @@ export async function submitCompose(opts: {
 	files: FileType[];
 	errorMessage: ComposeErrorMessageFn;
 	captchaFailedMessage: string;
+	bannedMessage?: (reason: string, until: string) => string;
 }): Promise<SubmitComposeResult> {
 	const invalid = validateCompose({
 		title: opts.title,
@@ -75,6 +108,18 @@ export async function submitCompose(opts: {
 	});
 
 	if (res.status === 403) {
+		const raw = await res.text();
+		const payload = parsePossiblyWrappedJson(raw);
+		if (payload?.code === 'banned') {
+			const bannedMessage =
+				opts.bannedMessage ??
+				((reason, until) => (until ? `${reason} (until ${until})` : reason));
+			return {
+				ok: false,
+				kind: 'banned',
+				message: formatBannedMessage(payload, bannedMessage),
+			};
+		}
 		return {
 			ok: false,
 			kind: 'captcha',
