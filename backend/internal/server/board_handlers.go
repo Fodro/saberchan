@@ -12,7 +12,6 @@ import (
 )
 
 func (s *Server) CreateBoard(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
 	if !s.requireAdmin(w, r) {
 		return
 	}
@@ -37,7 +36,6 @@ func (s *Server) CreateBoard(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) DeleteBoard(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
 	if !s.requireAdmin(w, r) {
 		return
 	}
@@ -55,7 +53,6 @@ func (s *Server) DeleteBoard(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) RestoreBoard(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
 	if !s.requireAdmin(w, r) {
 		return
 	}
@@ -73,7 +70,6 @@ func (s *Server) RestoreBoard(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetBoards(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
 	includeDeleted := s.isAdminRequest(r)
 	boards, err := s.board.GetBoards(r.Context(), includeDeleted)
 	if err != nil {
@@ -90,7 +86,6 @@ func (s *Server) GetBoards(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetBoardByAlias(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
 	alias := chi.URLParam(r, "alias")
 
 	limit := 20

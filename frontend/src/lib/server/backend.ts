@@ -1,6 +1,5 @@
 import { MAIN_BACKEND_URL, ADMIN_API_TOKEN } from '$env/static/private';
 import { error } from '@sveltejs/kit';
-import { verifyExp } from '$lib/helpers';
 import {
 	IMAGE_MIME,
 	MAX_FILES,
@@ -10,7 +9,7 @@ import {
 	VIDEO_MIME,
 	maxBytesForMime,
 } from '$lib/limits';
-import { jwtDecode } from 'jwt-decode';
+import { verifyAccessToken } from '$lib/server/oidc';
 import type { Cookies } from '@sveltejs/kit';
 
 export function backendUrl(path: string): string {
@@ -66,34 +65,20 @@ export function assertMultipartFiles(files: File[]) {
 	}
 }
 
-export async function validateCaptchaWithBackend(
-	fetchFn: typeof fetch,
-	captcha: { token: string; input: string },
-) {
-	const captchaRes = await fetchFn(backendUrl('/api/v1/captcha'), {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify(captcha),
-	});
-	const captchaJson = await captchaRes.json();
-	if (!captchaJson.passed) {
-		error(403, { message: 'Captcha failed' });
-	}
-}
-
 export function fingerprintFromCookies(cookies: Cookies): string {
 	return cookies.get('fingerprint') || '';
 }
 
-export function isAdminSession(cookies: Cookies): boolean {
+/** True when the accessToken cookie is a valid Keycloak JWT for our client. */
+export async function isAdminSession(cookies: Cookies): Promise<boolean> {
 	const token = cookies.get('accessToken');
-	if (!token || verifyExp(jwtDecode(token).exp)) return false;
-	return true;
+	if (!token) return false;
+	return verifyAccessToken(token);
 }
 
 /** Headers for Go admin-gated routes (create board, locked-board thread, etc.). */
-export function adminBackendHeaders(cookies: Cookies): Record<string, string> {
-	if (!isAdminSession(cookies) || !ADMIN_API_TOKEN) return {};
+export async function adminBackendHeaders(cookies: Cookies): Promise<Record<string, string>> {
+	if (!(await isAdminSession(cookies)) || !ADMIN_API_TOKEN) return {};
 	return { 'X-Admin-Token': ADMIN_API_TOKEN };
 }
 
@@ -101,8 +86,13 @@ export async function proxyBackend(
 	fetchFn: typeof fetch,
 	path: string,
 	init?: RequestInit,
+	clientAddress?: string,
 ): Promise<Response> {
-	const res = await fetchFn(backendUrl(path), init);
+	const headers = new Headers(init?.headers);
+	if (clientAddress) {
+		headers.set('X-Forwarded-For', clientAddress);
+	}
+	const res = await fetchFn(backendUrl(path), { ...init, headers });
 	if (!res.ok) {
 		const msg = await res.text();
 		error(res.status, { message: msg || `Backend request failed (${res.status})` });

@@ -4,7 +4,7 @@ import { error } from '@sveltejs/kit';
 import { adminBackendHeaders, isAdminSession, proxyBackend } from '$lib/server/backend';
 
 export const POST: RequestHandler = async ({ request, fetch, cookies }) => {
-	if (!isAdminSession(cookies)) {
+	if (!(await isAdminSession(cookies))) {
 		error(401, { message: 'Unauthorized' });
 	}
 	const body: Board = await request.json();
@@ -14,7 +14,7 @@ export const POST: RequestHandler = async ({ request, fetch, cookies }) => {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
-			...adminBackendHeaders(cookies),
+			...(await adminBackendHeaders(cookies)),
 		},
 		body: JSON.stringify(body),
 	});

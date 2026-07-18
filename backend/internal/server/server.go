@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,33 +17,70 @@ import (
 	"github.com/Fodro/saberchan/internal/captcha"
 	"github.com/Fodro/saberchan/internal/follow"
 	"github.com/Fodro/saberchan/internal/health"
+	"github.com/Fodro/saberchan/internal/ratelimit"
 	chi "github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
 
 type Server struct {
-	srv     *http.Server
-	conf    *config.Config
-	board   board.Service
-	captcha captcha.Service
-	health  health.Service
-	ban     ban.Service
-	follow  follow.Service
+	srv            *http.Server
+	conf           *config.Config
+	board          board.Service
+	captcha        captcha.Service
+	health         health.Service
+	ban            ban.Service
+	follow         follow.Service
+	trustedNets    []*net.IPNet
+	limitCaptcha   *ratelimit.Limiter
+	limitWrite     *ratelimit.Limiter
 }
 
 func NewServer(conf *config.Config, board board.Service, captcha captcha.Service, health health.Service, ban ban.Service, followSvc follow.Service) *Server {
 	return &Server{
 		srv: &http.Server{
-			Addr: ":" + conf.Port,
+			Addr:              ":" + conf.Port,
+			ReadHeaderTimeout: 10 * time.Second,
+			ReadTimeout:       60 * time.Second,
+			WriteTimeout:      120 * time.Second,
+			IdleTimeout:       90 * time.Second,
 		},
-		conf:    conf,
-		board:   board,
-		captcha: captcha,
-		health:  health,
-		ban:     ban,
-		follow:  followSvc,
+		conf:         conf,
+		board:        board,
+		captcha:      captcha,
+		health:       health,
+		ban:          ban,
+		follow:       followSvc,
+		trustedNets:  parseTrustedProxies(conf.TrustedProxies),
+		limitCaptcha: ratelimit.New(time.Minute, 30),
+		limitWrite:   ratelimit.New(time.Minute, 12),
 	}
+}
+
+func parseTrustedProxies(raw string) []*net.IPNet {
+	var out []*net.IPNet
+	for _, part := range strings.Split(raw, ",") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		if !strings.Contains(part, "/") {
+			if ip := net.ParseIP(part); ip != nil {
+				bits := 32
+				if ip.To4() == nil {
+					bits = 128
+				}
+				part = ip.String() + "/" + strconv.Itoa(bits)
+			}
+		}
+		_, network, err := net.ParseCIDR(part)
+		if err != nil {
+			log.Printf("config: ignoring invalid TRUSTED_PROXIES entry %q: %v", part, err)
+			continue
+		}
+		out = append(out, network)
+	}
+	return out
 }
 
 func writeJSONError(w http.ResponseWriter, status int, err error, code string) {
@@ -67,16 +105,49 @@ func writeBannedError(w http.ResponseWriter, rec *ban.Record) {
 	})
 }
 
-func clientIP(r *http.Request) string {
-	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		parts := strings.Split(xff, ",")
-		return strings.TrimSpace(parts[0])
-	}
+func remoteIP(r *http.Request) string {
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		return r.RemoteAddr
 	}
 	return host
+}
+
+func (s *Server) trustProxy(ipStr string) bool {
+	if len(s.trustedNets) == 0 {
+		return false
+	}
+	ip := net.ParseIP(ipStr)
+	if ip == nil {
+		return false
+	}
+	for _, n := range s.trustedNets {
+		if n.Contains(ip) {
+			return true
+		}
+	}
+	return false
+}
+
+// clientIP returns the client address. X-Forwarded-For is honored only when
+// RemoteAddr is in TRUSTED_PROXIES (e.g. Docker bridge / Caddy).
+func (s *Server) clientIP(r *http.Request) string {
+	remote := remoteIP(r)
+	if s.trustProxy(remote) {
+		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+			parts := strings.Split(xff, ",")
+			return strings.TrimSpace(parts[0])
+		}
+	}
+	return remote
+}
+
+func (s *Server) checkRateLimit(w http.ResponseWriter, r *http.Request, lim *ratelimit.Limiter) bool {
+	if lim.Allow(s.clientIP(r)) {
+		return true
+	}
+	writeJSONError(w, http.StatusTooManyRequests, errors.New("rate limit exceeded"), "rate_limited")
+	return false
 }
 
 // checkBanned reports whether the request's client IP or fingerprint is
@@ -87,7 +158,7 @@ func (s *Server) checkBanned(w http.ResponseWriter, r *http.Request, fingerprint
 	if s.ban == nil {
 		return false
 	}
-	rec, err := s.ban.Check(r.Context(), clientIP(r), fingerprint)
+	rec, err := s.ban.Check(r.Context(), s.clientIP(r), fingerprint)
 	if err != nil {
 		log.Printf("failed to check ban: %v", err)
 		return false
@@ -104,7 +175,7 @@ func (s *Server) applyClientIP(r *http.Request, post *board.Post) {
 		return
 	}
 	if s.conf.StoreIp {
-		post.IP = clientIP(r)
+		post.IP = s.clientIP(r)
 	} else {
 		post.IP = ""
 	}
@@ -114,7 +185,7 @@ func (s *Server) Start() error {
 	r := chi.NewRouter()
 	s.srv.Handler = r
 
-	// healtcheck
+	// healthcheck
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})

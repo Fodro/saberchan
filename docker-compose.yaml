@@ -1,3 +1,12 @@
+# Production app compose: frontend + backend only.
+# Data plane (Postgres, Redis, S3) and Keycloak/OIDC stay external.
+#
+#   cp .env.prod.dist .env.prod   # edit secrets / hosts
+#   make prod-up
+#
+# TLS: put Caddy/nginx on the host (or `docker compose --profile proxy up`)
+# terminating HTTPS → frontend:3000. Do NOT publish backend:8888 to the internet.
+
 services:
   frontend:
     build:
@@ -14,61 +23,86 @@ services:
         ADMIN_API_TOKEN: ${ADMIN_API_TOKEN}
         OIDC_REDIRECT_URI: ${OIDC_REDIRECT_URI}
         OIDC_LOGOUT_REDIRECT_URI: ${OIDC_LOGOUT_REDIRECT_URI}
+    restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "${FRONTEND_PORT:-3000}:3000"
     environment:
-      # Must match the public browser URL or multipart POSTs get CSRF 403.
       ORIGIN: ${ORIGIN:-${AUTH_HOST}}
       BODY_SIZE_LIMIT: ${BODY_SIZE_LIMIT:-16M}
       ADMIN_API_TOKEN: ${ADMIN_API_TOKEN}
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/ >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
 
   backend:
     build:
       context: backend
       dockerfile: ../backend.Dockerfile
-    ports:
-      - "8888:8888"
+    restart: unless-stopped
+    # Intentionally NOT published — only reachable on the compose network
+    # (frontend BFF → http://backend:8888). Exposing 8888 bypasses captcha.
+    expose:
+      - "8888"
     environment:
-      DB_TYPE: ${DB_TYPE}
+      DB_TYPE: ${DB_TYPE:-postgres}
       DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
+      DB_PORT: ${DB_PORT:-5432}
       DB_USER: ${DB_USER}
       DB_PASS: ${DB_PASS}
       DB_NAME: ${DB_NAME}
-      SSL_MODE: ${SSL_MODE}
+      SSL_MODE: ${SSL_MODE:-require}
       DB_MAX_CONNS: ${DB_MAX_CONNS:-25}
       DB_MIN_CONNS: ${DB_MIN_CONNS:-5}
       DB_MAX_CONN_LIFETIME: ${DB_MAX_CONN_LIFETIME:-30m}
       DB_MAX_CONN_IDLE_TIME: ${DB_MAX_CONN_IDLE_TIME:-5m}
+      STORE_IP: ${STORE_IP:-true}
+      PORT: ${PORT:-8888}
       ADMIN_API_TOKEN: ${ADMIN_API_TOKEN}
       PURGE_INTERVAL: ${PURGE_INTERVAL:-10m}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}
       REDIS_USER: ${REDIS_USER}
       REDIS_PASS: ${REDIS_PASS}
       REDIS_HOST: ${REDIS_HOST}
-      REDIS_PORT: ${REDIS_PORT}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_EXPIRES: ${REDIS_EXPIRES:-1m}
       S3_ACCESS_KEY: ${S3_ACCESS_KEY}
       S3_SECRET_KEY: ${S3_SECRET_KEY}
-      S3_REGION: ${S3_REGION}
+      S3_REGION: ${S3_REGION:-us-east-1}
       S3_URL: ${S3_URL}
       S3_BUCKET: ${S3_BUCKET}
+      S3_PUBLIC_URL: ${S3_PUBLIC_URL:-}
+      S3_USE_SSL: ${S3_USE_SSL:-true}
+      S3_FORCE_PATH_STYLE: ${S3_FORCE_PATH_STYLE:-false}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8888/readiness >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
-  keycloak_web:
-    image: quay.io/keycloak/keycloak:26.2
-    container_name: keycloak_web
-    environment:
-      KC_DB: postgres
-      KC_DB_URL: ${KC_DB_URL}
-      KC_DB_USERNAME: ${KC_DB_USERNAME}
-      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
-
-      KC_HOSTNAME_STRICT: false
-      KC_HOSTNAME_STRICT_HTTPS: false
-
-      KC_LOG_LEVEL: info
-      KC_METRICS_ENABLED: true
-      KC_HEALTH_ENABLED: true
-      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
-      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
-    command: start-dev
+  # Optional TLS terminator on the same host.
+  #   docker compose --env-file .env.prod --profile proxy up -d
+  caddy:
+    profiles: ["proxy"]
+    image: caddy:2.9-alpine
+    restart: unless-stopped
     ports:
-      - 9090:8080
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      frontend:
+        condition: service_healthy
+
+volumes:
+  caddy_data:
+  caddy_config:

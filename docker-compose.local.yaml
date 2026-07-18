@@ -3,7 +3,8 @@
 #   cp .env.local.dist .env.local
 #   make local-up
 #
-# Production should use docker-compose.yaml (or k8s) with external clustered Postgres/S3.
+# Production should use docker-compose.yaml with external Postgres/Redis/S3/OIDC.
+# Local publishes backend:8888 for debugging; prod compose does not.
 
 services:
   postgres:
@@ -97,6 +98,7 @@ services:
     build:
       context: backend
       dockerfile: ../backend.Dockerfile
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
@@ -106,6 +108,12 @@ services:
         condition: service_completed_successfully
     ports:
       - "${BACKEND_PORT}:8888"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8888/readiness >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
     environment:
       DB_TYPE: ${DB_TYPE}
       DB_HOST: ${DB_HOST}
@@ -123,6 +131,7 @@ services:
       SECRET: ${SECRET}
       ADMIN_API_TOKEN: ${ADMIN_API_TOKEN}
       PURGE_INTERVAL: ${PURGE_INTERVAL:-10m}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}
       REDIS_USER: ${REDIS_USER}
       REDIS_PASS: ${REDIS_PASS}
       REDIS_HOST: ${REDIS_HOST}
@@ -152,13 +161,20 @@ services:
         ADMIN_API_TOKEN: ${ADMIN_API_TOKEN}
         OIDC_REDIRECT_URI: ${OIDC_REDIRECT_URI}
         OIDC_LOGOUT_REDIRECT_URI: ${OIDC_LOGOUT_REDIRECT_URI}
+    restart: unless-stopped
     depends_on:
       backend:
-        condition: service_started
+        condition: service_healthy
       keycloak:
         condition: service_started
     ports:
       - "${FRONTEND_PORT}:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/ >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
     environment:
       MAIN_BACKEND_URL: ${MAIN_BACKEND_URL}
       OIDC_REALM: ${OIDC_REALM}

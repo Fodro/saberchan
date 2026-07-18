@@ -19,7 +19,7 @@ export const load: PageServerLoad = async ({ params, depends, fetch, cookies }) 
 	const fingerprint = cookies.get('fingerprint');
 
 	const resThread = await fetch(`${MAIN_BACKEND_URL}/api/v1/thread/${id}`, {
-		headers: adminBackendHeaders(cookies),
+		headers: await adminBackendHeaders(cookies),
 	});
 	if (!resThread.ok) {
 		redirect(302, '/404');

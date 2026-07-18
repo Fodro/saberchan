@@ -13,7 +13,6 @@ import (
 )
 
 func (s *Server) DeletePost(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
 	if !s.requireAdmin(w, r) {
 		return
 	}
@@ -31,7 +30,6 @@ func (s *Server) DeletePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) RestorePost(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
 	if !s.requireAdmin(w, r) {
 		return
 	}
@@ -56,7 +54,6 @@ type banPostRequest struct {
 // BanPost bans the author (IP if known, else fingerprint) of a post and
 // soft-deletes it. Admin only.
 func (s *Server) BanPost(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
 	if !s.requireAdmin(w, r) {
 		return
 	}
@@ -104,7 +101,9 @@ func writeBanPostError(w http.ResponseWriter, err error) {
 }
 
 func (s *Server) CreatePost(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
+	if !s.checkRateLimit(w, r, s.limitWrite) {
+		return
+	}
 	threadID := chi.URLParam(r, "thread_id")
 	convertedThreadID, err := uuid.Parse(threadID)
 	if err != nil {
@@ -113,6 +112,7 @@ func (s *Server) CreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var post board.Post
+	var captchaInput, captchaToken string
 	if isMultipart(r) {
 		parsed, err := parseMultipartPost(r)
 		if err != nil {
@@ -121,9 +121,14 @@ func (s *Server) CreatePost(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		post = *parsed
-	} else if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
+		captchaInput = r.FormValue("captcha_input")
+		captchaToken = r.FormValue("captcha_token")
+	} else if captchaInput, captchaToken, err = decodeJSONWithCaptcha(r, &post); err != nil {
 		log.Printf("failed to decode post: %v", err)
 		writeJSONError(w, http.StatusBadRequest, err, "bad_request")
+		return
+	}
+	if !s.requireCaptcha(w, r, captchaInput, captchaToken) {
 		return
 	}
 	if s.checkBanned(w, r, post.BrowserFingerprint) {

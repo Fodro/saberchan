@@ -1,4 +1,6 @@
 import { MAIN_BACKEND_URL } from '$env/static/private';
+import { cookieSecure } from '$lib/auth';
+import { isAppLocale } from '$lib/locales';
 import { beginLogin, redirectIfNeedsRefresh } from '$lib/server/auth';
 import { adminBackendHeaders, isAdminSession } from '$lib/server/backend';
 import { loadFollowedSummary } from '$lib/server/followed';
@@ -9,14 +11,20 @@ import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async ({ fetch, cookies, depends }) => {
 	const boardsRes = await fetch(`${MAIN_BACKEND_URL}/api/v1/board`, {
-		headers: adminBackendHeaders(cookies),
+		headers: await adminBackendHeaders(cookies),
 	});
 	const boards: Board[] = await boardsRes.json();
 
 	const fingerprint = cookies.get('fingerprint');
 
 	if (!fingerprint) {
-		cookies.set('fingerprint', crypto.randomUUID(), { path: '/', httpOnly: true });
+		cookies.set('fingerprint', crypto.randomUUID(), {
+			path: '/',
+			httpOnly: true,
+			sameSite: 'lax',
+			secure: cookieSecure,
+			maxAge: 60 * 60 * 24 * 365,
+		});
 	}
 
 	const recentBoards: string[] = cookies.get('recent-boards')?.split(',') ?? [];
@@ -29,12 +37,13 @@ export const load: LayoutServerLoad = async ({ fetch, cookies, depends }) => {
 
 	const followed = await loadFollowedSummary(fetch, cookies);
 
-	const locale = cookies.get('locale') || 'en';
+	const rawLocale = cookies.get('locale') || 'en';
+	const locale = isAppLocale(rawLocale) ? rawLocale : 'en';
 	await loadTranslations(locale, '/');
 
 	const { loginUrl, logoutUrl } = beginLogin(cookies);
 	const session = redirectIfNeedsRefresh(cookies);
-	const isAdmin = isAdminSession(cookies);
+	const isAdmin = await isAdminSession(cookies);
 
 	if (!session.signed) {
 		return {

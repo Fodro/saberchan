@@ -13,6 +13,9 @@ type Config struct {
 	Secret        string        `env:"SECRET" envDefault:"dontuseme"`
 	AdminAPIToken string        `env:"ADMIN_API_TOKEN"`
 	PurgeInterval time.Duration `env:"PURGE_INTERVAL" envDefault:"10m"`
+	// Comma-separated CIDRs (or IPs) allowed to set X-Forwarded-For.
+	// Empty = never trust XFF (use RemoteAddr only).
+	TrustedProxies string `env:"TRUSTED_PROXIES"`
 
 	Redis *Redis
 	DB    *Database

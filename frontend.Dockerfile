@@ -3,6 +3,10 @@
 # Build context: frontend/ (see docker-compose*.yaml).
 # Private SvelteKit env ($env/static/private) is baked at build time via ARG/ENV below.
 # Keep NODE_OPTIONS modest — adapter-node tracing OOMs low-RAM Colima VMs (see DEPLOY.md).
+#
+# Production: do NOT set ALLOW_INSECURE_TLS (default empty = normal TLS verify).
+# Local compose may pass ALLOW_INSECURE_TLS=0 for self-signed OIDC experiments;
+# local Keycloak over HTTP does not need it.
 
 FROM node:24-alpine AS builder
 
@@ -44,9 +48,11 @@ RUN npm run build \
 
 FROM node:24-alpine AS runner
 
+# Empty = verify TLS (prod). Set build-arg ALLOW_INSECURE_TLS=0 only for local HTTPS experiments.
+ARG ALLOW_INSECURE_TLS=
 ENV NODE_ENV=production \
 	BODY_SIZE_LIMIT=16M \
-	NODE_TLS_REJECT_UNAUTHORIZED=0
+	NODE_TLS_REJECT_UNAUTHORIZED=${ALLOW_INSECURE_TLS}
 
 USER node
 WORKDIR /app

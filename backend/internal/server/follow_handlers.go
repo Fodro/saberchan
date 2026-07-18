@@ -12,7 +12,6 @@ import (
 )
 
 func (s *Server) FollowThread(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
 	id, err := parseIDParam(r)
 	if err != nil {
 		writeJSONError(w, http.StatusBadRequest, err, "bad_request")
@@ -38,7 +37,6 @@ func (s *Server) FollowThread(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetFollowStatus(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
 	if s.follow == nil {
 		writeJSONError(w, http.StatusNotImplemented, errors.New("follow not configured"), "not_implemented")
 		return

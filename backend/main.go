@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/Fodro/saberchan/config"
 	"github.com/Fodro/saberchan/internal/ban"
@@ -86,7 +87,7 @@ func main() {
 
 	file := s3service.NewService(conf)
 	board := board.NewService(repo, file, conf, followSvc)
-	health := health.NewService(repo)
+	health := health.NewServiceWithRedis(repo, redisClient)
 	server := server.NewServer(conf, board, captcha, health, ban, followSvc)
 	log.Println("starting server on port", conf.Port)
 
@@ -101,7 +102,9 @@ func main() {
 		log.Println("shutting down server")
 
 		cancelPurge()
-		if err := server.Stop(context.Background()); err != nil {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		if err := server.Stop(shutdownCtx); err != nil {
 			log.Fatalf("HTTP close error: %v", err)
 		}
 	}()

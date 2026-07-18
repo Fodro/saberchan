@@ -14,15 +14,14 @@
 	import { onMount } from "svelte";
 	import { unfollowThread } from "$lib/followed";
 	import { t } from "$lib/translations";
-	import { CounterClockwiseClock, Cross2, Update } from "svelte-radix";
+	import LocaleSwitcher from "$lib/components/custom/LocaleSwitcher.svelte";
+	import { Cross2, Update } from "svelte-radix";
 	import { toast } from "svelte-sonner";
 
 	// Prefer longer intervals — 1–10s hammers the BFF/backend.
 	let intervals = [15, 30, 60];
 
 	let interval: number | undefined = $state(9999);
-
-	let localeLoading = $state(false);
 
 	$effect(() => {
 		if (interval !== 9999) {
@@ -104,55 +103,7 @@
 		<div
 			class="flex flex-row-reverse basis-1/2 gap-3 justify-start items-center"
 		>
-			<!-- TODO: make a select -->
-			{#if data.i18n.locale === "ru"}
-				<Button
-					variant="secondary"
-					class="cursor-pointer"
-					onclick={async () => {
-						localeLoading = true;
-						await fetch("/locale", {
-							method: "POST",
-							headers: { "Content-Type": "application/json" },
-							body: JSON.stringify({
-								locale: "en",
-							}),
-						});
-						localeLoading = false;
-						invalidateAll();
-					}}
-				>
-					{#if localeLoading}
-						<CounterClockwiseClock />
-					{:else}
-						RU
-					{/if}
-				</Button>
-			{/if}
-			{#if data.i18n.locale === "en"}
-				<Button
-					variant="secondary"
-					class="cursor-pointer"
-					onclick={async () => {
-						localeLoading = true;
-						await fetch("/locale", {
-							method: "POST",
-							headers: { "Content-Type": "application/json" },
-							body: JSON.stringify({
-								locale: "ru",
-							}),
-						});
-						localeLoading = false;
-						invalidateAll();
-					}}
-				>
-					{#if localeLoading}
-						<CounterClockwiseClock />
-					{:else}
-						EN
-					{/if}
-				</Button>
-			{/if}
+			<LocaleSwitcher current={data.i18n.locale} />
 			<Button onclick={toggleMode} size="icon" class="cursor-pointer">
 				<Sun
 					class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"

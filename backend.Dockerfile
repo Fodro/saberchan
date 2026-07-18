@@ -20,7 +20,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 
 FROM alpine:3.22
 
-RUN apk add --no-cache ca-certificates tzdata \
+RUN apk add --no-cache ca-certificates tzdata wget \
 	&& adduser -D -H -u 65532 nonroot
 
 WORKDIR /app

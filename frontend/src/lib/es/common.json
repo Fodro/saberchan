@@ -1,0 +1,97 @@
+{
+	"recent": "Recientes",
+	"all": "Todos",
+	"autoreload": "Actualización automática",
+	"disable": "Desactivar",
+	"disabled": "Desactivado",
+	"cancel": "Ocultar formulario",
+	"save": "Guardar",
+	"post": "¡Publicar!",
+	"you": "Tú",
+	"reply": "Responder",
+	"follow": "Seguir",
+	"unfollow": "Dejar de seguir",
+	"follow_failed": "No se pudo seguir, algo salió mal",
+	"followed": "Seguido",
+	"followed_threads": "Hilos seguidos",
+	"followed_empty": "No hay hilos seguidos",
+	"followed_dead": "✕",
+	"op": "OP",
+	"copy_link": "Copiar enlace",
+	"copied": "¡Enlace copiado!",
+	"login": "Iniciar sesión como admin",
+	"logout": "Cerrar sesión",
+	"clearTokens": "Borrar tokens",
+	"logged_in": "Sesión iniciada como",
+	"draggable": "Haz clic en el botón de la esquina superior derecha para desanclar y mover la ventana",
+	"ban": "Banear",
+	"ban_reason": "Motivo",
+	"ban_duration": "Duración",
+	"ban_submit": "Banear usuario",
+	"ban_success": "Usuario baneado y publicación eliminada",
+	"ban_presets": {
+		"1h": "1 hora",
+		"1d": "1 día",
+		"7d": "7 días",
+		"30d": "30 días",
+		"permanent": "Permanente"
+	},
+	"banned": "Estás baneado: {reason}",
+	"banned_until": "Estás baneado hasta {until}: {reason}",
+	"deleted": "[ELIMINADO]",
+	"restore": "Restaurar",
+	"delete": "Eliminar",
+	"lightbox": {
+		"close": "Cerrar",
+		"viewing": "Medios a tamaño completo"
+	},
+	"admin": {
+		"add_board": "Añadir tablón"
+	},
+	"threads": {
+		"new": "Nuevo hilo"
+	},
+	"fields": {
+		"title": "Título",
+		"title_placeholder": "Escribe tu título aquí",
+		"text_placeholder": "Escribe tu texto aquí...",
+		"text": "Texto",
+		"files": "Archivos",
+		"captcha": "Captcha",
+		"sage": "Sage"
+	},
+	"boards": {
+		"list_title": "Tablones",
+		"noRecent": "No hay tablones recientes...",
+		"name": "Nombre",
+		"alias": "Alias",
+		"description": "Descripción",
+		"locked": "Bloquear tablón para usuarios anónimos"
+	},
+	"posts": {
+		"replies": "respuestas",
+		"at": "en",
+		"new": "Nueva publicación"
+	},
+	"captcha": {
+		"show": "Mostrar captcha",
+		"placeholder": "Escribe el texto aquí...",
+		"failed": "¡Captcha incorrecto!",
+		"required": "Resuelve el captcha antes de publicar"
+	},
+	"file": {
+		"add": "Añadir archivo",
+		"remove": "Quitar",
+		"limitCount": "El máximo de archivos es 4",
+		"limitSize": "Imágenes máx. 5 MB; vídeos máx. 10 MB",
+		"limitSizeVideo": "El tamaño máximo de vídeo es 10 MB",
+		"limitType": "Solo se permiten JPEG, PNG, GIF, WebP, WebM o MP4"
+	},
+	"compose": {
+		"title_required": "El título es obligatorio",
+		"title_too_long": "El título es demasiado largo (máx. 255 caracteres)",
+		"text_required": "El texto de la publicación es obligatorio",
+		"text_too_long": "El texto de la publicación es demasiado largo (máx. 16000 caracteres)",
+		"payload_too_large": "La publicación es demasiado grande (prueba con menos imágenes o más pequeñas)"
+	}
+}
