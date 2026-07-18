@@ -56,7 +56,8 @@ ci: frontend-install backend-test backend-build frontend-check frontend-build
 
 local-up:
 	@test -f $(ROOT).env.local || (echo "Missing .env.local — copy from .env.local.dist" && exit 1)
-	$(COMPOSE_LOCAL) up -d --build
+	# One image at a time: parallel Go+Vite builds OOM Colima at 2GiB (adapter-node SIGKILL).
+	COMPOSE_PARALLEL_LIMIT=1 $(COMPOSE_LOCAL) up -d --build
 
 local-down:
 	@test -f $(ROOT).env.local || (echo "Missing .env.local — copy from .env.local.dist" && exit 1)

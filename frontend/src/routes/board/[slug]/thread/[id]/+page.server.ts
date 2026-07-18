@@ -1,3 +1,4 @@
+import { redirect } from '@sveltejs/kit';
 import { MAIN_BACKEND_URL } from '$env/static/private';
 import { trimLargeWords } from '$lib/helpers';
 import type { Thread } from '$lib/types/thread';
@@ -11,12 +12,16 @@ export const load: PageServerLoad = async ({ params, depends, fetch, cookies }) 
 	const fingerprint = cookies.get('fingerprint');
 
 	const resThread = await fetch(`${MAIN_BACKEND_URL}/api/v1/thread/${id}`);
+	if (!resThread.ok) {
+		redirect(302, '/404');
+	}
+
 	let thread: Thread;
 	try {
-	 thread = await resThread.json();
+		thread = await resThread.json();
 	} catch (error) {
-		console.error({error, id});
-		return { slug }
+		console.error({ error, id });
+		redirect(302, '/404');
 	}
 
 	if (thread.original_post.browser_fingerprint === fingerprint) {

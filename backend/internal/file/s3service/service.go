@@ -12,10 +12,9 @@ import (
 
 	"github.com/Fodro/saberchan/config"
 	"github.com/Fodro/saberchan/internal/file"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	nanoid "github.com/matoous/go-nanoid/v2"
 )
 
@@ -24,7 +23,7 @@ type service struct {
 	shouldExpire bool
 	linkPrefix   string
 	expires      time.Duration
-	svc          *s3.S3
+	svc          *s3.Client
 }
 
 func (s *service) UploadFile(ctx context.Context, f *file.FileReq) (*file.FileResp, error) {
@@ -35,9 +34,8 @@ func (s *service) UploadFile(ctx context.Context, f *file.FileReq) (*file.FileRe
 
 	var expires *time.Time
 	if s.shouldExpire {
-		expires = aws.Time(time.Now().Add(s.expires))
-	} else {
-		expires = nil
+		t := time.Now().Add(s.expires)
+		expires = &t
 	}
 
 	body, err := base64.StdEncoding.DecodeString(f.Body)
@@ -46,7 +44,7 @@ func (s *service) UploadFile(ctx context.Context, f *file.FileReq) (*file.FileRe
 		return nil, err
 	}
 
-	_, err = s.svc.PutObjectWithContext(ctx, &s3.PutObjectInput{
+	_, err = s.svc.PutObject(ctx, &s3.PutObjectInput{
 		Bucket:             aws.String(s.bucket),
 		Key:                aws.String(key),
 		Body:               bytes.NewReader(body),
@@ -66,19 +64,18 @@ func (s *service) UploadFile(ctx context.Context, f *file.FileReq) (*file.FileRe
 
 func NewService(conf *config.Config) file.Service {
 	endpoint := ResolveEndpoint(conf.S3.Url, conf.S3.UseSSL)
-	awsCfg := &aws.Config{
-		Credentials:      credentials.NewStaticCredentials(conf.S3.AccessKey, conf.S3.SecretKey, ""),
-		Endpoint:         aws.String(endpoint),
-		Region:           aws.String(conf.S3.Region),
-		S3ForcePathStyle: aws.Bool(conf.S3.ForcePathStyle),
-		DisableSSL:       aws.Bool(!conf.S3.UseSSL),
+
+	awsCfg := aws.Config{
+		Region:      conf.S3.Region,
+		Credentials: credentials.NewStaticCredentialsProvider(conf.S3.AccessKey, conf.S3.SecretKey, ""),
 	}
 
-	sess, err := session.NewSession(awsCfg)
-	if err != nil {
-		log.Fatalf("failed to connect to s3: %s", err)
-	}
-	svc := s3.New(sess)
+	svc := s3.NewFromConfig(awsCfg, func(o *s3.Options) {
+		if endpoint != "" {
+			o.BaseEndpoint = aws.String(endpoint)
+		}
+		o.UsePathStyle = conf.S3.ForcePathStyle
+	})
 
 	return &service{
 		bucket:       conf.S3.Bucket,

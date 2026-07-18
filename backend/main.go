@@ -20,7 +20,7 @@ import (
 	"github.com/Fodro/saberchan/internal/health"
 	"github.com/Fodro/saberchan/internal/server"
 	_ "github.com/lib/pq"
-	"github.com/pressly/goose"
+	"github.com/pressly/goose/v3"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -39,7 +39,10 @@ func main() {
 			log.Fatal(err)
 			return
 		}
-		goose.SetDialect("postgres")
+		if err := goose.SetDialect("postgres"); err != nil {
+			log.Fatal(err)
+			return
+		}
 		err = goose.Up(db, "./migrations")
 		if err != nil {
 			log.Fatal(err)

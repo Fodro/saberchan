@@ -32,7 +32,6 @@
 	} from "svelte-radix";
 	import { invalidate } from "$app/navigation";
 	import PostCard from "$lib/components/custom/PostCard.svelte";
-	import { redirect } from "@sveltejs/kit";
 	import Captcha from "$lib/components/custom/Captcha.svelte";
 	import FileUploader from "$lib/components/custom/FileUploader.svelte";
 
@@ -72,10 +71,6 @@
 				return $t("common.compose.payload_too_large");
 		}
 	};
-
-	if (!data.thread) {
-		redirect(302, "/404");
-	}
 
 	const checkIsInText = (txt: string): boolean => {
 		return newText.includes(txt);

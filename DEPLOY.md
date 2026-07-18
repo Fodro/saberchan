@@ -19,6 +19,8 @@ Production keeps the data plane (DB, S3, Redis) outside the app compose file. Us
     "cliPluginsExtraDirs": ["/opt/homebrew/lib/docker/cli-plugins"]
     ```
   - Colima (or Docker Desktop) must be running for `make local-up`
+  - **Colima RAM:** give the VM **≥4 GiB** (2 GiB often SIGKILLs the frontend image at `@sveltejs/adapter-node`). Example: `colima stop && colima start --cpu 2 --memory 4`
+  - `make local-up` builds images **one at a time** (`COMPOSE_PARALLEL_LIMIT=1`) to reduce peak memory
 - Global Go tools: `make backend-install-deps` (installs `mockgen` into `$(go env GOPATH)/bin` — keep that dir on `PATH`)
 
 ## Local CI gate
