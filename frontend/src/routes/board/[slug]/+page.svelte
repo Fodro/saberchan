@@ -164,6 +164,7 @@
 							<Image
 								link={thread.original_post.attachments[0].link ?? ""}
 								name={thread.original_post.attachments[0].name ?? ""}
+								type={thread.original_post.attachments[0].type ?? ""}
 							/>
 						</div>
 					{/if}

@@ -20,7 +20,7 @@
 	"ban": "Бан",
 	"lightbox": {
 		"close": "Закрыть",
-		"viewing": "Изображение в полном размере"
+		"viewing": "Медиа в полном размере"
 	},
 	"admin": {
 		"add_board": "Создать доску"
@@ -60,8 +60,9 @@
 		"add": "Добавить файл",
 		"remove": "Удалить",
 		"limitCount": "Максимум 4 файла",
-		"limitSize": "Максимальный размер 5 МБ",
-		"limitType": "Допустимы только JPEG, PNG, GIF или WebP"
+		"limitSize": "Изображения до 5 МБ; видео до 10 МБ",
+		"limitSizeVideo": "Максимум 10 МБ для видео",
+		"limitType": "Допустимы JPEG, PNG, GIF, WebP, WebM или MP4"
 	},
 	"compose": {
 		"title_required": "Нужен заголовок",

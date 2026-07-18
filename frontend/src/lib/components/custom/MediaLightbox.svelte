@@ -2,16 +2,28 @@
 	import { Dialog as DialogPrimitive } from "bits-ui";
 	import Cross2 from "svelte-radix/Cross2.svelte";
 	import { t } from "$lib/translations";
+	import { isVideoAttachment } from "$lib/limits";
 
 	let {
 		open = $bindable(false),
 		link,
 		name,
+		type = "",
 	}: {
 		open?: boolean;
 		link: string;
 		name: string;
+		type?: string;
 	} = $props();
+
+	const isVideo = $derived(isVideoAttachment(name, type));
+	let videoEl: HTMLVideoElement | undefined = $state();
+
+	$effect(() => {
+		if (!open && videoEl) {
+			videoEl.pause();
+		}
+	});
 </script>
 
 <DialogPrimitive.Root bind:open>
@@ -38,11 +50,23 @@
 			<DialogPrimitive.Description class="sr-only">
 				{$t("common.lightbox.viewing")}
 			</DialogPrimitive.Description>
-			<img
-				src={link}
-				alt={name}
-				class="max-h-[84vh] max-w-[90vw] object-contain"
-			/>
+			{#if isVideo}
+				<!-- svelte-ignore a11y_media_has_caption -->
+				<video
+					bind:this={videoEl}
+					src={link}
+					controls
+					playsinline
+					preload="metadata"
+					class="max-h-[84vh] max-w-[90vw] bg-black"
+				></video>
+			{:else}
+				<img
+					src={link}
+					alt={name}
+					class="max-h-[84vh] max-w-[90vw] object-contain"
+				/>
+			{/if}
 		</DialogPrimitive.Content>
 	</DialogPrimitive.Portal>
 </DialogPrimitive.Root>

@@ -4,10 +4,11 @@ import { verifyExp } from '$lib/helpers';
 import {
 	IMAGE_MIME,
 	MAX_FILES,
-	MAX_IMAGE_BYTES,
 	MAX_JSON_BODY_CHARS,
 	MAX_TEXT_CHARS,
 	MAX_TITLE_CHARS,
+	VIDEO_MIME,
+	maxBytesForMime,
 } from '$lib/limits';
 import { jwtDecode } from 'jwt-decode';
 import type { Cookies } from '@sveltejs/kit';
@@ -53,12 +54,14 @@ export function assertMultipartFiles(files: File[]) {
 	}
 	for (const file of files) {
 		const mime = file.type || '';
-		// Video MIME allowlist lands in Phase 2; Phase 0 is images only at 5 MiB.
-		if (mime && !IMAGE_MIME.has(mime)) {
+		const allowed = IMAGE_MIME.has(mime) || VIDEO_MIME.has(mime);
+		if (mime && !allowed) {
 			error(400, { message: `Unsupported file type: ${file.type}` });
 		}
-		if (file.size > MAX_IMAGE_BYTES) {
-			error(413, { message: 'Maximum file size is 5MB for images' });
+		const limit = maxBytesForMime(mime || 'image/jpeg');
+		if (file.size > limit) {
+			const label = VIDEO_MIME.has(mime) ? '10MB for videos' : '5MB for images';
+			error(413, { message: `Maximum file size is ${label}` });
 		}
 	}
 }

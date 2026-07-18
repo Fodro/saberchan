@@ -4,7 +4,12 @@
 	import Button from "../ui/button/button.svelte";
 	import { t } from "$lib/translations";
 	import { toast } from "svelte-sonner";
-	import { MAX_FILE_BYTES, MAX_FILES } from "$lib/limits";
+	import {
+		IMAGE_MIME,
+		MAX_FILES,
+		VIDEO_MIME,
+		maxBytesForMime,
+	} from "$lib/limits";
 
 	let { value = $bindable() }: { value: FileType[] } = $props();
 	let fileCurrentId = $state(0);
@@ -17,8 +22,20 @@
 		const id = fileCurrentId.toString();
 		fileCurrentId += 1;
 
-		if (picked.size > MAX_FILE_BYTES) {
-			toast.error($t("common.file.limitSize"));
+		const mime = picked.type || "";
+		const allowed = IMAGE_MIME.has(mime) || VIDEO_MIME.has(mime);
+		if (mime && !allowed) {
+			toast.error($t("common.file.limitType"));
+			return;
+		}
+
+		const limit = maxBytesForMime(mime || "image/jpeg");
+		if (picked.size > limit) {
+			toast.error(
+				VIDEO_MIME.has(mime)
+					? $t("common.file.limitSizeVideo")
+					: $t("common.file.limitSize"),
+			);
 			return;
 		}
 
@@ -45,7 +62,7 @@
 </script>
 
 <div class="flex flex-row justify-start items-start gap-2">
-	{#each value as file}
+	{#each value as file (file.id)}
 		<Button
 			id={`file-${file.id}`}
 			title={$t("common.file.remove")}
@@ -68,7 +85,7 @@
 
 			const input = document.createElement("input");
 			input.type = "file";
-			input.accept = "image/*";
+			input.accept = "image/*,video/webm,video/mp4";
 			input.onchange = onFilePicked;
 			input.click();
 		}}

@@ -15,7 +15,7 @@ import (
 const (
 	maxMultipartMemory = 40 << 20 // headroom for up to 4×10 MiB videos
 	maxImageBytes      = 5 << 20  // 5 MiB
-	maxVideoBytes      = 10 << 20 // 10 MiB (Phase 2 MIME allowlist)
+	maxVideoBytes      = 10 << 20 // 10 MiB
 	maxUploadFiles     = 4
 )
 
@@ -25,6 +25,15 @@ var allowedImageMIME = map[string]bool{
 	"image/png":  true,
 	"image/gif":  true,
 	"image/webp": true,
+}
+
+var allowedVideoMIME = map[string]bool{
+	"video/webm": true,
+	"video/mp4":  true,
+}
+
+func isAllowedUploadMIME(ctype string) bool {
+	return allowedImageMIME[ctype] || allowedVideoMIME[ctype]
 }
 
 func isMultipart(r *http.Request) bool {
@@ -62,14 +71,14 @@ func parseMultipartFiles(r *http.Request) ([]board.Attachment, error) {
 		ctype = strings.ToLower(ctype)
 		limit := int64(maxImageBytes)
 		limitMsg := "maximum image size is 5MB"
-		if strings.HasPrefix(ctype, "video/") {
+		if allowedVideoMIME[ctype] {
 			limit = int64(maxVideoBytes)
 			limitMsg = "maximum video size is 10MB"
 		}
 		if fh.Size > limit {
 			return nil, fmt.Errorf("%s", limitMsg)
 		}
-		if !allowedImageMIME[ctype] {
+		if !isAllowedUploadMIME(ctype) {
 			return nil, fmt.Errorf("unsupported file type %q", ctype)
 		}
 

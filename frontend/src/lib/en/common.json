@@ -20,7 +20,7 @@
 	"ban": "Ban",
 	"lightbox": {
 		"close": "Close",
-		"viewing": "Full-size image"
+		"viewing": "Full-size media"
 	},
 	"admin": {
 		"add_board": "Add Board"
@@ -60,8 +60,9 @@
 		"add": "Add file",
 		"remove": "Remove",
 		"limitCount": "Maximum file count is 4",
-		"limitSize": "Maximum file size is 5MB",
-		"limitType": "Only JPEG, PNG, GIF, or WebP images are allowed"
+		"limitSize": "Images max 5MB; videos max 10MB",
+		"limitSizeVideo": "Maximum video size is 10MB",
+		"limitType": "Only JPEG, PNG, GIF, WebP, WebM, or MP4 are allowed"
 	},
 	"compose": {
 		"title_required": "Title is required",
