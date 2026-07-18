@@ -10,6 +10,11 @@
 	import ComposeForm from "$lib/components/custom/ComposeForm.svelte";
 	import PostCard from "$lib/components/custom/PostCard.svelte";
 	import { composeErrorMessageFactory, submitCompose } from "$lib/compose";
+	import { followThread, unfollowThread } from "$lib/followed";
+	import { formatDateTime } from "$lib/helpers.js";
+	import { restoreDeleted, softDelete } from "$lib/adminModeration";
+	import { Trash, Update } from "svelte-radix";
+	import { onMount } from "svelte";
 
 	let newText = $state("");
 	let newSage = $state(false);
@@ -28,6 +33,62 @@
 	const { data } = $props();
 
 	const composeErrorMessage = composeErrorMessageFactory((key) => $t(key));
+	const isThreadDeleted = $derived(Boolean(data.thread.deleted_at));
+	const isFollowing = $derived((data.followed?.ids ?? []).includes(data.thread.id));
+	let modBusy = $state(false);
+	let followBusy = $state(false);
+
+	// Page load marks the cookie seen after layout runs — refresh the badge.
+	onMount(() => {
+		void invalidate("followed:list");
+	});
+
+	async function toggleFollow() {
+		followBusy = true;
+		const wasFollowing = isFollowing;
+		try {
+			if (wasFollowing) {
+				await unfollowThread(data.thread.id);
+			} else {
+				const replies = data.thread.posts?.length ?? data.thread.replies_count ?? 0;
+				await followThread(data.thread.id, replies);
+			}
+		} catch {
+			if (!wasFollowing) {
+				toast.error($t("common.follow_failed"));
+			}
+		} finally {
+			followBusy = false;
+		}
+	}
+
+	async function deleteThread() {
+		modBusy = true;
+		try {
+			const err = await softDelete("thread", data.thread.id);
+			if (err) {
+				toast.error(err);
+				return;
+			}
+			await invalidate("thread:id");
+		} finally {
+			modBusy = false;
+		}
+	}
+
+	async function restoreThread() {
+		modBusy = true;
+		try {
+			const err = await restoreDeleted("thread", data.thread.id);
+			if (err) {
+				toast.error(err);
+				return;
+			}
+			await invalidate("thread:id");
+		} finally {
+			modBusy = false;
+		}
+	}
 
 	const checkIsInText = (txt: string): boolean => {
 		return newText.includes(txt);
@@ -58,6 +119,12 @@
 				files: filesList,
 				errorMessage: composeErrorMessage,
 				captchaFailedMessage: $t("common.captcha.failed"),
+				bannedMessage: (reason, until) =>
+					until
+						? $t("common.banned_until")
+								.replace("{until}", formatDateTime(until))
+								.replace("{reason}", reason)
+						: $t("common.banned").replace("{reason}", reason),
 			});
 
 			if (!result.ok) {
@@ -71,6 +138,13 @@
 			newOP = false;
 			isReplyOpen = false;
 			filesList = [];
+
+			const newReplies = (data.thread.posts?.length ?? 0) + 1;
+			try {
+				await followThread(data.thread.id, newReplies);
+			} catch {
+				toast.error($t("common.follow_failed"));
+			}
 
 			await invalidate("thread:id");
 		} finally {
@@ -91,9 +165,52 @@
 <svelte:window bind:scrollX={formX} bind:scrollY={formY} />
 
 <div class="flex flex-col justify-center items-start gap-2">
-	<h3 class="mt-8 scroll-m-20 text-2xl font-semibold tracking-tight mb-5">
-		{data.thread.title}
-	</h3>
+	<div class="mt-8 mb-5 flex w-full flex-row flex-wrap items-center gap-3">
+		<h3
+			class={`scroll-m-20 text-2xl font-semibold tracking-tight ${isThreadDeleted ? "text-red-600" : ""}`}
+		>
+			{#if isThreadDeleted}
+				{$t("common.deleted")}{" "}
+			{/if}
+			{data.thread.title}
+		</h3>
+		{#if data.isAdmin}
+			{#if isThreadDeleted}
+				<Button
+					variant="outline"
+					size="sm"
+					disabled={modBusy}
+					onclick={() => void restoreThread()}
+				>
+					<Update class="mr-1 h-4 w-4" />
+					{$t("common.restore")}
+				</Button>
+			{:else}
+				<Button
+					variant="destructive"
+					size="sm"
+					disabled={modBusy}
+					onclick={() => void deleteThread()}
+				>
+					<Trash class="mr-1 h-4 w-4" />
+					{$t("common.delete")}
+				</Button>
+			{/if}
+		{/if}
+		<Button
+			variant="outline"
+			size="sm"
+			class="cursor-pointer"
+			disabled={followBusy}
+			onclick={() => void toggleFollow()}
+		>
+			{#if isFollowing}
+				{$t("common.unfollow")}
+			{:else}
+				{$t("common.follow")}
+			{/if}
+		</Button>
+	</div>
 	<Button
 		class="cursor-pointer"
 		onclick={() => {
@@ -102,8 +219,7 @@
 	>
 		{#if isReplyOpen}
 			{$t("common.cancel")}
-		{/if}
-		{#if !isReplyOpen}
+		{:else}
 			{$t("common.reply")}
 		{/if}
 	</Button>
@@ -114,15 +230,15 @@
 			{addToText}
 			{checkIsInText}
 			{setReplyOpen}
-			isSigned={data.signed}
+			isAdmin={data.isAdmin}
 		/>
-		{#each data.thread.posts as post}
+		{#each data.thread.posts as post (post.id)}
 			<PostCard
 				{post}
 				{addToText}
 				{checkIsInText}
 				{setReplyOpen}
-				isSigned={data.signed}
+				isAdmin={data.isAdmin}
 			/>
 		{/each}
 	</div>

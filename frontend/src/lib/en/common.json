@@ -9,6 +9,13 @@
 	"post": "Post!",
 	"you": "You",
 	"reply": "Reply",
+	"follow": "Follow",
+	"unfollow": "Unfollow",
+	"follow_failed": "Can't follow, something went wrong",
+	"followed": "Followed",
+	"followed_threads": "Followed threads",
+	"followed_empty": "No followed threads",
+	"followed_dead": "✕",
 	"op": "OP",
 	"copy_link": "Copy Link",
 	"copied": "Link copied!",
@@ -18,6 +25,26 @@
 	"logged_in": "Signed in as",
 	"draggable": "Click button in top-right corner to unpin and move window",
 	"ban": "Ban",
+	"ban_reason": "Reason",
+	"ban_duration": "Duration",
+	"ban_submit": "Ban user",
+	"ban_success": "User banned and post deleted",
+	"ban_presets": {
+		"1h": "1 hour",
+		"1d": "1 day",
+		"7d": "7 days",
+		"30d": "30 days",
+		"permanent": "Permanent"
+	},
+	"banned": "You are banned: {reason}",
+	"banned_until": "You are banned until {until}: {reason}",
+	"deleted": "[DELETED]",
+	"restore": "Restore",
+	"delete": "Delete",
+	"lightbox": {
+		"close": "Close",
+		"viewing": "Full-size media"
+	},
 	"admin": {
 		"add_board": "Add Board"
 	},
@@ -56,8 +83,9 @@
 		"add": "Add file",
 		"remove": "Remove",
 		"limitCount": "Maximum file count is 4",
-		"limitSize": "Maximum file size is 2MB",
-		"limitType": "Only JPEG, PNG, GIF, or WebP images are allowed"
+		"limitSize": "Images max 5MB; videos max 10MB",
+		"limitSizeVideo": "Maximum video size is 10MB",
+		"limitType": "Only JPEG, PNG, GIF, WebP, WebM, or MP4 are allowed"
 	},
 	"compose": {
 		"title_required": "Title is required",

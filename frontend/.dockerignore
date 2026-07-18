@@ -15,3 +15,10 @@ build
 coverage
 **/*.test.ts
 **/*.spec.ts
+**/__tests__/
+eslint.config.js
+.eslintignore
+.prettier*
+playwright*
+vitest*
+static/robots.txt.bak

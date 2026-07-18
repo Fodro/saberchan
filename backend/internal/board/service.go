@@ -5,18 +5,23 @@ import (
 	"encoding/base64"
 	"errors"
 	"log"
+	"time"
 
 	"github.com/Fodro/saberchan/config"
 	"github.com/Fodro/saberchan/internal/database"
 	"github.com/Fodro/saberchan/internal/file"
+	"github.com/Fodro/saberchan/internal/follow"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
 
+const restoreWindow = 24 * time.Hour
+
 type service struct {
-	repo database.Repository
-	file file.Service
-	conf *config.Config
+	repo   database.Repository
+	file   file.Service
+	conf   *config.Config
+	follow follow.Service // optional; nil disables follow refresh on bump
 }
 
 func (s *service) CreateBoard(ctx context.Context, board *BoardInput) error {
@@ -49,6 +54,7 @@ func (s *service) persistPostInTx(
 	threadID, postID uuid.UUID,
 	post *Post,
 	uploadedKeys *[]string,
+	bumped *bool,
 ) error {
 	hasAttachment := len(post.Attachments) > 0
 	if err := tx.AddPost(ctx, &database.Post{
@@ -88,6 +94,7 @@ func (s *service) persistPostInTx(
 			Link:   fileResp.Link,
 			Name:   attachment.Name,
 			Type:   attachment.Type,
+			Key:    fileResp.Key,
 		}); err != nil {
 			log.Printf("error saving attachment %s to db: %v", fileResp.Link, err)
 			return err
@@ -97,21 +104,39 @@ func (s *service) persistPostInTx(
 	if !post.Sage {
 		shouldBump, _ := tx.CheckIfThreadBelowBumpLimit(ctx, threadID)
 		if shouldBump {
-			return tx.BumpThread(ctx, threadID)
+			if err := tx.BumpThread(ctx, threadID); err != nil {
+				return err
+			}
+			if bumped != nil {
+				*bumped = true
+			}
 		}
 	}
 	return nil
 }
 
+func (s *service) refreshFollowOnBump(ctx context.Context, threadID uuid.UUID) {
+	if s.follow == nil {
+		return
+	}
+	if err := s.follow.RefreshOnBump(ctx, threadID); err != nil {
+		log.Printf("follow: refresh on bump %s: %v", threadID, err)
+	}
+}
+
 func (s *service) CreatePost(ctx context.Context, threadID uuid.UUID, post *Post) error {
 	postID := uuid.New()
 	var uploadedKeys []string
+	var bumped bool
 	err := s.repo.InTx(ctx, func(tx database.Repository) error {
-		return s.persistPostInTx(ctx, tx, threadID, postID, post, &uploadedKeys)
+		return s.persistPostInTx(ctx, tx, threadID, postID, post, &uploadedKeys, &bumped)
 	})
 	if err != nil {
 		s.cleanupUploads(ctx, uploadedKeys)
 		return err
+	}
+	if bumped {
+		s.refreshFollowOnBump(ctx, threadID)
 	}
 	return nil
 }
@@ -124,7 +149,7 @@ func (s *service) CreateThread(ctx context.Context, thread *Thread) (*Thread, er
 		return nil, errors.New("original_post is required")
 	}
 
-	board, err := s.repo.GetBoardById(ctx, thread.BoardID)
+	board, err := s.repo.GetBoardById(ctx, thread.BoardID, false)
 	if err != nil {
 		return nil, err
 	}
@@ -144,15 +169,19 @@ func (s *service) CreateThread(ctx context.Context, thread *Thread) (*Thread, er
 
 	postID := uuid.New()
 	var uploadedKeys []string
+	var bumped bool
 	err = s.repo.InTx(ctx, func(tx database.Repository) error {
 		if err := tx.AddThread(ctx, threadDB); err != nil {
 			return err
 		}
-		return s.persistPostInTx(ctx, tx, threadDB.ID, postID, thread.OriginalPost, &uploadedKeys)
+		return s.persistPostInTx(ctx, tx, threadDB.ID, postID, thread.OriginalPost, &uploadedKeys, &bumped)
 	})
 	if err != nil {
 		s.cleanupUploads(ctx, uploadedKeys)
 		return nil, err
+	}
+	if bumped {
+		s.refreshFollowOnBump(ctx, threadDB.ID)
 	}
 
 	return &Thread{
@@ -167,19 +196,113 @@ func (s *service) CreateThread(ctx context.Context, thread *Thread) (*Thread, er
 	}, nil
 }
 
+// DeleteBoard soft-deletes a board and cascades the soft-delete to its
+// threads and posts.
 func (s *service) DeleteBoard(ctx context.Context, id uuid.UUID) error {
-	return ErrNotImplemented
+	b, err := s.repo.GetBoardById(ctx, id, true)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrNotFound
+		}
+		return err
+	}
+	if b.DeletedAt != nil {
+		return ErrAlreadyDeleted
+	}
+	return s.repo.SoftDeleteBoard(ctx, id)
 }
 
-func (s *service) DeletePost(ctx context.Context, id uuid.UUID) error {
-	return ErrNotImplemented
+	// RestoreBoard undoes a soft-delete within the 24h grace window and cascades
+	// restore only to threads/posts that share the board's deleted_at timestamp.
+	func (s *service) RestoreBoard(ctx context.Context, id uuid.UUID) error {
+	b, err := s.repo.GetBoardById(ctx, id, true)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrNotFound
+		}
+		return err
+	}
+	if b.DeletedAt == nil {
+		return ErrNotFound
+	}
+	if b.DeletedAt.Before(time.Now().Add(-restoreWindow)) {
+		return ErrRestoreExpired
+	}
+	return s.repo.RestoreBoard(ctx, id)
 }
 
+// DeleteThread soft-deletes a thread and cascades the soft-delete to its
+// posts.
 func (s *service) DeleteThread(ctx context.Context, id uuid.UUID) error {
-	return ErrNotImplemented
+	t, err := s.repo.GetThread(ctx, id, true)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrNotFound
+		}
+		return err
+	}
+	if t.DeletedAt != nil {
+		return ErrAlreadyDeleted
+	}
+	return s.repo.SoftDeleteThread(ctx, id)
 }
 
-func (s *service) GetBoardWithThreads(ctx context.Context, alias string, limit, offset int) (*Board, error) {
+	// RestoreThread undoes a soft-delete within the 24h grace window and
+	// cascades restore only to posts that share the thread's deleted_at timestamp.
+	func (s *service) RestoreThread(ctx context.Context, id uuid.UUID) error {
+	t, err := s.repo.GetThread(ctx, id, true)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrNotFound
+		}
+		return err
+	}
+	if t.DeletedAt == nil {
+		return ErrNotFound
+	}
+	if t.DeletedAt.Before(time.Now().Add(-restoreWindow)) {
+		return ErrRestoreExpired
+	}
+	return s.repo.RestoreThread(ctx, id)
+}
+
+// DeletePost soft-deletes a single post. Posts have no children.
+func (s *service) DeletePost(ctx context.Context, id uuid.UUID) error {
+	p, err := s.repo.GetPost(ctx, id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrNotFound
+		}
+		return err
+	}
+	if p.DeletedAt != nil {
+		return ErrAlreadyDeleted
+	}
+	return s.repo.SoftDeletePost(ctx, id)
+}
+
+// RestorePost undoes a soft-delete within the 24h grace window.
+func (s *service) RestorePost(ctx context.Context, id uuid.UUID) error {
+	p, err := s.repo.GetPost(ctx, id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrNotFound
+		}
+		return err
+	}
+	if p.DeletedAt == nil {
+		return ErrNotFound
+	}
+	if p.PurgedAt != nil {
+		return ErrRestoreExpired
+	}
+	if p.DeletedAt.Before(time.Now().Add(-restoreWindow)) {
+		return ErrRestoreExpired
+	}
+	return s.repo.RestorePost(ctx, id)
+}
+
+func (s *service) GetBoardWithThreads(ctx context.Context, alias string, limit, offset int, includeDeleted bool) (*Board, error) {
 	if limit <= 0 {
 		limit = 20
 	}
@@ -190,17 +313,17 @@ func (s *service) GetBoardWithThreads(ctx context.Context, alias string, limit, 
 		offset = 0
 	}
 
-	boardDB, err := s.repo.GetBoardByAlias(ctx, alias)
+	boardDB, err := s.repo.GetBoardByAlias(ctx, alias, includeDeleted)
 	if err != nil {
 		return nil, err
 	}
 
-	total, err := s.repo.CountThreads(ctx, boardDB.ID)
+	total, err := s.repo.CountThreads(ctx, boardDB.ID, includeDeleted)
 	if err != nil {
 		return nil, err
 	}
 
-	catalog, err := s.repo.GetBoardCatalog(ctx, boardDB.ID, limit, offset)
+	catalog, err := s.repo.GetBoardCatalog(ctx, boardDB.ID, limit, offset, includeDeleted)
 	if err != nil {
 		return nil, err
 	}
@@ -253,6 +376,7 @@ func (s *service) GetBoardWithThreads(ctx context.Context, alias string, limit, 
 				Attachments:        attachments,
 			},
 			RepliesCount: ct.RepliesCount,
+			DeletedAt:    ct.DeletedAt,
 		})
 	}
 
@@ -266,11 +390,12 @@ func (s *service) GetBoardWithThreads(ctx context.Context, alias string, limit, 
 		TotalThreads: total,
 		Limit:        limit,
 		Offset:       offset,
+		DeletedAt:    boardDB.DeletedAt,
 	}, nil
 }
 
-func (s *service) GetBoards(ctx context.Context) ([]*Board, error) {
-	boardsDB, err := s.repo.GetBoards(ctx)
+func (s *service) GetBoards(ctx context.Context, includeDeleted bool) ([]*Board, error) {
+	boardsDB, err := s.repo.GetBoards(ctx, includeDeleted)
 	if err != nil {
 		return nil, err
 	}
@@ -282,17 +407,18 @@ func (s *service) GetBoards(ctx context.Context) ([]*Board, error) {
 			Name:        boardDB.Name,
 			Description: boardDB.Description,
 			Locked:      boardDB.Locked,
+			DeletedAt:   boardDB.DeletedAt,
 		})
 	}
 	return boards, nil
 }
 
-func (s *service) GetThreadWithPosts(ctx context.Context, id uuid.UUID) (*Thread, error) {
-	threadDB, err := s.repo.GetThread(ctx, id)
+func (s *service) GetThreadWithPosts(ctx context.Context, id uuid.UUID, includeDeleted bool) (*Thread, error) {
+	threadDB, err := s.repo.GetThread(ctx, id, includeDeleted)
 	if err != nil {
 		return nil, err
 	}
-	postsDB, err := s.repo.GetPosts(ctx, id)
+	postsDB, err := s.repo.GetPosts(ctx, id, includeDeleted)
 	if err != nil {
 		return nil, err
 	}
@@ -319,6 +445,7 @@ func (s *service) GetThreadWithPosts(ctx context.Context, id uuid.UUID) (*Thread
 				IP:                 postDB.IP,
 				CreatedAt:          postDB.CreatedAt,
 				Attachments:        attachments,
+				DeletedAt:          postDB.DeletedAt,
 			}
 			continue
 		}
@@ -333,6 +460,7 @@ func (s *service) GetThreadWithPosts(ctx context.Context, id uuid.UUID) (*Thread
 			IP:                 postDB.IP,
 			CreatedAt:          postDB.CreatedAt,
 			Attachments:        attachments,
+			DeletedAt:          postDB.DeletedAt,
 		})
 	}
 	return &Thread{
@@ -343,6 +471,7 @@ func (s *service) GetThreadWithPosts(ctx context.Context, id uuid.UUID) (*Thread
 		UpdatedAt:    threadDB.UpdatedAt.String(),
 		OriginalPost: op,
 		Posts:        posts,
+		DeletedAt:    threadDB.DeletedAt,
 	}, nil
 }
 
@@ -380,6 +509,6 @@ func attachmentBytes(a Attachment) ([]byte, error) {
 	return base64.StdEncoding.DecodeString(a.Body)
 }
 
-func NewService(repo database.Repository, file file.Service, conf *config.Config) Service {
-	return &service{repo: repo, file: file, conf: conf}
+func NewService(repo database.Repository, file file.Service, conf *config.Config, followSvc follow.Service) Service {
+	return &service{repo: repo, file: file, conf: conf, follow: followSvc}
 }

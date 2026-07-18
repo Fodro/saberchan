@@ -1,13 +1,13 @@
 import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import {
+	adminBackendHeaders,
 	assertBodySize,
 	assertCaptcha,
 	assertMultipartFiles,
 	assertText,
 	assertTitle,
 	fingerprintFromCookies,
-	isAdminSession,
 	proxyBackend,
 	validateCaptchaWithBackend,
 } from '$lib/server/backend';
@@ -42,13 +42,13 @@ export const POST: RequestHandler = async ({ request, cookies, fetch }) => {
 	out.set('title', String(form.get('title') ?? ''));
 	out.set('text', String(form.get('text') ?? ''));
 	out.set('browser_fingerprint', fingerprintFromCookies(cookies));
-	out.set('is_admin', isAdminSession(cookies) ? 'true' : 'false');
 	for (const file of files) {
 		out.append('files', file, file.name);
 	}
 
 	return proxyBackend(fetch, '/api/v1/thread', {
 		method: 'POST',
+		headers: adminBackendHeaders(cookies),
 		body: out,
 	});
 };

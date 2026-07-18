@@ -11,12 +11,15 @@ import (
 	"syscall"
 
 	"github.com/Fodro/saberchan/config"
+	"github.com/Fodro/saberchan/internal/ban"
 	"github.com/Fodro/saberchan/internal/board"
 	"github.com/Fodro/saberchan/internal/captcha"
 	"github.com/Fodro/saberchan/internal/database"
 	"github.com/Fodro/saberchan/internal/database/psql"
 	"github.com/Fodro/saberchan/internal/file/s3service"
+	"github.com/Fodro/saberchan/internal/follow"
 	"github.com/Fodro/saberchan/internal/health"
+	"github.com/Fodro/saberchan/internal/purge"
 	"github.com/Fodro/saberchan/internal/server"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
@@ -78,12 +81,18 @@ func main() {
 	})
 
 	captcha := captcha.NewService(redisClient, conf.Redis.Expires)
+	ban := ban.NewService(ban.NewRedisStore(redisClient), repo)
+	followSvc := follow.NewService(follow.NewRedisStore(redisClient), repo)
 
 	file := s3service.NewService(conf)
-	board := board.NewService(repo, file, conf)
+	board := board.NewService(repo, file, conf, followSvc)
 	health := health.NewService(repo)
-	server := server.NewServer(conf, board, captcha, health)
+	server := server.NewServer(conf, board, captcha, health, ban, followSvc)
 	log.Println("starting server on port", conf.Port)
+
+	purgeCtx, cancelPurge := context.WithCancel(context.Background())
+	go purge.Run(purgeCtx, repo, file, conf.PurgeInterval)
+	log.Printf("purge worker interval %s", conf.PurgeInterval)
 
 	go func() {
 		sigChan := make(chan os.Signal, 1)
@@ -91,6 +100,7 @@ func main() {
 		<-sigChan
 		log.Println("shutting down server")
 
+		cancelPurge()
 		if err := server.Stop(context.Background()); err != nil {
 			log.Fatalf("HTTP close error: %v", err)
 		}

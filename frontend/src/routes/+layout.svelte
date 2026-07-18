@@ -7,12 +7,15 @@
 	import Moon from "svelte-radix/Moon.svelte";
 	import Home from "svelte-radix/Home.svelte";
 	import { toggleMode } from "mode-watcher";
+	import { Badge } from "$lib/components/ui/badge/index.js";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import { goto, invalidate, invalidateAll } from "$app/navigation";
 	import { page } from "$app/state";
 	import { onMount } from "svelte";
+	import { unfollowThread } from "$lib/followed";
 	import { t } from "$lib/translations";
-	import { CounterClockwiseClock, Update } from "svelte-radix";
+	import { CounterClockwiseClock, Cross2, Update } from "svelte-radix";
+	import { toast } from "svelte-sonner";
 
 	// Prefer longer intervals — 1–10s hammers the BFF/backend.
 	let intervals = [15, 30, 60];
@@ -40,6 +43,7 @@
 			} else if (path.startsWith("/board/")) {
 				void invalidate("board:slug");
 			}
+			void invalidate("followed:list");
 			// Do not invalidate board:all on the timer — nav list is not the live surface.
 		};
 
@@ -67,6 +71,14 @@
 	});
 
 	let { children, data } = $props();
+
+	async function unfollowFromMenu(id: string) {
+		try {
+			await unfollowThread(id);
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : String(e));
+		}
+	}
 </script>
 
 <ModeWatcher />
@@ -236,6 +248,59 @@
 						{`${i}s`}
 					</Menubar.Item>
 				{/each}
+			</Menubar.Content>
+		</Menubar.Menu>
+		<Menubar.Menu>
+			<Menubar.Trigger class="gap-2">
+				{$t("common.followed_threads")}
+				{#if data.followed.dirty_count > 0}
+					<Badge variant="secondary" class="ml-1">
+						{data.followed.dirty_count}
+					</Badge>
+				{/if}
+			</Menubar.Trigger>
+			<Menubar.Content class="min-w-56">
+				{#if data.followed.threads.length === 0}
+					<Menubar.Item disabled>
+						{$t("common.followed_empty")}
+					</Menubar.Item>
+				{:else}
+					{#each data.followed.threads as thread (thread.id)}
+						<Menubar.Item class="gap-2 p-0 focus:bg-transparent data-[highlighted]:bg-transparent">
+							<a
+								href={thread.href}
+								target="_blank"
+								rel="noreferrer noopener"
+								class="hover:bg-accent flex min-w-0 flex-1 items-center justify-between gap-2 rounded-sm px-2 py-1.5"
+							>
+								<span class="truncate max-w-40">{thread.title}</span>
+								{#if thread.dead}
+									<span class="text-muted-foreground shrink-0"
+										>{$t("common.followed_dead")}</span
+									>
+								{:else if thread.new_posts > 0}
+									<Badge variant="secondary" class="shrink-0"
+										>{thread.new_posts}</Badge
+									>
+								{/if}
+							</a>
+							<Button
+								type="button"
+								variant="ghost"
+								size="icon"
+								class="text-muted-foreground hover:text-destructive mr-1 h-7 w-7 shrink-0 cursor-pointer"
+								title={$t("common.unfollow")}
+								onclick={(e) => {
+									e.preventDefault();
+									e.stopPropagation();
+									void unfollowFromMenu(thread.id);
+								}}
+							>
+								<Cross2 class="h-3.5 w-3.5" />
+							</Button>
+						</Menubar.Item>
+					{/each}
+				{/if}
 			</Menubar.Content>
 		</Menubar.Menu>
 		<Button

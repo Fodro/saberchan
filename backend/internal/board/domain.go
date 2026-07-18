@@ -10,31 +10,35 @@ import (
 
 type Service interface {
 	CreateBoard(ctx context.Context, board *BoardInput) error
-	GetBoardWithThreads(ctx context.Context, alias string, limit, offset int) (*Board, error)
-	GetBoards(ctx context.Context) ([]*Board, error)
+	GetBoardWithThreads(ctx context.Context, alias string, limit, offset int, includeDeleted bool) (*Board, error)
+	GetBoards(ctx context.Context, includeDeleted bool) ([]*Board, error)
 	DeleteBoard(ctx context.Context, id uuid.UUID) error
+	RestoreBoard(ctx context.Context, id uuid.UUID) error
 	UpdateBoard(ctx context.Context, board *Board) error
 
 	CreateThread(ctx context.Context, thread *Thread) (*Thread, error)
-	GetThreadWithPosts(ctx context.Context, id uuid.UUID) (*Thread, error)
+	GetThreadWithPosts(ctx context.Context, id uuid.UUID, includeDeleted bool) (*Thread, error)
 	DeleteThread(ctx context.Context, id uuid.UUID) error
+	RestoreThread(ctx context.Context, id uuid.UUID) error
 
 	CreatePost(ctx context.Context, threadID uuid.UUID, post *Post) error
 	DeletePost(ctx context.Context, id uuid.UUID) error
+	RestorePost(ctx context.Context, id uuid.UUID) error
 }
 
 type (
 	Board struct {
-		ID           uuid.UUID `json:"id"`
-		Alias        string    `json:"alias"`
-		Name         string    `json:"name"`
-		Description  string    `json:"description"`
-		Locked       bool      `json:"locked"`
-		Threads      []*Thread `json:"threads"`
-		Author       string    `json:"author"`
-		TotalThreads uint64    `json:"total_threads"`
-		Limit        int       `json:"limit"`
-		Offset       int       `json:"offset"`
+		ID           uuid.UUID  `json:"id"`
+		Alias        string     `json:"alias"`
+		Name         string     `json:"name"`
+		Description  string     `json:"description"`
+		Locked       bool       `json:"locked"`
+		Threads      []*Thread  `json:"threads"`
+		Author       string     `json:"author"`
+		TotalThreads uint64     `json:"total_threads"`
+		Limit        int        `json:"limit"`
+		Offset       int        `json:"offset"`
+		DeletedAt    *time.Time `json:"deleted_at,omitempty"`
 	}
 
 	BoardInput struct {
@@ -46,15 +50,16 @@ type (
 	}
 
 	Thread struct {
-		ID           uuid.UUID `json:"id"`
-		BoardID      uuid.UUID `json:"board_id"`
-		Title        string    `json:"title"`
-		OriginalPost *Post     `json:"original_post"`
-		Locked       bool      `json:"locked"`
-		UpdatedAt    string    `json:"updated_at"`
-		Posts        []*Post   `json:"posts"`
-		RepliesCount uint64    `json:"replies_count"`
-		IsAdmin      bool      `json:"is_admin,omitempty"`
+		ID           uuid.UUID  `json:"id"`
+		BoardID      uuid.UUID  `json:"board_id"`
+		Title        string     `json:"title"`
+		OriginalPost *Post      `json:"original_post"`
+		Locked       bool       `json:"locked"`
+		UpdatedAt    string     `json:"updated_at"`
+		Posts        []*Post    `json:"posts"`
+		RepliesCount uint64     `json:"replies_count"`
+		IsAdmin      bool       `json:"is_admin,omitempty"`
+		DeletedAt    *time.Time `json:"deleted_at,omitempty"`
 	}
 
 	Post struct {
@@ -68,6 +73,7 @@ type (
 		IP                 string       `json:"ip"`
 		CreatedAt          time.Time    `json:"created_at"`
 		Attachments        []Attachment `json:"attachments"`
+		DeletedAt          *time.Time   `json:"deleted_at,omitempty"`
 	}
 
 	Attachment struct {
@@ -84,4 +90,7 @@ type (
 var (
 	ErrBoardLocked    = errors.New("board is locked")
 	ErrNotImplemented = errors.New("not implemented")
+	ErrNotFound       = errors.New("not found")
+	ErrRestoreExpired = errors.New("restore window expired")
+	ErrAlreadyDeleted = errors.New("already deleted")
 )

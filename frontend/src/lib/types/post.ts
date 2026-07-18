@@ -14,4 +14,5 @@ export type Post = {
 	attachments: Attachment[];
 	is_author: boolean;
 	captcha: Captcha | undefined;
+	deleted_at?: string | null;
 };

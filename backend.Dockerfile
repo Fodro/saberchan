@@ -1,47 +1,33 @@
 # syntax=docker/dockerfile:1
 
-FROM golang:1.26
+# Build context: backend/ (see docker-compose*.yaml).
+# Runtime config comes from compose/k8s env — do not bake secrets into the image.
+
+FROM golang:1.26-alpine AS builder
+
+RUN apk add --no-cache ca-certificates git
+
+WORKDIR /src
+
+COPY go.mod go.sum ./
+RUN --mount=type=cache,target=/go/pkg/mod \
+	go mod download
+
+COPY . .
+RUN --mount=type=cache,target=/go/pkg/mod \
+	--mount=type=cache,target=/root/.cache/go-build \
+	CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/saberchan ./main.go
+
+FROM alpine:3.22
+
+RUN apk add --no-cache ca-certificates tzdata \
+	&& adduser -D -H -u 65532 nonroot
+
 WORKDIR /app
 
-ARG DB_TYPE=postgres
-ENV DB_TYPE=${DB_TYPE}
-ARG DB_HOST
-ENV DB_HOST=${DB_HOST}
-ARG DB_PORT
-ENV DB_PORT=${DB_PORT}
-ARG DB_USER
-ENV DB_USER=${DB_USER}
-ARG DB_PASS
-ENV DB_PASS=${DB_PASS}
-ARG DB_NAME
-ENV DB_NAME=${DB_NAME}
-ARG SSL_MODE
-ENV SSL_MODE=${SSL_MODE}
-ARG PORT=8888
-ENV PORT=${PORT}
-ARG REDIS_USER
-ENV REDIS_USER=${REDIS_USER}
-ARG REDIS_PASS
-ENV REDIS_PASS=${REDIS_PASS}
-ARG REDIS_HOST
-ENV REDIS_HOST=${REDIS_HOST}
-ARG REDIS_PORT
-ENV REDIS_PORT=${REDIS_PORT}
-ARG REDIS_EXPIRES
-ENV REDIS_EXPIRES=${REDIS_EXPIRES}
-ARG S3_ACCESS_KEY
-ENV S3_ACCESS_KEY=${S3_ACCESS_KEY}
-ARG S3_SECRET_KEY
-ENV S3_SECRET_KEY=${S3_SECRET_KEY}
-ARG S3_BUCKET
-ENV S3_BUCKET=${S3_BUCKET}
-ARG S3_REGION
-ENV S3_REGION=${S3_REGION}
-ARG S3_URL
-ENV S3_URL=${S3_URL}
+COPY --from=builder /out/saberchan /app/main
+COPY --from=builder /src/migrations /app/migrations
 
-COPY . ./
-RUN go mod download
-RUN CGO_ENABLED=0 GOOS=linux go build -o ./main ./main.go
+USER nonroot:nonroot
 EXPOSE 8888
 CMD ["/app/main"]

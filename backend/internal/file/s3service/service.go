@@ -42,16 +42,21 @@ func (s *service) UploadFile(ctx context.Context, f *file.FileReq) (*file.FileRe
 	}
 
 	put := &s3.PutObjectInput{
-		Bucket:             aws.String(s.bucket),
-		Key:                aws.String(key),
-		Body:               bytes.NewReader(f.Data),
-		Expires:            expires,
-		CacheControl:       aws.String("max-age=31536000"),
-		ContentDisposition: aws.String(fmt.Sprintf("attachment; filename*=UTF-8''%s", url.QueryEscape(f.Name))),
+		Bucket:       aws.String(s.bucket),
+		Key:          aws.String(key),
+		Body:         bytes.NewReader(f.Data),
+		Expires:      expires,
+		CacheControl: aws.String("max-age=31536000"),
 	}
 	if f.Type != "" {
 		put.ContentType = aws.String(f.Type)
 	}
+	// inline so <img>/<video> can play in-browser; filename preserved for Save As.
+	disposition := "inline"
+	if f.Type != "" && !strings.HasPrefix(f.Type, "image/") && !strings.HasPrefix(f.Type, "video/") {
+		disposition = "attachment"
+	}
+	put.ContentDisposition = aws.String(fmt.Sprintf("%s; filename*=UTF-8''%s", disposition, url.QueryEscape(f.Name)))
 	_, err := s.svc.PutObject(ctx, put)
 	if err != nil {
 		log.Printf("failed to upload file: %s", err)

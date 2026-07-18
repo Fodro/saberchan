@@ -1,8 +1,11 @@
 import {
-	MAX_FILE_BYTES,
+	IMAGE_MIME,
 	MAX_FILES,
 	MAX_TEXT_CHARS,
 	MAX_TITLE_CHARS,
+	VIDEO_EXT,
+	VIDEO_MIME,
+	maxBytesForMime,
 } from '$lib/limits';
 import type { File as FileType } from '$lib/types/attachment';
 
@@ -16,7 +19,7 @@ export type ComposeValidationError =
 	| 'file_size'
 	| 'file_type';
 
-const ALLOWED_EXT = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp']);
+const ALLOWED_EXT = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'webm', 'mp4']);
 
 export function mimeFromName(name: string): string {
 	const ext = name.split('.').pop()?.toLowerCase() ?? '';
@@ -30,6 +33,10 @@ export function mimeFromName(name: string): string {
 			return 'image/gif';
 		case 'webp':
 			return 'image/webp';
+		case 'webm':
+			return 'video/webm';
+		case 'mp4':
+			return 'video/mp4';
 		default:
 			return 'application/octet-stream';
 	}
@@ -75,13 +82,18 @@ export function validateCompose(input: {
 	for (const file of input.files) {
 		const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
 		if (!ALLOWED_EXT.has(ext)) return 'file_type';
+		const mime = mimeFromName(file.name);
+		if (!IMAGE_MIME.has(mime) && !VIDEO_MIME.has(mime) && !VIDEO_EXT.has(ext)) {
+			return 'file_type';
+		}
 		const size =
 			typeof file.blob === 'string'
 				? file.blob.length
 				: file.blob instanceof ArrayBuffer
 					? file.blob.byteLength
 					: 0;
-		if (size > MAX_FILE_BYTES) return 'file_size';
+		const limit = maxBytesForMime(mime);
+		if (size > limit) return 'file_size';
 	}
 
 	return null;

@@ -45,9 +45,18 @@
 		onSubmit: () => void | Promise<void>;
 		submitting?: boolean;
 	} = $props();
+
+	let draggable: { preparePinChange: (nextPinned: boolean) => void } | undefined =
+		$state();
+
+	function togglePinned() {
+		const next = !formPinned;
+		draggable?.preparePinChange(next);
+		formPinned = next;
+	}
 </script>
 
-<Draggable {initialLeft} {initialTop} pinned={formPinned}>
+<Draggable bind:this={draggable} {initialLeft} {initialTop} pinned={formPinned}>
 	<Card.Root class="w-[100%] h-[100%]">
 		<Card.Header>
 			<Card.Title>
@@ -60,9 +69,7 @@
 							class="cursor-pointer md:flex hidden"
 							variant="outline"
 							size="icon"
-							onclick={() => {
-								formPinned = !formPinned;
-							}}
+							onclick={togglePinned}
 						>
 							{#if formPinned}
 								<DrawingPinFilled />

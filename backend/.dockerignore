@@ -1,0 +1,17 @@
+# Build context is backend/ — keep the transfer tiny.
+**/*_test.go
+**/mocks/
+**/.git
+**/.gitignore
+**/.DS_Store
+**/*.md
+**/coverage/
+**/bin/
+**/dist/
+**/.idea/
+**/.vscode/
+**/tmp/
+**/*.exe
+**/*.test
+.env
+.env.*

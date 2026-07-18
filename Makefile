@@ -1,5 +1,5 @@
 .PHONY: ci backend-test backend-build backend-install-deps backend-mocks frontend-install \
-	frontend-check frontend-build ensure-frontend-env local-up local-down local-logs local-ps help
+	frontend-check frontend-test frontend-build ensure-frontend-env local-up local-down local-logs local-ps help
 
 ROOT := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 COMPOSE_LOCAL := docker compose -f $(ROOT)docker-compose.local.yaml --env-file $(ROOT).env.local
@@ -17,6 +17,7 @@ help:
 	@echo "  make backend-mocks        regenerate uber/gomock mocks"
 	@echo "  make frontend-install     npm ci"
 	@echo "  make frontend-check       svelte-check / lint types"
+	@echo "  make frontend-test        vitest unit tests"
 	@echo "  make frontend-build       production frontend build"
 	@echo "  make local-up             start full local stack (compose.local)"
 	@echo "  make local-down           stop local stack"
@@ -39,7 +40,7 @@ backend-build:
 
 # Requires mockgen from: make backend-install-deps
 backend-mocks: backend-install-deps
-	cd $(ROOT)backend && PATH="$(GOBIN):$$PATH" go generate ./internal/database ./internal/file ./internal/captcha
+	cd $(ROOT)backend && PATH="$(GOBIN):$$PATH" go generate ./internal/database ./internal/file ./internal/captcha ./internal/ban
 
 frontend-install:
 	cd $(ROOT)frontend && npm ci
@@ -47,11 +48,14 @@ frontend-install:
 frontend-check: ensure-frontend-env
 	cd $(ROOT)frontend && npm run check
 
+frontend-test: ensure-frontend-env
+	cd $(ROOT)frontend && npm test
+
 frontend-build: ensure-frontend-env
 	cd $(ROOT)frontend && npm run build
 
-# Install once, then typecheck/build/test. Requires network on first frontend-install.
-ci: frontend-install backend-test backend-build frontend-check frontend-build
+# Install once, then typecheck/test/build. Requires network on first frontend-install.
+ci: frontend-install backend-test backend-build frontend-check frontend-test frontend-build
 	@echo "ci ok"
 
 local-up:

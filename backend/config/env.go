@@ -8,29 +8,31 @@ import (
 )
 
 type Config struct {
-	Port    string `env:"PORT" envDefault:"8080"`
-	StoreIp bool   `env:"STORE_IP" envDefault:"false"`
-	Secret  string `env:"SECRET" envDefault:"dontuseme"`
+	Port          string        `env:"PORT" envDefault:"8080"`
+	StoreIp       bool          `env:"STORE_IP" envDefault:"false"`
+	Secret        string        `env:"SECRET" envDefault:"dontuseme"`
+	AdminAPIToken string        `env:"ADMIN_API_TOKEN"`
+	PurgeInterval time.Duration `env:"PURGE_INTERVAL" envDefault:"10m"`
 
 	Redis *Redis
 	DB    *Database
 	S3    *S3
 }
 
-	type Database struct {
-		DBType  string `env:"DB_TYPE"`
-		DBHost  string `env:"DB_HOST"`
-		DBPort  int    `env:"DB_PORT"`
-		DBUser  string `env:"DB_USER"`
-		DBPass  string `env:"DB_PASS"`
-		DBName  string `env:"DB_NAME"`
-		SSLMode string `env:"SSL_MODE"`
+type Database struct {
+	DBType  string `env:"DB_TYPE"`
+	DBHost  string `env:"DB_HOST"`
+	DBPort  int    `env:"DB_PORT"`
+	DBUser  string `env:"DB_USER"`
+	DBPass  string `env:"DB_PASS"`
+	DBName  string `env:"DB_NAME"`
+	SSLMode string `env:"SSL_MODE"`
 
-		MaxConns        int32         `env:"DB_MAX_CONNS" envDefault:"25"`
-		MinConns        int32         `env:"DB_MIN_CONNS" envDefault:"5"`
-		MaxConnLifetime time.Duration `env:"DB_MAX_CONN_LIFETIME" envDefault:"30m"`
-		MaxConnIdleTime time.Duration `env:"DB_MAX_CONN_IDLE_TIME" envDefault:"5m"`
-	}
+	MaxConns        int32         `env:"DB_MAX_CONNS" envDefault:"25"`
+	MinConns        int32         `env:"DB_MIN_CONNS" envDefault:"5"`
+	MaxConnLifetime time.Duration `env:"DB_MAX_CONN_LIFETIME" envDefault:"30m"`
+	MaxConnIdleTime time.Duration `env:"DB_MAX_CONN_IDLE_TIME" envDefault:"5m"`
+}
 
 type Redis struct {
 	Host     string        `env:"REDIS_HOST"`

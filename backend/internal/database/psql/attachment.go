@@ -12,14 +12,14 @@ import (
 func (r *repo) AddAttachment(ctx context.Context, attachment *database.Attachment) error {
 	return r.exec(ctx, r.psqb.
 		Insert("attachment").
-		Columns("id", "post_id", "link", "name", "type").
-		Values(attachment.ID, attachment.PostID, attachment.Link, attachment.Name, attachment.Type),
+		Columns("id", "post_id", "link", "name", "type", "key").
+		Values(attachment.ID, attachment.PostID, attachment.Link, attachment.Name, attachment.Type, attachment.Key),
 	)
 }
 
 func (r *repo) GetAttachments(ctx context.Context, postID uuid.UUID) ([]database.Attachment, error) {
 	rows, err := r.query(ctx, r.psqb.
-		Select("id", "link", "name", "type").
+		Select("id", "link", "name", "type", "key").
 		From("attachment").
 		Where(squirrel.Eq{"post_id": postID}),
 	)
@@ -28,7 +28,7 @@ func (r *repo) GetAttachments(ctx context.Context, postID uuid.UUID) ([]database
 	}
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (database.Attachment, error) {
 		var a database.Attachment
-		err := row.Scan(&a.ID, &a.Link, &a.Name, &a.Type)
+		err := row.Scan(&a.ID, &a.Link, &a.Name, &a.Type, &a.Key)
 		return a, err
 	})
 }
@@ -38,7 +38,7 @@ func (r *repo) GetAttachmentsByPostIDs(ctx context.Context, postIDs []uuid.UUID)
 		return []database.Attachment{}, nil
 	}
 	rows, err := r.query(ctx, r.psqb.
-		Select("id", "post_id", "link", "name", "type").
+		Select("id", "post_id", "link", "name", "type", "key").
 		From("attachment").
 		Where(squirrel.Eq{"post_id": postIDs}),
 	)
@@ -47,7 +47,11 @@ func (r *repo) GetAttachmentsByPostIDs(ctx context.Context, postIDs []uuid.UUID)
 	}
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (database.Attachment, error) {
 		var a database.Attachment
-		err := row.Scan(&a.ID, &a.PostID, &a.Link, &a.Name, &a.Type)
+		err := row.Scan(&a.ID, &a.PostID, &a.Link, &a.Name, &a.Type, &a.Key)
 		return a, err
 	})
+}
+
+func (r *repo) DeleteAttachmentsByPostID(ctx context.Context, postID uuid.UUID) error {
+	return r.exec(ctx, r.psqb.Delete("attachment").Where(squirrel.Eq{"post_id": postID}))
 }

@@ -12,4 +12,5 @@ export type Thread = {
 	replies_count: number;
 	captcha: Captcha | undefined;
 	is_admin: boolean;
-}
+	deleted_at?: string | null;
+};
