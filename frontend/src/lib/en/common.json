@@ -18,6 +18,10 @@
 	"logged_in": "Signed in as",
 	"draggable": "Click button in top-right corner to unpin and move window",
 	"ban": "Ban",
+	"lightbox": {
+		"close": "Close",
+		"viewing": "Full-size image"
+	},
 	"admin": {
 		"add_board": "Add Board"
 	},
