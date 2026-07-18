@@ -42,7 +42,8 @@ export type SubmitComposeResult =
 
 type BanPayload = { code?: string; reason?: string; until?: string; error?: string; message?: string };
 
-function parsePossiblyWrappedJson(raw: string): BanPayload | null {
+/** Exported for unit tests — parses BFF-wrapped or raw ban JSON bodies. */
+export function parsePossiblyWrappedJson(raw: string): BanPayload | null {
 	try {
 		const outer = JSON.parse(raw) as BanPayload;
 		if (typeof outer.message === 'string' && outer.message.trim().startsWith('{')) {
@@ -58,7 +59,8 @@ function parsePossiblyWrappedJson(raw: string): BanPayload | null {
 	}
 }
 
-function formatBannedMessage(
+/** Exported for unit tests. */
+export function formatBannedMessage(
 	payload: BanPayload,
 	bannedMessage: (reason: string, until: string) => string,
 ): string {
