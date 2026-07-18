@@ -138,6 +138,8 @@ Backend variables are listed in [`backend/.env.dist`](backend/.env.dist). Fronte
 
 `ADMIN_API_TOKEN` must be the **same** value on the Go API and the SvelteKit BFF. The BFF sends it as `X-Admin-Token` for admin mutations (create board, posting on locked boards). Leave it empty to disable admin API privileges (fail closed).
 
+`PURGE_INTERVAL` (Go duration, default `10m`) controls how often the soft-delete S3 purge worker sweeps overdue rows.
+
 Health endpoints on the Go API:
 
 - `GET /liveness` — process up

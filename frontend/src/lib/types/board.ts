@@ -11,4 +11,5 @@ export type Board = {
 	total_threads?: number;
 	limit?: number;
 	offset?: number;
+	deleted_at?: string | null;
 };

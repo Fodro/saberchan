@@ -1,5 +1,6 @@
 import { MAIN_BACKEND_URL } from '$env/static/private';
 import { trimLargeWords } from '$lib/helpers';
+import { adminBackendHeaders } from '$lib/server/backend';
 import type { Board } from '$lib/types/board';
 import type { LayoutServerLoad } from './$types';
 
@@ -19,6 +20,7 @@ export const load: LayoutServerLoad = async ({ params, url, depends, fetch, cook
 
 	const res = await fetch(
 		`${MAIN_BACKEND_URL}/api/v1/board/${slug}?limit=${limit}&offset=${offset}`,
+		{ headers: adminBackendHeaders(cookies) },
 	);
 	const board: Board = await res.json();
 	board.threads.forEach((thread) => {

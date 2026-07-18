@@ -17,6 +17,7 @@ import (
 	"github.com/Fodro/saberchan/internal/database/psql"
 	"github.com/Fodro/saberchan/internal/file/s3service"
 	"github.com/Fodro/saberchan/internal/health"
+	"github.com/Fodro/saberchan/internal/purge"
 	"github.com/Fodro/saberchan/internal/server"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
@@ -85,12 +86,17 @@ func main() {
 	server := server.NewServer(conf, board, captcha, health)
 	log.Println("starting server on port", conf.Port)
 
+	purgeCtx, cancelPurge := context.WithCancel(context.Background())
+	go purge.Run(purgeCtx, repo, file, conf.PurgeInterval)
+	log.Printf("purge worker interval %s", conf.PurgeInterval)
+
 	go func() {
 		sigChan := make(chan os.Signal, 1)
 		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 		<-sigChan
 		log.Println("shutting down server")
 
+		cancelPurge()
 		if err := server.Stop(context.Background()); err != nil {
 			log.Fatalf("HTTP close error: %v", err)
 		}

@@ -8,10 +8,11 @@ import (
 )
 
 type Config struct {
-	Port          string `env:"PORT" envDefault:"8080"`
-	StoreIp       bool   `env:"STORE_IP" envDefault:"false"`
-	Secret        string `env:"SECRET" envDefault:"dontuseme"`
-	AdminAPIToken string `env:"ADMIN_API_TOKEN"`
+	Port          string        `env:"PORT" envDefault:"8080"`
+	StoreIp       bool          `env:"STORE_IP" envDefault:"false"`
+	Secret        string        `env:"SECRET" envDefault:"dontuseme"`
+	AdminAPIToken string        `env:"ADMIN_API_TOKEN"`
+	PurgeInterval time.Duration `env:"PURGE_INTERVAL" envDefault:"10m"`
 
 	Redis *Redis
 	DB    *Database

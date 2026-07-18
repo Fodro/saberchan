@@ -44,7 +44,7 @@ func TestCreateThread_LockedBoard_NonAdmin(t *testing.T) {
 	svc := NewService(repo, files, &config.Config{})
 
 	boardID := uuid.New()
-	repo.EXPECT().GetBoardById(gomock.Any(), boardID).Return(&database.Board{ID: boardID, Locked: true}, nil)
+	repo.EXPECT().GetBoardById(gomock.Any(), boardID, false).Return(&database.Board{ID: boardID, Locked: true}, nil)
 
 	_, err := svc.CreateThread(context.Background(), &Thread{
 		BoardID:      boardID,
@@ -66,7 +66,7 @@ func TestCreateThread_LockedBoard_Admin(t *testing.T) {
 
 	boardID := uuid.New()
 	expectInTx(repo)
-	repo.EXPECT().GetBoardById(gomock.Any(), boardID).Return(&database.Board{ID: boardID, Locked: true}, nil)
+	repo.EXPECT().GetBoardById(gomock.Any(), boardID, false).Return(&database.Board{ID: boardID, Locked: true}, nil)
 	repo.EXPECT().AddThread(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, thread *database.Thread) error {
 		if thread.BoardID != boardID || thread.Title != "admin thread" {
 			t.Fatalf("unexpected thread: %+v", thread)
@@ -238,11 +238,11 @@ func TestGetBoards_MapsFields(t *testing.T) {
 	svc := NewService(repo, files, &config.Config{})
 
 	id := uuid.New()
-	repo.EXPECT().GetBoards(gomock.Any()).Return([]database.Board{{
+	repo.EXPECT().GetBoards(gomock.Any(), false).Return([]database.Board{{
 		ID: id, Alias: "b", Name: "Random", Description: "desc", Locked: true,
 	}}, nil)
 
-	boards, err := svc.GetBoards(context.Background())
+	boards, err := svc.GetBoards(context.Background(), false)
 	if err != nil {
 		t.Fatalf("unexpected err: %v", err)
 	}

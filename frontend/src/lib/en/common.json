@@ -18,6 +18,9 @@
 	"logged_in": "Signed in as",
 	"draggable": "Click button in top-right corner to unpin and move window",
 	"ban": "Ban",
+	"deleted": "[DELETED]",
+	"restore": "Restore",
+	"delete": "Delete",
 	"lightbox": {
 		"close": "Close",
 		"viewing": "Full-size media"

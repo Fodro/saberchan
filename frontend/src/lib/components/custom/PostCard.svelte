@@ -1,27 +1,29 @@
 <script lang="ts">
+	import { invalidate } from "$app/navigation";
 	import { formatDateTime } from "$lib/helpers";
 	import { t } from "$lib/translations";
 	import Badge from "$lib/components/ui/badge/badge.svelte";
 	import { Button } from "$lib/components/ui/button/index.js";
-	import { DoubleArrowDown, Trash } from "svelte-radix";
+	import { DoubleArrowDown, Trash, Update } from "svelte-radix";
 	import { toast } from "svelte-sonner";
 	import PostBody from "./PostBody.svelte";
 	import * as Card from "$lib/components/ui/card/index.js";
 	import type { Post } from "$lib/types/post";
 	import Image from "./Image.svelte";
+	import { restoreDeleted, softDelete } from "$lib/adminModeration";
 
 	const {
 		post,
 		addToText,
 		setReplyOpen,
 		checkIsInText,
-		isSigned,
+		isAdmin = false,
 	}: {
 		post: Post;
 		addToText: (txt: string) => void;
 		setReplyOpen: (value: boolean) => void;
 		checkIsInText: (txt: string) => boolean;
-		isSigned: boolean;
+		isAdmin?: boolean;
 	} = $props();
 
 	const colsCount = $derived(
@@ -31,19 +33,74 @@
 		!post.attachments ? 0 : post.attachments.length < 3 ? 1 : 2,
 	);
 	const imageFlex = $derived(!post.attachments ? 0 : 1);
+	const isDeleted = $derived(Boolean(post.deleted_at));
+
+	let busy = $state(false);
+
+	async function onDelete() {
+		busy = true;
+		try {
+			const err = await softDelete("post", post.id);
+			if (err) {
+				toast.error(err);
+				return;
+			}
+			await invalidate("thread:id");
+		} finally {
+			busy = false;
+		}
+	}
+
+	async function onRestore() {
+		busy = true;
+		try {
+			const err = await restoreDeleted("post", post.id);
+			if (err) {
+				toast.error(err);
+				return;
+			}
+			await invalidate("thread:id");
+		} finally {
+			busy = false;
+		}
+	}
 </script>
 
-<Card.Root id={`${post.number}`} class="target:border-sky-500">
+<Card.Root
+	id={`${post.number}`}
+	class={`target:border-sky-500 ${isDeleted ? "border-2 border-red-600" : ""}`}
+>
 	<Card.Header>
 		<Card.Title>
 			<div class="flex flex-row justify-start items-center gap-2">
-				{#if isSigned}
-					<Button variant="destructive" size="icon">
-						<Trash />
-					</Button>
+				{#if isAdmin}
+					{#if isDeleted}
+						<Button
+							variant="outline"
+							size="icon"
+							disabled={busy}
+							title={$t("common.restore")}
+							onclick={() => void onRestore()}
+						>
+							<Update />
+						</Button>
+					{:else}
+						<Button
+							variant="destructive"
+							size="icon"
+							disabled={busy}
+							title={$t("common.delete")}
+							onclick={() => void onDelete()}
+						>
+							<Trash />
+						</Button>
+					{/if}
 					<Button variant="destructive">
 						{$t("common.ban")}
 					</Button>
+				{/if}
+				{#if isDeleted}
+					<span class="text-red-600 font-semibold">{$t("common.deleted")}</span>
 				{/if}
 				anon #{post.number}
 				{$t("common.posts.at")}

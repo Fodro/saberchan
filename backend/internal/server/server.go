@@ -96,16 +96,22 @@ func (s *Server) Start() error {
 			r.Route("/board", func(r chi.Router) {
 				r.Post("/", s.CreateBoard)
 				r.Get("/", s.GetBoards)
+				r.Delete("/{id}", s.DeleteBoard)
+				r.Post("/{id}/restore", s.RestoreBoard)
 				r.Get("/{alias}", s.GetBoardByAlias)
 			})
 
 			r.Route("/thread", func(r chi.Router) {
 				r.Post("/", s.CreateThread)
 				r.Get("/{id}", s.GetThread)
+				r.Delete("/{id}", s.DeleteThread)
+				r.Post("/{id}/restore", s.RestoreThread)
 			})
 
 			r.Route("/post", func(r chi.Router) {
 				r.Post("/{thread_id}", s.CreatePost)
+				r.Delete("/{id}", s.DeletePost)
+				r.Post("/{id}/restore", s.RestorePost)
 			})
 
 			r.Route("/captcha", func(r chi.Router) {
@@ -143,9 +149,141 @@ func (s *Server) CreateBoard(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
+// writeSoftDeleteError maps the shared soft-delete/restore sentinel errors to
+// HTTP status codes for the DELETE/restore admin endpoints.
+func writeSoftDeleteError(w http.ResponseWriter, err error) {
+	status := http.StatusInternalServerError
+	code := "internal_error"
+	switch {
+	case errors.Is(err, board.ErrNotFound), errors.Is(err, pgx.ErrNoRows):
+		status = http.StatusNotFound
+		code = "not_found"
+	case errors.Is(err, board.ErrRestoreExpired):
+		status = http.StatusConflict
+		code = "restore_expired"
+	case errors.Is(err, board.ErrAlreadyDeleted):
+		status = http.StatusConflict
+		code = "already_deleted"
+	}
+	writeJSONError(w, status, err, code)
+}
+
+func parseIDParam(r *http.Request) (uuid.UUID, error) {
+	return uuid.Parse(chi.URLParam(r, "id"))
+}
+
+func (s *Server) DeleteBoard(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Access-Control-Allow-Origin", "*")
+	if !s.requireAdmin(w, r) {
+		return
+	}
+	id, err := parseIDParam(r)
+	if err != nil {
+		writeJSONError(w, http.StatusBadRequest, err, "bad_request")
+		return
+	}
+	if err := s.board.DeleteBoard(r.Context(), id); err != nil {
+		log.Printf("failed to delete board %s: %v", id, err)
+		writeSoftDeleteError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) RestoreBoard(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Access-Control-Allow-Origin", "*")
+	if !s.requireAdmin(w, r) {
+		return
+	}
+	id, err := parseIDParam(r)
+	if err != nil {
+		writeJSONError(w, http.StatusBadRequest, err, "bad_request")
+		return
+	}
+	if err := s.board.RestoreBoard(r.Context(), id); err != nil {
+		log.Printf("failed to restore board %s: %v", id, err)
+		writeSoftDeleteError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) DeleteThread(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Access-Control-Allow-Origin", "*")
+	if !s.requireAdmin(w, r) {
+		return
+	}
+	id, err := parseIDParam(r)
+	if err != nil {
+		writeJSONError(w, http.StatusBadRequest, err, "bad_request")
+		return
+	}
+	if err := s.board.DeleteThread(r.Context(), id); err != nil {
+		log.Printf("failed to delete thread %s: %v", id, err)
+		writeSoftDeleteError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) RestoreThread(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Access-Control-Allow-Origin", "*")
+	if !s.requireAdmin(w, r) {
+		return
+	}
+	id, err := parseIDParam(r)
+	if err != nil {
+		writeJSONError(w, http.StatusBadRequest, err, "bad_request")
+		return
+	}
+	if err := s.board.RestoreThread(r.Context(), id); err != nil {
+		log.Printf("failed to restore thread %s: %v", id, err)
+		writeSoftDeleteError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) DeletePost(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Access-Control-Allow-Origin", "*")
+	if !s.requireAdmin(w, r) {
+		return
+	}
+	id, err := parseIDParam(r)
+	if err != nil {
+		writeJSONError(w, http.StatusBadRequest, err, "bad_request")
+		return
+	}
+	if err := s.board.DeletePost(r.Context(), id); err != nil {
+		log.Printf("failed to delete post %s: %v", id, err)
+		writeSoftDeleteError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) RestorePost(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Access-Control-Allow-Origin", "*")
+	if !s.requireAdmin(w, r) {
+		return
+	}
+	id, err := parseIDParam(r)
+	if err != nil {
+		writeJSONError(w, http.StatusBadRequest, err, "bad_request")
+		return
+	}
+	if err := s.board.RestorePost(r.Context(), id); err != nil {
+		log.Printf("failed to restore post %s: %v", id, err)
+		writeSoftDeleteError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
 func (s *Server) GetBoards(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Access-Control-Allow-Origin", "*")
-	boards, err := s.board.GetBoards(r.Context())
+	includeDeleted := s.isAdminRequest(r)
+	boards, err := s.board.GetBoards(r.Context(), includeDeleted)
 	if err != nil {
 		log.Printf("failed to get boards: %v", err)
 		writeJSONError(w, http.StatusInternalServerError, err, "internal_error")
@@ -176,7 +314,8 @@ func (s *Server) GetBoardByAlias(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	boardRes, err := s.board.GetBoardWithThreads(r.Context(), alias, limit, offset)
+	includeDeleted := s.isAdminRequest(r)
+	boardRes, err := s.board.GetBoardWithThreads(r.Context(), alias, limit, offset, includeDeleted)
 	if err != nil {
 		log.Printf("failed to get board: %v", err)
 		writeJSONError(w, http.StatusInternalServerError, err, "internal_error")
@@ -243,7 +382,8 @@ func (s *Server) GetThread(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusBadRequest, err, "bad_request")
 		return
 	}
-	thread, err := s.board.GetThreadWithPosts(r.Context(), convertedId)
+	includeDeleted := s.isAdminRequest(r)
+	thread, err := s.board.GetThreadWithPosts(r.Context(), convertedId, includeDeleted)
 	if err != nil {
 		log.Printf("failed to get thread: %v", err)
 		writeJSONError(w, http.StatusInternalServerError, err, "internal_error")
