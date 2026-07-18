@@ -1,5 +1,6 @@
 import { MAIN_BACKEND_URL } from '$env/static/private';
 import { beginLogin, redirectIfNeedsRefresh } from '$lib/server/auth';
+import { isAdminSession } from '$lib/server/backend';
 import { loadTranslations, translations } from '$lib/translations';
 import type { Board } from '$lib/types/board';
 import type { Metadata } from '$lib/types/metadata';
@@ -27,6 +28,7 @@ export const load: LayoutServerLoad = async ({ fetch, cookies, depends }) => {
 
 	const { loginUrl, logoutUrl } = beginLogin(cookies);
 	const session = redirectIfNeedsRefresh(cookies);
+	const isAdmin = isAdminSession(cookies);
 
 	if (!session.signed) {
 		return {
@@ -37,6 +39,7 @@ export const load: LayoutServerLoad = async ({ fetch, cookies, depends }) => {
 			loginUrl,
 			logoutUrl,
 			signed: false,
+			isAdmin: false,
 		};
 	}
 
@@ -48,6 +51,7 @@ export const load: LayoutServerLoad = async ({ fetch, cookies, depends }) => {
 		loginUrl,
 		logoutUrl,
 		signed: true,
+		isAdmin,
 		session: session.session,
 		username: session.username,
 		idToken: session.idToken,

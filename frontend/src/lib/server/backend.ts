@@ -1,17 +1,16 @@
-import { MAIN_BACKEND_URL } from '$env/static/private';
+import { MAIN_BACKEND_URL, ADMIN_API_TOKEN } from '$env/static/private';
 import { error } from '@sveltejs/kit';
 import { verifyExp } from '$lib/helpers';
 import {
-	MAX_FILE_BYTES,
+	IMAGE_MIME,
 	MAX_FILES,
+	MAX_IMAGE_BYTES,
 	MAX_JSON_BODY_CHARS,
 	MAX_TEXT_CHARS,
 	MAX_TITLE_CHARS,
 } from '$lib/limits';
 import { jwtDecode } from 'jwt-decode';
 import type { Cookies } from '@sveltejs/kit';
-
-const ALLOWED_MIME = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']);
 
 export function backendUrl(path: string): string {
 	const base = MAIN_BACKEND_URL.replace(/\/$/, '');
@@ -53,11 +52,13 @@ export function assertMultipartFiles(files: File[]) {
 		error(400, { message: `Maximum file count is ${MAX_FILES}` });
 	}
 	for (const file of files) {
-		if (file.size > MAX_FILE_BYTES) {
-			error(413, { message: 'Maximum file size is 2MB' });
-		}
-		if (file.type && !ALLOWED_MIME.has(file.type)) {
+		const mime = file.type || '';
+		// Video MIME allowlist lands in Phase 2; Phase 0 is images only at 5 MiB.
+		if (mime && !IMAGE_MIME.has(mime)) {
 			error(400, { message: `Unsupported file type: ${file.type}` });
+		}
+		if (file.size > MAX_IMAGE_BYTES) {
+			error(413, { message: 'Maximum file size is 5MB for images' });
 		}
 	}
 }
@@ -85,6 +86,12 @@ export function isAdminSession(cookies: Cookies): boolean {
 	const token = cookies.get('accessToken');
 	if (!token || verifyExp(jwtDecode(token).exp)) return false;
 	return true;
+}
+
+/** Headers for Go admin-gated routes (create board, locked-board thread, etc.). */
+export function adminBackendHeaders(cookies: Cookies): Record<string, string> {
+	if (!isAdminSession(cookies) || !ADMIN_API_TOKEN) return {};
+	return { 'X-Admin-Token': ADMIN_API_TOKEN };
 }
 
 export async function proxyBackend(

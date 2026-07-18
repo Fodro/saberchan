@@ -1,7 +1,7 @@
 import type { Board } from '$lib/types/board';
 import type { RequestHandler } from './$types';
 import { error } from '@sveltejs/kit';
-import { isAdminSession, proxyBackend } from '$lib/server/backend';
+import { adminBackendHeaders, isAdminSession, proxyBackend } from '$lib/server/backend';
 
 export const POST: RequestHandler = async ({ request, fetch, cookies }) => {
 	if (!isAdminSession(cookies)) {
@@ -12,7 +12,10 @@ export const POST: RequestHandler = async ({ request, fetch, cookies }) => {
 
 	return proxyBackend(fetch, '/api/v1/board', {
 		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
+		headers: {
+			'Content-Type': 'application/json',
+			...adminBackendHeaders(cookies),
+		},
 		body: JSON.stringify(body),
 	});
 };

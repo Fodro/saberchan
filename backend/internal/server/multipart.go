@@ -6,7 +6,6 @@ import (
 	"mime"
 	"net/http"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/Fodro/saberchan/internal/board"
@@ -14,8 +13,9 @@ import (
 )
 
 const (
-	maxMultipartMemory = 10 << 20 // 10 MiB
-	maxUploadBytes     = 2 << 20  // 2 MiB per file
+	maxMultipartMemory = 40 << 20 // headroom for up to 4×10 MiB videos
+	maxImageBytes      = 5 << 20  // 5 MiB
+	maxVideoBytes      = 10 << 20 // 10 MiB (Phase 2 MIME allowlist)
 	maxUploadFiles     = 4
 )
 
@@ -52,9 +52,6 @@ func parseMultipartFiles(r *http.Request) ([]board.Attachment, error) {
 
 	out := make([]board.Attachment, 0, len(headers))
 	for _, fh := range headers {
-		if fh.Size > maxUploadBytes {
-			return nil, fmt.Errorf("maximum file size is 2MB")
-		}
 		ctype := fh.Header.Get("Content-Type")
 		if ctype == "" {
 			ctype = mime.TypeByExtension(filepath.Ext(fh.Filename))
@@ -62,7 +59,17 @@ func parseMultipartFiles(r *http.Request) ([]board.Attachment, error) {
 		if mediaType, _, err := mime.ParseMediaType(ctype); err == nil {
 			ctype = mediaType
 		}
-		if !allowedImageMIME[strings.ToLower(ctype)] {
+		ctype = strings.ToLower(ctype)
+		limit := int64(maxImageBytes)
+		limitMsg := "maximum image size is 5MB"
+		if strings.HasPrefix(ctype, "video/") {
+			limit = int64(maxVideoBytes)
+			limitMsg = "maximum video size is 10MB"
+		}
+		if fh.Size > limit {
+			return nil, fmt.Errorf("%s", limitMsg)
+		}
+		if !allowedImageMIME[ctype] {
 			return nil, fmt.Errorf("unsupported file type %q", ctype)
 		}
 
@@ -70,13 +77,13 @@ func parseMultipartFiles(r *http.Request) ([]board.Attachment, error) {
 		if err != nil {
 			return nil, err
 		}
-		data, err := io.ReadAll(io.LimitReader(f, maxUploadBytes+1))
+		data, err := io.ReadAll(io.LimitReader(f, limit+1))
 		_ = f.Close()
 		if err != nil {
 			return nil, err
 		}
-		if len(data) > maxUploadBytes {
-			return nil, fmt.Errorf("maximum file size is 2MB")
+		if int64(len(data)) > limit {
+			return nil, fmt.Errorf("%s", limitMsg)
 		}
 
 		out = append(out, board.Attachment{
@@ -117,11 +124,10 @@ func parseMultipartThread(r *http.Request) (*board.Thread, error) {
 	if err != nil {
 		return nil, err
 	}
-	isAdmin, _ := strconv.ParseBool(r.FormValue("is_admin"))
 	return &board.Thread{
 		BoardID: boardID,
 		Title:   r.FormValue("title"),
-		IsAdmin: isAdmin || formBool(r, "is_admin"),
+		IsAdmin: false, // set by handler via admin token only
 		OriginalPost: &board.Post{
 			Text:               r.FormValue("text"),
 			Sage:               false,

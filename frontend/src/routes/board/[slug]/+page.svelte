@@ -36,6 +36,7 @@
 	let captchaCounter = $state(0);
 
 	const composeErrorMessage = composeErrorMessageFactory((key) => $t(key));
+	const canCreateThread = $derived(!data.board.locked || data.isAdmin);
 
 	onMount(async () => {
 		await trackBoard(data.board.alias);
@@ -90,23 +91,24 @@
 	<h3 class="mt-8 scroll-m-20 text-2xl font-semibold tracking-tight mb-5">
 		{data.board.name}
 	</h3>
-	<Button
-		class="cursor-pointer"
-		onclick={() => {
-			isReplyOpen = !isReplyOpen;
-		}}
-	>
-		{#if isReplyOpen}
-			{$t("common.cancel")}
-		{/if}
-		{#if !isReplyOpen}
-			{$t("common.threads.new")}
-		{/if}
-	</Button>
+	{#if canCreateThread}
+		<Button
+			class="cursor-pointer"
+			onclick={() => {
+				isReplyOpen = !isReplyOpen;
+			}}
+		>
+			{#if isReplyOpen}
+				{$t("common.cancel")}
+			{:else}
+				{$t("common.threads.new")}
+			{/if}
+		</Button>
+	{/if}
 </div>
 <Separator class="my-4" />
 
-{#if isReplyOpen}
+{#if canCreateThread && isReplyOpen}
 	<ComposeForm
 		heading={$t("common.threads.new")}
 		textareaId="new-thread-area"

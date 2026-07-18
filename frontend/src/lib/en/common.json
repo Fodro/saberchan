@@ -56,7 +56,7 @@
 		"add": "Add file",
 		"remove": "Remove",
 		"limitCount": "Maximum file count is 4",
-		"limitSize": "Maximum file size is 2MB",
+		"limitSize": "Maximum file size is 5MB",
 		"limitType": "Only JPEG, PNG, GIF, or WebP images are allowed"
 	},
 	"compose": {

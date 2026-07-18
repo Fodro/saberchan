@@ -134,7 +134,9 @@ Object links look like `http://localhost:9000/saberchan/<key>`. Production typic
 
 ## Production env
 
-Backend variables are listed in [`backend/.env.dist`](backend/.env.dist). Frontend build args / runtime env: `MAIN_BACKEND_URL`, `OIDC_*`, `AUTH_HOST`, `AUTH_SECRET`.
+Backend variables are listed in [`backend/.env.dist`](backend/.env.dist). Frontend build args / runtime env: `MAIN_BACKEND_URL`, `OIDC_*`, `AUTH_HOST`, `AUTH_SECRET`, `ADMIN_API_TOKEN`.
+
+`ADMIN_API_TOKEN` must be the **same** value on the Go API and the SvelteKit BFF. The BFF sends it as `X-Admin-Token` for admin mutations (create board, posting on locked boards). Leave it empty to disable admin API privileges (fail closed).
 
 Health endpoints on the Go API:
 

@@ -120,6 +120,9 @@ func (s *Server) Start() error {
 
 func (s *Server) CreateBoard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Access-Control-Allow-Origin", "*")
+	if !s.requireAdmin(w, r) {
+		return
+	}
 	var boardIn board.BoardInput
 	if err := json.NewDecoder(r.Body).Decode(&boardIn); err != nil {
 		log.Printf("failed to decode board: %v", err)
@@ -203,6 +206,8 @@ func (s *Server) CreateThread(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusBadRequest, err, "bad_request")
 		return
 	}
+	// Never trust client is_admin — only the shared admin token grants privileges.
+	thread.IsAdmin = s.isAdminRequest(r)
 	s.applyClientIP(r, thread.OriginalPost)
 	res, err := s.board.CreateThread(r.Context(), &thread)
 	if err != nil {
