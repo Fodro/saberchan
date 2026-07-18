@@ -40,11 +40,12 @@ type Repository interface {
 	CountThreads(ctx context.Context, boardID uuid.UUID, includeDeleted bool) (uint64, error)
 	DeleteThread(ctx context.Context, id uuid.UUID) error
 	BumpThread(ctx context.Context, id uuid.UUID) error
-	CheckIfThreadBelowBumpLimit(ctx context.Context, id uuid.UUID) (bool, error)
-	SoftDeleteThread(ctx context.Context, id uuid.UUID) error
-	RestoreThread(ctx context.Context, id uuid.UUID) error
-	ListThreadsDueForPurge(ctx context.Context, before time.Time) ([]Thread, error)
-	MarkThreadPurged(ctx context.Context, id uuid.UUID) error
+		CheckIfThreadBelowBumpLimit(ctx context.Context, id uuid.UUID) (bool, error)
+		GetFollowThreadInfos(ctx context.Context, ids []uuid.UUID) ([]FollowThreadInfo, error)
+		SoftDeleteThread(ctx context.Context, id uuid.UUID) error
+		RestoreThread(ctx context.Context, id uuid.UUID) error
+		ListThreadsDueForPurge(ctx context.Context, before time.Time) ([]Thread, error)
+		MarkThreadPurged(ctx context.Context, id uuid.UUID) error
 
 	//post
 	AddPost(ctx context.Context, post *Post) error
@@ -121,10 +122,19 @@ type (
 		CreatedAt time.Time
 	}
 
-	// CatalogThread is a board-catalog row: thread + OP post + reply count (no N+1).
-	CatalogThread struct {
-		Thread
-		OP           Post
-		RepliesCount uint64
-	}
-)
+		// CatalogThread is a board-catalog row: thread + OP post + reply count (no N+1).
+		CatalogThread struct {
+			Thread
+			OP           Post
+			RepliesCount uint64
+		}
+
+		// FollowThreadInfo is a batch row for follow status.
+		FollowThreadInfo struct {
+			ID             uuid.UUID
+			Title          string
+			BoardAlias     string
+			RepliesCount   uint64 // posts - 1 (same as catalog)
+			BelowBumpLimit bool
+		}
+	)

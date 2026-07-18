@@ -10,9 +10,11 @@
 	import ComposeForm from "$lib/components/custom/ComposeForm.svelte";
 	import PostCard from "$lib/components/custom/PostCard.svelte";
 	import { composeErrorMessageFactory, submitCompose } from "$lib/compose";
+	import { followThread, unfollowThread } from "$lib/followed";
 	import { formatDateTime } from "$lib/helpers.js";
 	import { restoreDeleted, softDelete } from "$lib/adminModeration";
 	import { Trash, Update } from "svelte-radix";
+	import { onMount } from "svelte";
 
 	let newText = $state("");
 	let newSage = $state(false);
@@ -32,7 +34,33 @@
 
 	const composeErrorMessage = composeErrorMessageFactory((key) => $t(key));
 	const isThreadDeleted = $derived(Boolean(data.thread.deleted_at));
+	const isFollowing = $derived((data.followed?.ids ?? []).includes(data.thread.id));
 	let modBusy = $state(false);
+	let followBusy = $state(false);
+
+	// Page load marks the cookie seen after layout runs — refresh the badge.
+	onMount(() => {
+		void invalidate("followed:list");
+	});
+
+	async function toggleFollow() {
+		followBusy = true;
+		const wasFollowing = isFollowing;
+		try {
+			if (wasFollowing) {
+				await unfollowThread(data.thread.id);
+			} else {
+				const replies = data.thread.posts?.length ?? data.thread.replies_count ?? 0;
+				await followThread(data.thread.id, replies);
+			}
+		} catch {
+			if (!wasFollowing) {
+				toast.error($t("common.follow_failed"));
+			}
+		} finally {
+			followBusy = false;
+		}
+	}
 
 	async function deleteThread() {
 		modBusy = true;
@@ -111,6 +139,13 @@
 			isReplyOpen = false;
 			filesList = [];
 
+			const newReplies = (data.thread.posts?.length ?? 0) + 1;
+			try {
+				await followThread(data.thread.id, newReplies);
+			} catch {
+				toast.error($t("common.follow_failed"));
+			}
+
 			await invalidate("thread:id");
 		} finally {
 			submitting = false;
@@ -162,6 +197,19 @@
 				</Button>
 			{/if}
 		{/if}
+		<Button
+			variant="outline"
+			size="sm"
+			class="cursor-pointer"
+			disabled={followBusy}
+			onclick={() => void toggleFollow()}
+		>
+			{#if isFollowing}
+				{$t("common.unfollow")}
+			{:else}
+				{$t("common.follow")}
+			{/if}
+		</Button>
 	</div>
 	<Button
 		class="cursor-pointer"

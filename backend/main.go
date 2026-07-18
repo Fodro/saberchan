@@ -17,6 +17,7 @@ import (
 	"github.com/Fodro/saberchan/internal/database"
 	"github.com/Fodro/saberchan/internal/database/psql"
 	"github.com/Fodro/saberchan/internal/file/s3service"
+	"github.com/Fodro/saberchan/internal/follow"
 	"github.com/Fodro/saberchan/internal/health"
 	"github.com/Fodro/saberchan/internal/purge"
 	"github.com/Fodro/saberchan/internal/server"
@@ -81,11 +82,12 @@ func main() {
 
 	captcha := captcha.NewService(redisClient, conf.Redis.Expires)
 	ban := ban.NewService(ban.NewRedisStore(redisClient), repo)
+	followSvc := follow.NewService(follow.NewRedisStore(redisClient), repo)
 
 	file := s3service.NewService(conf)
-	board := board.NewService(repo, file, conf)
+	board := board.NewService(repo, file, conf, followSvc)
 	health := health.NewService(repo)
-	server := server.NewServer(conf, board, captcha, health, ban)
+	server := server.NewServer(conf, board, captcha, health, ban, followSvc)
 	log.Println("starting server on port", conf.Port)
 
 	purgeCtx, cancelPurge := context.WithCancel(context.Background())

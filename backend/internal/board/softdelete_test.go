@@ -18,7 +18,7 @@ import (
 func newTestService(ctrl *gomock.Controller) (*dbmocks.MockRepository, Service) {
 	repo := dbmocks.NewMockRepository(ctrl)
 	files := filemocks.NewMockService(ctrl)
-	return repo, NewService(repo, files, &config.Config{})
+	return repo, NewService(repo, files, &config.Config{}, nil)
 }
 
 func TestDeleteBoard_SoftDeletesWhenLive(t *testing.T) {

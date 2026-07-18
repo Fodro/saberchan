@@ -25,7 +25,7 @@ func TestCreateThread_RequiresOriginalPost(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	repo := dbmocks.NewMockRepository(ctrl)
 	files := filemocks.NewMockService(ctrl)
-	svc := NewService(repo, files, &config.Config{})
+	svc := NewService(repo, files, &config.Config{}, nil)
 
 	_, err := svc.CreateThread(context.Background(), &Thread{
 		BoardID: uuid.New(),
@@ -41,7 +41,7 @@ func TestCreateThread_LockedBoard_NonAdmin(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	repo := dbmocks.NewMockRepository(ctrl)
 	files := filemocks.NewMockService(ctrl)
-	svc := NewService(repo, files, &config.Config{})
+	svc := NewService(repo, files, &config.Config{}, nil)
 
 	boardID := uuid.New()
 	repo.EXPECT().GetBoardById(gomock.Any(), boardID, false).Return(&database.Board{ID: boardID, Locked: true}, nil)
@@ -62,7 +62,7 @@ func TestCreateThread_LockedBoard_Admin(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	repo := dbmocks.NewMockRepository(ctrl)
 	files := filemocks.NewMockService(ctrl)
-	svc := NewService(repo, files, &config.Config{})
+	svc := NewService(repo, files, &config.Config{}, nil)
 
 	boardID := uuid.New()
 	expectInTx(repo)
@@ -101,7 +101,7 @@ func TestCreatePost_SageSkipsBump(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	repo := dbmocks.NewMockRepository(ctrl)
 	files := filemocks.NewMockService(ctrl)
-	svc := NewService(repo, files, &config.Config{})
+	svc := NewService(repo, files, &config.Config{}, nil)
 
 	threadID := uuid.New()
 	expectInTx(repo)
@@ -117,7 +117,7 @@ func TestCreatePost_BumpsWhenAllowed(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	repo := dbmocks.NewMockRepository(ctrl)
 	files := filemocks.NewMockService(ctrl)
-	svc := NewService(repo, files, &config.Config{})
+	svc := NewService(repo, files, &config.Config{}, nil)
 
 	threadID := uuid.New()
 	expectInTx(repo)
@@ -135,7 +135,7 @@ func TestCreatePost_UploadsAttachment(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	repo := dbmocks.NewMockRepository(ctrl)
 	files := filemocks.NewMockService(ctrl)
-	svc := NewService(repo, files, &config.Config{})
+	svc := NewService(repo, files, &config.Config{}, nil)
 
 	link := "http://localhost:9000/saberchan/abc.jpg"
 	expectInTx(repo)
@@ -180,7 +180,7 @@ func TestCreatePost_UploadFailurePropagates(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	repo := dbmocks.NewMockRepository(ctrl)
 	files := filemocks.NewMockService(ctrl)
-	svc := NewService(repo, files, &config.Config{})
+	svc := NewService(repo, files, &config.Config{}, nil)
 
 	uploadErr := errors.New("minio down")
 	expectInTx(repo)
@@ -206,7 +206,7 @@ func TestCreatePost_CleansUpS3WhenAttachmentInsertFails(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	repo := dbmocks.NewMockRepository(ctrl)
 	files := filemocks.NewMockService(ctrl)
-	svc := NewService(repo, files, &config.Config{})
+	svc := NewService(repo, files, &config.Config{}, nil)
 
 	expectInTx(repo)
 	repo.EXPECT().AddPost(gomock.Any(), gomock.Any()).Return(nil)
@@ -235,7 +235,7 @@ func TestGetBoards_MapsFields(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	repo := dbmocks.NewMockRepository(ctrl)
 	files := filemocks.NewMockService(ctrl)
-	svc := NewService(repo, files, &config.Config{})
+	svc := NewService(repo, files, &config.Config{}, nil)
 
 	id := uuid.New()
 	repo.EXPECT().GetBoards(gomock.Any(), false).Return([]database.Board{{

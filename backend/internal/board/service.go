@@ -10,6 +10,7 @@ import (
 	"github.com/Fodro/saberchan/config"
 	"github.com/Fodro/saberchan/internal/database"
 	"github.com/Fodro/saberchan/internal/file"
+	"github.com/Fodro/saberchan/internal/follow"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
@@ -17,9 +18,10 @@ import (
 const restoreWindow = 24 * time.Hour
 
 type service struct {
-	repo database.Repository
-	file file.Service
-	conf *config.Config
+	repo   database.Repository
+	file   file.Service
+	conf   *config.Config
+	follow follow.Service // optional; nil disables follow refresh on bump
 }
 
 func (s *service) CreateBoard(ctx context.Context, board *BoardInput) error {
@@ -52,6 +54,7 @@ func (s *service) persistPostInTx(
 	threadID, postID uuid.UUID,
 	post *Post,
 	uploadedKeys *[]string,
+	bumped *bool,
 ) error {
 	hasAttachment := len(post.Attachments) > 0
 	if err := tx.AddPost(ctx, &database.Post{
@@ -101,21 +104,39 @@ func (s *service) persistPostInTx(
 	if !post.Sage {
 		shouldBump, _ := tx.CheckIfThreadBelowBumpLimit(ctx, threadID)
 		if shouldBump {
-			return tx.BumpThread(ctx, threadID)
+			if err := tx.BumpThread(ctx, threadID); err != nil {
+				return err
+			}
+			if bumped != nil {
+				*bumped = true
+			}
 		}
 	}
 	return nil
 }
 
+func (s *service) refreshFollowOnBump(ctx context.Context, threadID uuid.UUID) {
+	if s.follow == nil {
+		return
+	}
+	if err := s.follow.RefreshOnBump(ctx, threadID); err != nil {
+		log.Printf("follow: refresh on bump %s: %v", threadID, err)
+	}
+}
+
 func (s *service) CreatePost(ctx context.Context, threadID uuid.UUID, post *Post) error {
 	postID := uuid.New()
 	var uploadedKeys []string
+	var bumped bool
 	err := s.repo.InTx(ctx, func(tx database.Repository) error {
-		return s.persistPostInTx(ctx, tx, threadID, postID, post, &uploadedKeys)
+		return s.persistPostInTx(ctx, tx, threadID, postID, post, &uploadedKeys, &bumped)
 	})
 	if err != nil {
 		s.cleanupUploads(ctx, uploadedKeys)
 		return err
+	}
+	if bumped {
+		s.refreshFollowOnBump(ctx, threadID)
 	}
 	return nil
 }
@@ -148,15 +169,19 @@ func (s *service) CreateThread(ctx context.Context, thread *Thread) (*Thread, er
 
 	postID := uuid.New()
 	var uploadedKeys []string
+	var bumped bool
 	err = s.repo.InTx(ctx, func(tx database.Repository) error {
 		if err := tx.AddThread(ctx, threadDB); err != nil {
 			return err
 		}
-		return s.persistPostInTx(ctx, tx, threadDB.ID, postID, thread.OriginalPost, &uploadedKeys)
+		return s.persistPostInTx(ctx, tx, threadDB.ID, postID, thread.OriginalPost, &uploadedKeys, &bumped)
 	})
 	if err != nil {
 		s.cleanupUploads(ctx, uploadedKeys)
 		return nil, err
+	}
+	if bumped {
+		s.refreshFollowOnBump(ctx, threadDB.ID)
 	}
 
 	return &Thread{
@@ -484,6 +509,6 @@ func attachmentBytes(a Attachment) ([]byte, error) {
 	return base64.StdEncoding.DecodeString(a.Body)
 }
 
-func NewService(repo database.Repository, file file.Service, conf *config.Config) Service {
-	return &service{repo: repo, file: file, conf: conf}
+func NewService(repo database.Repository, file file.Service, conf *config.Config, followSvc follow.Service) Service {
+	return &service{repo: repo, file: file, conf: conf, follow: followSvc}
 }

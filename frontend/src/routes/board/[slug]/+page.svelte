@@ -10,6 +10,7 @@
 	import type { File as FileType } from "$lib/types/attachment";
 	import { formatDateTime } from "$lib/helpers.js";
 	import { composeErrorMessageFactory, submitCompose } from "$lib/compose";
+	import { followThread, unfollowThread } from "$lib/followed";
 	import { trackBoard } from "$lib/tracking";
 	import type { Thread } from "$lib/types/thread.js";
 	import { onMount } from "svelte";
@@ -25,6 +26,7 @@
 	let isReplyOpen = $state(false);
 	let submitting = $state(false);
 	let modBusy = $state(false);
+	let followBusyId = $state<string | null>(null);
 
 	let formX = $state(0);
 	let formY = $state(0);
@@ -42,10 +44,29 @@
 	const composeErrorMessage = composeErrorMessageFactory((key) => $t(key));
 	const canCreateThread = $derived(!data.board.locked || data.isAdmin);
 	const isBoardDeleted = $derived(Boolean(data.board.deleted_at));
+	const followedIds = $derived(new Set(data.followed?.ids ?? []));
 
 	onMount(async () => {
 		await trackBoard(data.board.alias);
 	});
+
+	async function toggleFollowCatalog(thread: Thread) {
+		followBusyId = thread.id;
+		const wasFollowing = followedIds.has(thread.id);
+		try {
+			if (wasFollowing) {
+				await unfollowThread(thread.id);
+			} else {
+				await followThread(thread.id, thread.replies_count ?? 0);
+			}
+		} catch {
+			if (!wasFollowing) {
+				toast.error($t("common.follow_failed"));
+			}
+		} finally {
+			followBusyId = null;
+		}
+	}
 
 	async function deleteBoard() {
 		modBusy = true;
@@ -131,6 +152,12 @@
 			newTitle = null;
 			isReplyOpen = false;
 			filesList = [];
+
+			try {
+				await followThread(thread.id, 0);
+			} catch {
+				toast.error($t("common.follow_failed"));
+			}
 
 			await window.open(`/board/${data.slug}/thread/${thread.id}`, "_blank", "noopener");
 		} finally {
@@ -293,7 +320,7 @@
 					</div>
 				</div>
 			</Card.Content>
-			<Card.Footer>
+			<Card.Footer class="flex flex-row flex-wrap gap-2">
 				<Button
 					class="cursor-pointer"
 					href={`/board/${data.slug}/thread/${thread.id}`}
@@ -301,6 +328,18 @@
 					rel="noreferrer noopener"
 				>
 					{$t("common.reply")}
+				</Button>
+				<Button
+					variant="outline"
+					class="cursor-pointer"
+					disabled={followBusyId === thread.id}
+					onclick={() => void toggleFollowCatalog(thread)}
+				>
+					{#if followedIds.has(thread.id)}
+						{$t("common.unfollow")}
+					{:else}
+						{$t("common.follow")}
+					{/if}
 				</Button>
 			</Card.Footer>
 		</Card.Root>

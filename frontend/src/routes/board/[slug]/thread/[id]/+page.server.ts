@@ -2,6 +2,12 @@ import { redirect } from '@sveltejs/kit';
 import { MAIN_BACKEND_URL } from '$env/static/private';
 import { trimLargeWords } from '$lib/helpers';
 import { adminBackendHeaders } from '$lib/server/backend';
+import {
+	FOLLOWED_COOKIE,
+	markSeen,
+	parseFollowedCookie,
+	setFollowedCookie,
+} from '$lib/server/followed';
 import type { Thread } from '$lib/types/thread';
 import type { PageServerLoad } from './$types';
 
@@ -46,6 +52,13 @@ export const load: PageServerLoad = async ({ params, depends, fetch, cookies }) 
 		}
 		post.browser_fingerprint = '';
 	});
+
+	// Mark followed thread as seen at current reply count (posts = replies, OP separate).
+	const replies = thread.posts?.length ?? thread.replies_count ?? 0;
+	const updated = markSeen(parseFollowedCookie(cookies.get(FOLLOWED_COOKIE)), id, replies);
+	if (updated) {
+		setFollowedCookie(cookies, updated);
+	}
 
 	return { slug, thread };
 };

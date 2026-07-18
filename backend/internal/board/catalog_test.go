@@ -17,7 +17,7 @@ func TestGetBoardWithThreads_UsesCatalogAndClampsLimit(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	repo := dbmocks.NewMockRepository(ctrl)
 	files := filemocks.NewMockService(ctrl)
-	svc := NewService(repo, files, &config.Config{})
+	svc := NewService(repo, files, &config.Config{}, nil)
 
 	boardID := uuid.New()
 	opID := uuid.New()

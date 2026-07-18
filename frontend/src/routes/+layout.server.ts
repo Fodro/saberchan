@@ -1,6 +1,7 @@
 import { MAIN_BACKEND_URL } from '$env/static/private';
 import { beginLogin, redirectIfNeedsRefresh } from '$lib/server/auth';
 import { adminBackendHeaders, isAdminSession } from '$lib/server/backend';
+import { loadFollowedSummary } from '$lib/server/followed';
 import { loadTranslations, translations } from '$lib/translations';
 import type { Board } from '$lib/types/board';
 import type { Metadata } from '$lib/types/metadata';
@@ -24,6 +25,9 @@ export const load: LayoutServerLoad = async ({ fetch, cookies, depends }) => {
 	};
 
 	depends('board:all');
+	depends('followed:list');
+
+	const followed = await loadFollowedSummary(fetch, cookies);
 
 	const locale = cookies.get('locale') || 'en';
 	await loadTranslations(locale, '/');
@@ -36,6 +40,7 @@ export const load: LayoutServerLoad = async ({ fetch, cookies, depends }) => {
 		return {
 			boards,
 			meta,
+			followed,
 			i18n: { locale, route: '/' },
 			translations: translations.get(),
 			loginUrl,
@@ -48,6 +53,7 @@ export const load: LayoutServerLoad = async ({ fetch, cookies, depends }) => {
 	return {
 		boards,
 		meta,
+		followed,
 		i18n: { locale, route: '/' },
 		translations: translations.get(),
 		loginUrl,
