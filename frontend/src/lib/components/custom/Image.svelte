@@ -6,21 +6,29 @@
 		link,
 		name,
 		type = "",
+		onOpen,
 	}: {
 		link: string;
 		name: string;
 		type?: string;
+		/** When set, parent owns the lightbox (e.g. AttachmentGallery). */
+		onOpen?: () => void;
 	} = $props();
 
 	let open = $state(false);
 	const isVideo = $derived(isVideoAttachment(name, type));
+	const ownsLightbox = $derived(!onOpen);
 </script>
 
 <button
 	type="button"
 	class="flex cursor-pointer flex-col items-center justify-center gap-1 border-0 bg-transparent p-0 text-left"
 	onclick={() => {
-		open = true;
+		if (onOpen) {
+			onOpen();
+		} else {
+			open = true;
+		}
 	}}
 >
 	<span class="text-sm text-primary underline-offset-4 hover:underline">{name}</span>
@@ -38,4 +46,10 @@
 	{/if}
 </button>
 
-<MediaLightbox bind:open {link} {name} {type} />
+{#if ownsLightbox}
+	<MediaLightbox
+		bind:open
+		items={[{ link, name, type }]}
+		index={0}
+	/>
+{/if}

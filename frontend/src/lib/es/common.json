@@ -43,7 +43,9 @@
 	"delete": "Eliminar",
 	"lightbox": {
 		"close": "Cerrar",
-		"viewing": "Medios a tamaño completo"
+		"viewing": "Medios a tamaño completo",
+		"prev": "Adjunto anterior",
+		"next": "Adjunto siguiente"
 	},
 	"admin": {
 		"add_board": "Añadir tablón"

@@ -170,3 +170,17 @@ Health endpoints on the Go API (compose network):
 
 - `GET /liveness` — process up
 - `GET /readiness` — DB + Redis ping
+
+## P2 backlog (after 1.0.0)
+
+Tracked leftovers from the pre-1.0 review — not blockers for the VPS demo.
+
+- [ ] **One-shot migrate job** — run goose outside the long-lived API process so multi-replica starts don’t race
+- [ ] **Structured logging + request IDs** — replace stdlib `log` / noisy boot prints
+- [ ] **CI** — GitHub Action for `make ci` + `govulncheck` / `npm audit`
+- [ ] **S3 prod checklist** — bucket policy / CloudFront via `S3_PUBLIC_URL`, IAM least-privilege (expand this doc)
+- [ ] **Dead `SECRET` env** — wire it for something real or remove from `config/env.go` + dist files
+- [ ] **Runtime secrets for frontend** — stop baking `OIDC_CLIENT_SECRET` / `ADMIN_API_TOKEN` / `AUTH_SECRET` into the image (SvelteKit private env strategy)
+- [ ] **Upload magic-byte sniff** — don’t trust `Content-Type` / extension alone
+- [ ] **Backup runbook** — managed PG snapshots/PITR + S3 lifecycle/versioning; Redis is ephemeral by design
+- [ ] **Shared rate-limit store** — move in-process limiters to Redis if backend replicas > 1

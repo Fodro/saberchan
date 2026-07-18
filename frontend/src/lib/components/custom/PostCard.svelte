@@ -12,7 +12,7 @@
 	import Label from "$lib/components/ui/label/label.svelte";
 	import Input from "$lib/components/ui/input/input.svelte";
 	import type { Post } from "$lib/types/post";
-	import Image from "./Image.svelte";
+	import AttachmentGallery from "./AttachmentGallery.svelte";
 	import {
 		banPost,
 		restoreDeleted,
@@ -200,16 +200,13 @@
 	</Card.Header>
 	<Card.Content>
 		<div class="flex flex-row justify-start items-start gap-3">
-			{#if post.attachments}
-			<div class={`grid grid-cols-${colsCount} grid-rows-${rowsCount} items-center gap-2 flex-${imageFlex} p-2 border-r-7`}>
-				{#each post.attachments as file, i (file.link ?? i)}
-					<Image
-						link={file.link ?? ""}
-						name={file.name ?? ""}
-						type={file.type ?? ""}
-					/>
-				{/each}
-			</div>
+			{#if post.attachments && post.attachments.length > 0}
+				<AttachmentGallery
+					attachments={post.attachments}
+					{colsCount}
+					{rowsCount}
+					{imageFlex}
+				/>
 			{/if}
 			<PostBody text={post.text} additionalClass="" />
 		</div>
