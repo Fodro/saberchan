@@ -3,6 +3,7 @@ package board
 import (
 	"context"
 	"database/sql"
+	"encoding/base64"
 	"errors"
 	"log"
 
@@ -56,30 +57,36 @@ func (s *service) CreatePost(threadID uuid.UUID, post *Post) error {
 		return err
 	}
 
-	if hasAttachment {
-		for _, attachment := range post.Attachments {
-			fileResp, err := s.file.UploadFile(context.Background(), &file.FileReq{
-				PostID: postID,
-				Name:   attachment.Name,
-				Body:   attachment.Body,
-			})
-			if err != nil {
-				log.Printf("error uploading file: %v", err)
-				return err
-			}
-			err = s.repo.AddAttachment(&database.Attachment{
-				ID:     uuid.New(),
-				PostID: postID,
-				Link:   fileResp.Link,
-				Name:   attachment.Name,
-				Type:   attachment.Type,
-			})
-			if err != nil {
-				log.Printf("error saving attachment %s to db: %v", fileResp.Link, err)
-				return err
+		if hasAttachment {
+			for _, attachment := range post.Attachments {
+				data, err := attachmentBytes(attachment)
+				if err != nil {
+					log.Printf("error decoding attachment: %v", err)
+					return err
+				}
+				fileResp, err := s.file.UploadFile(context.Background(), &file.FileReq{
+					PostID: postID,
+					Name:   attachment.Name,
+					Type:   attachment.Type,
+					Data:   data,
+				})
+				if err != nil {
+					log.Printf("error uploading file: %v", err)
+					return err
+				}
+				err = s.repo.AddAttachment(&database.Attachment{
+					ID:     uuid.New(),
+					PostID: postID,
+					Link:   fileResp.Link,
+					Name:   attachment.Name,
+					Type:   attachment.Type,
+				})
+				if err != nil {
+					log.Printf("error saving attachment %s to db: %v", fileResp.Link, err)
+					return err
+				}
 			}
 		}
-	}
 
 	if !post.Sage {
 		shouldBump, _ := s.repo.CheckIfThreadBelowBumpLimit(threadID)
@@ -151,64 +158,94 @@ func (s *service) DeleteThread(id uuid.UUID) error {
 	return ErrNotImplemented
 }
 
-func (s *service) GetBoardWithThreads(alias string) (*Board, error) {
+func (s *service) GetBoardWithThreads(alias string, limit, offset int) (*Board, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
 	boardDB, err := s.repo.GetBoardByAlias(alias)
 	if err != nil {
 		return nil, err
 	}
-	threadsDB, err := s.repo.GetThreads(boardDB.ID)
+
+	total, err := s.repo.CountThreads(boardDB.ID)
 	if err != nil {
 		return nil, err
 	}
-	threads := make([]*Thread, 0, len(threadsDB))
-	for _, threadDB := range threadsDB {
-		opPostDB, err := s.repo.GetOPPost(threadDB.ID)
-		if err != nil {
-			return nil, err
-		}
 
-		var attachments []Attachment
-		if opPostDB.HasAttachment {
-			attachments, err = s.getAttachmentsForPost(opPostDB.ID)
-			if err != nil {
-				log.Printf("error while getting attachments for op post %s: %s", opPostDB.ID, err)
+	catalog, err := s.repo.GetBoardCatalog(boardDB.ID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	opIDs := make([]uuid.UUID, 0, len(catalog))
+	for _, ct := range catalog {
+		if ct.OP.HasAttachment && ct.OP.ID != uuid.Nil {
+			opIDs = append(opIDs, ct.OP.ID)
+		}
+	}
+
+	attsByPost := map[uuid.UUID][]Attachment{}
+	if len(opIDs) > 0 {
+		atts, err := s.repo.GetAttachmentsByPostIDs(opIDs)
+		if err != nil {
+			log.Printf("error while batching attachments: %s", err)
+		} else {
+			for _, a := range atts {
+				attsByPost[a.PostID] = append(attsByPost[a.PostID], Attachment{
+					ID:   a.ID,
+					Name: a.Name,
+					Type: a.Type,
+					Link: a.Link,
+				})
 			}
 		}
+	}
 
-		repliesCount, err := s.repo.GetRepliesForThread(threadDB.ID)
-		if err != nil {
-			return nil, err
+	threads := make([]*Thread, 0, len(catalog))
+	for _, ct := range catalog {
+		var attachments []Attachment
+		if ct.OP.HasAttachment {
+			attachments = attsByPost[ct.OP.ID]
 		}
 		threads = append(threads, &Thread{
-			ID:      threadDB.ID,
-			BoardID: threadDB.BoardID,
-			Title:   threadDB.Title,
-			Locked:  threadDB.Locked,
+			ID:      ct.ID,
+			BoardID: ct.BoardID,
+			Title:   ct.Title,
+			Locked:  ct.Locked,
 			OriginalPost: &Post{
-				ID:                 opPostDB.ID,
-				Number:             opPostDB.Number,
-				Text:               opPostDB.Text,
-				ThreadID:           opPostDB.ThreadID,
-				Sage:               opPostDB.Sage,
-				OpMarker:           opPostDB.OpMarker,
-				BrowserFingerprint: opPostDB.BrowserFingerprint,
-				IP:                 opPostDB.IP,
-				CreatedAt:          opPostDB.CreatedAt,
+				ID:                 ct.OP.ID,
+				Number:             ct.OP.Number,
+				Text:               ct.OP.Text,
+				ThreadID:           ct.OP.ThreadID,
+				Sage:               ct.OP.Sage,
+				OpMarker:           ct.OP.OpMarker,
+				BrowserFingerprint: ct.OP.BrowserFingerprint,
+				IP:                 ct.OP.IP,
+				CreatedAt:          ct.OP.CreatedAt,
 				Attachments:        attachments,
 			},
-			RepliesCount: repliesCount,
+			RepliesCount: ct.RepliesCount,
 		})
 	}
 
 	return &Board{
-		ID:          boardDB.ID,
-		Alias:       boardDB.Alias,
-		Name:        boardDB.Name,
-		Locked:      boardDB.Locked,
-		Description: boardDB.Description,
-		Threads:     threads,
+		ID:           boardDB.ID,
+		Alias:        boardDB.Alias,
+		Name:         boardDB.Name,
+		Locked:       boardDB.Locked,
+		Description:  boardDB.Description,
+		Threads:      threads,
+		TotalThreads: total,
+		Limit:        limit,
+		Offset:       offset,
 	}, nil
-
 }
 
 func (s *service) GetBoards() ([]*Board, error) {
@@ -313,6 +350,16 @@ func (s *service) getAttachmentsForPost(id uuid.UUID) ([]Attachment, error) {
 
 func (s *service) UpdateBoard(board *Board) error {
 	return ErrNotImplemented
+}
+
+func attachmentBytes(a Attachment) ([]byte, error) {
+	if len(a.Data) > 0 {
+		return a.Data, nil
+	}
+	if a.Body == "" {
+		return nil, errors.New("empty attachment body")
+	}
+	return base64.StdEncoding.DecodeString(a.Body)
 }
 
 func NewService(repo database.Repository, file file.Service, conf *config.Config) Service {

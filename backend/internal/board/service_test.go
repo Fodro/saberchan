@@ -157,7 +157,7 @@ func TestCreatePost_UploadsAttachment(t *testing.T) {
 		Attachments: []Attachment{{
 			Name: "pic.jpg",
 			Type: "image/jpeg",
-			Body: "not-validated-by-mock",
+			Data: []byte("fake-image-bytes"),
 		}},
 	})
 	if err != nil {

@@ -9,7 +9,7 @@ import (
 
 type Service interface {
 	CreateBoard(board *BoardInput) error
-	GetBoardWithThreads(alias string) (*Board, error)
+	GetBoardWithThreads(alias string, limit, offset int) (*Board, error)
 	GetBoards() ([]*Board, error)
 	DeleteBoard(id uuid.UUID) error
 	UpdateBoard(board *Board) error
@@ -24,13 +24,16 @@ type Service interface {
 
 type (
 	Board struct {
-		ID          uuid.UUID `json:"id"`
-		Alias       string    `json:"alias"`
-		Name        string    `json:"name"`
-		Description string    `json:"description"`
-		Locked      bool      `json:"locked"`
-		Threads     []*Thread `json:"threads"`
-		Author      string    `json:"author"`
+		ID           uuid.UUID `json:"id"`
+		Alias        string    `json:"alias"`
+		Name         string    `json:"name"`
+		Description  string    `json:"description"`
+		Locked       bool      `json:"locked"`
+		Threads      []*Thread `json:"threads"`
+		Author       string    `json:"author"`
+		TotalThreads uint64    `json:"total_threads"`
+		Limit        int       `json:"limit"`
+		Offset       int       `json:"offset"`
 	}
 
 	BoardInput struct {
@@ -72,7 +75,8 @@ type (
 		PostID uuid.UUID `json:"post_id"`
 		Name   string    `json:"name"`
 		Type   string    `json:"type"`
-		Body   string    `json:"body"`
+		Body   string    `json:"body,omitempty"` // base64 (legacy JSON)
+		Data   []byte    `json:"-"`              // raw bytes (multipart)
 	}
 )
 

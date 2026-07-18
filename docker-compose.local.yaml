@@ -163,6 +163,9 @@ services:
       OIDC_REDIRECT_URI: ${OIDC_REDIRECT_URI}
       OIDC_LOGOUT_REDIRECT_URI: ${OIDC_LOGOUT_REDIRECT_URI}
       PORT: "3000"
+      # Required for multipart POST (posts/threads). Without it, adapter-node
+      # assumes https and SvelteKit CSRF rejects http://localhost form uploads.
+      ORIGIN: ${ORIGIN:-${AUTH_HOST}}
       BODY_SIZE_LIMIT: ${BODY_SIZE_LIMIT:-16M}
 
 volumes:

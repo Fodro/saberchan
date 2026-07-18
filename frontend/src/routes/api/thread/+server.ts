@@ -1,10 +1,9 @@
-import type { Thread } from '$lib/types/thread';
 import { error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import {
-	assertAttachments,
 	assertBodySize,
 	assertCaptcha,
+	assertMultipartFiles,
 	assertText,
 	assertTitle,
 	fingerprintFromCookies,
@@ -16,31 +15,40 @@ import {
 export const POST: RequestHandler = async ({ request, cookies, fetch }) => {
 	assertBodySize(request);
 
-	const body: Thread = await request.json();
-	assertCaptcha(body.captcha);
-	assertTitle(body.title);
+	const form = await request.formData();
+	const captcha = {
+		token: String(form.get('captcha_token') ?? ''),
+		input: String(form.get('captcha_input') ?? ''),
+	};
+	assertCaptcha(captcha);
+	assertTitle(String(form.get('title') ?? ''));
+	assertText(String(form.get('text') ?? ''));
 
-	if (!body.original_post) {
-		error(400, { message: 'original_post is required' });
+	const boardId = String(form.get('board_id') ?? '');
+	if (!boardId) {
+		error(400, { message: 'board_id is required' });
 	}
 
-	assertText(body.original_post.text);
-	assertAttachments(body.original_post.attachments ?? []);
+	const files = form.getAll('files').filter((f): f is File => f instanceof File && f.size > 0);
+	assertMultipartFiles(files);
 
 	await validateCaptchaWithBackend(fetch, {
-		token: body.captcha!.token!,
-		input: body.captcha!.input!,
+		token: captcha.token,
+		input: captcha.input,
 	});
 
-	body.original_post.browser_fingerprint = fingerprintFromCookies(cookies);
-	delete (body.original_post as { ip?: string }).ip;
-	body.original_post.sage = false;
-	body.original_post.op_marker = true;
-	body.is_admin = isAdminSession(cookies);
+	const out = new FormData();
+	out.set('board_id', boardId);
+	out.set('title', String(form.get('title') ?? ''));
+	out.set('text', String(form.get('text') ?? ''));
+	out.set('browser_fingerprint', fingerprintFromCookies(cookies));
+	out.set('is_admin', isAdminSession(cookies) ? 'true' : 'false');
+	for (const file of files) {
+		out.append('files', file, file.name);
+	}
 
 	return proxyBackend(fetch, '/api/v1/thread', {
 		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify(body),
+		body: out,
 	});
 };

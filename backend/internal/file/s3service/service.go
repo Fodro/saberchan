@@ -3,7 +3,6 @@ package s3service
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"fmt"
 	"log"
 	"net/url"
@@ -38,20 +37,22 @@ func (s *service) UploadFile(ctx context.Context, f *file.FileReq) (*file.FileRe
 		expires = &t
 	}
 
-	body, err := base64.StdEncoding.DecodeString(f.Body)
-	if err != nil {
-		log.Printf("failed to decode body: %s", err)
-		return nil, err
+	if len(f.Data) == 0 {
+		return nil, fmt.Errorf("empty file body")
 	}
 
-	_, err = s.svc.PutObject(ctx, &s3.PutObjectInput{
+	put := &s3.PutObjectInput{
 		Bucket:             aws.String(s.bucket),
 		Key:                aws.String(key),
-		Body:               bytes.NewReader(body),
+		Body:               bytes.NewReader(f.Data),
 		Expires:            expires,
 		CacheControl:       aws.String("max-age=31536000"),
 		ContentDisposition: aws.String(fmt.Sprintf("attachment; filename*=UTF-8''%s", url.QueryEscape(f.Name))),
-	})
+	}
+	if f.Type != "" {
+		put.ContentType = aws.String(f.Type)
+	}
+	_, err := s.svc.PutObject(ctx, put)
 	if err != nil {
 		log.Printf("failed to upload file: %s", err)
 		return nil, err

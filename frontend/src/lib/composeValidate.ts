@@ -1,8 +1,6 @@
-import { bufferToBase64 } from '$lib/helpers';
 import {
 	MAX_FILE_BYTES,
 	MAX_FILES,
-	MAX_JSON_BODY_CHARS,
 	MAX_TEXT_CHARS,
 	MAX_TITLE_CHARS,
 } from '$lib/limits';
@@ -16,20 +14,38 @@ export type ComposeValidationError =
 	| 'captcha_required'
 	| 'file_count'
 	| 'file_size'
-	| 'payload_too_large';
+	| 'file_type';
 
-export type AttachmentPayload = {
-	name: string;
-	type: string;
-	body: string;
-};
+const ALLOWED_EXT = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp']);
 
-export function buildAttachments(files: FileType[]): AttachmentPayload[] {
-	return files.map((value) => ({
-		name: value.name,
-		type: 'image',
-		body: bufferToBase64(value.blob),
-	}));
+export function mimeFromName(name: string): string {
+	const ext = name.split('.').pop()?.toLowerCase() ?? '';
+	switch (ext) {
+		case 'jpg':
+		case 'jpeg':
+			return 'image/jpeg';
+		case 'png':
+			return 'image/png';
+		case 'gif':
+			return 'image/gif';
+		case 'webp':
+			return 'image/webp';
+		default:
+			return 'application/octet-stream';
+	}
+}
+
+export function fileBlob(file: FileType): Blob {
+	const type = mimeFromName(file.name);
+	if (file.blob instanceof ArrayBuffer) {
+		return new Blob([file.blob], { type });
+	}
+	if (typeof file.blob === 'string') {
+		// Legacy: treat as binary string length for size checks only — prefer ArrayBuffer.
+		const buf = Uint8Array.from(file.blob, (c) => c.charCodeAt(0));
+		return new Blob([buf], { type });
+	}
+	return new Blob([], { type });
 }
 
 export function validateCompose(input: {
@@ -39,8 +55,6 @@ export function validateCompose(input: {
 	captchaInput?: string;
 	captchaToken?: string;
 	files: FileType[];
-	attachments: AttachmentPayload[];
-	payload: unknown;
 }): ComposeValidationError | null {
 	const title = input.title?.trim() ?? '';
 	const text = input.text?.trim() ?? '';
@@ -59,6 +73,8 @@ export function validateCompose(input: {
 
 	if (input.files.length > MAX_FILES) return 'file_count';
 	for (const file of input.files) {
+		const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
+		if (!ALLOWED_EXT.has(ext)) return 'file_type';
 		const size =
 			typeof file.blob === 'string'
 				? file.blob.length
@@ -67,9 +83,6 @@ export function validateCompose(input: {
 					: 0;
 		if (size > MAX_FILE_BYTES) return 'file_size';
 	}
-
-	const encoded = JSON.stringify(input.payload);
-	if (encoded.length > MAX_JSON_BODY_CHARS) return 'payload_too_large';
 
 	return null;
 }

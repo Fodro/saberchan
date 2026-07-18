@@ -100,6 +100,21 @@ BODY_SIZE_LIMIT=16M
 
 (already in `.env.local.dist` and `frontend.Dockerfile`). Client + BFF also pre-validate title/text/captcha/files and toast a clear error instead of a generic Internal Error.
 
+### `ORIGIN` (required for multipart uploads)
+
+Create post/thread uses `multipart/form-data`. SvelteKit CSRF compares the browser `Origin` header to the request URL origin. If `ORIGIN` is unset, adapter-node often treats the app as `https://…` even when you browse over `http://`, and you get:
+
+`Cross-site POST form submissions are forbidden` (HTTP 403).
+
+Set it to the exact public URL users type in the browser (scheme + host + port):
+
+```bash
+ORIGIN=http://localhost:3000   # local Docker
+# ORIGIN=https://board.example.com   # production
+```
+
+Local compose already passes `ORIGIN` (defaults to `AUTH_HOST`).
+
 Logout uses Keycloak’s end-session endpoint with  
 `post_logout_redirect_uri={AUTH_HOST}/admin/auth/signOut`  
 (local default matches `OIDC_LOGOUT_REDIRECT_URI` in `.env.local.dist`). That URI must be listed under **Valid post logout redirect URIs**, or Keycloak will reject the redirect after logout.

@@ -1,6 +1,6 @@
 import { MAIN_BACKEND_URL } from '$env/static/private';
 import { error } from '@sveltejs/kit';
-import { base64ToArrayBuffer, verifyExp } from '$lib/helpers';
+import { verifyExp } from '$lib/helpers';
 import {
 	MAX_FILE_BYTES,
 	MAX_FILES,
@@ -10,6 +10,8 @@ import {
 } from '$lib/limits';
 import { jwtDecode } from 'jwt-decode';
 import type { Cookies } from '@sveltejs/kit';
+
+const ALLOWED_MIME = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']);
 
 export function backendUrl(path: string): string {
 	const base = MAIN_BACKEND_URL.replace(/\/$/, '');
@@ -46,14 +48,16 @@ export function assertTitle(title: string | null | undefined) {
 	}
 }
 
-export function assertAttachments(attachments: { body: string }[]) {
-	if (attachments.length > MAX_FILES) {
+export function assertMultipartFiles(files: File[]) {
+	if (files.length > MAX_FILES) {
 		error(400, { message: `Maximum file count is ${MAX_FILES}` });
 	}
-	for (const attachment of attachments) {
-		const buf = base64ToArrayBuffer(attachment.body);
-		if (buf.byteLength > MAX_FILE_BYTES) {
+	for (const file of files) {
+		if (file.size > MAX_FILE_BYTES) {
 			error(413, { message: 'Maximum file size is 2MB' });
+		}
+		if (file.type && !ALLOWED_MIME.has(file.type)) {
+			error(400, { message: `Unsupported file type: ${file.type}` });
 		}
 	}
 }

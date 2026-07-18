@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/Fodro/saberchan/config"
@@ -158,7 +159,21 @@ func (s *Server) GetBoards(w http.ResponseWriter, r *http.Request) {
 func (s *Server) GetBoardByAlias(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Access-Control-Allow-Origin", "*")
 	alias := chi.URLParam(r, "alias")
-	boardRes, err := s.board.GetBoardWithThreads(alias)
+
+	limit := 20
+	offset := 0
+	if v := r.URL.Query().Get("limit"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			limit = n
+		}
+	}
+	if v := r.URL.Query().Get("offset"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			offset = n
+		}
+	}
+
+	boardRes, err := s.board.GetBoardWithThreads(alias, limit, offset)
 	if err != nil {
 		log.Printf("failed to get board: %v", err)
 		writeJSONError(w, http.StatusInternalServerError, err, "internal_error")
@@ -175,7 +190,15 @@ func (s *Server) GetBoardByAlias(w http.ResponseWriter, r *http.Request) {
 func (s *Server) CreateThread(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Access-Control-Allow-Origin", "*")
 	var thread board.Thread
-	if err := json.NewDecoder(r.Body).Decode(&thread); err != nil {
+	if isMultipart(r) {
+		parsed, err := parseMultipartThread(r)
+		if err != nil {
+			log.Printf("failed to parse multipart thread: %v", err)
+			writeJSONError(w, http.StatusBadRequest, err, "bad_request")
+			return
+		}
+		thread = *parsed
+	} else if err := json.NewDecoder(r.Body).Decode(&thread); err != nil {
 		log.Printf("failed to decode thread: %v", err)
 		writeJSONError(w, http.StatusBadRequest, err, "bad_request")
 		return
@@ -239,7 +262,15 @@ func (s *Server) CreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var post board.Post
-	if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
+	if isMultipart(r) {
+		parsed, err := parseMultipartPost(r)
+		if err != nil {
+			log.Printf("failed to parse multipart post: %v", err)
+			writeJSONError(w, http.StatusBadRequest, err, "bad_request")
+			return
+		}
+		post = *parsed
+	} else if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
 		log.Printf("failed to decode post: %v", err)
 		writeJSONError(w, http.StatusBadRequest, err, "bad_request")
 		return

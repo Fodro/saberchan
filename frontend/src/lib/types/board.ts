@@ -1,6 +1,6 @@
 import type { Thread } from "./thread";
 
-export type Board  = {
+export type Board = {
 	id: string;
 	alias: string;
 	name: string;
@@ -8,4 +8,7 @@ export type Board  = {
 	locked: boolean;
 	author: string;
 	threads: Thread[];
-}
+	total_threads?: number;
+	limit?: number;
+	offset?: number;
+};

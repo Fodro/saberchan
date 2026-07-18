@@ -9,11 +9,13 @@
 	import { toggleMode } from "mode-watcher";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import { goto, invalidate, invalidateAll } from "$app/navigation";
+	import { page } from "$app/state";
 	import { onMount } from "svelte";
 	import { t } from "$lib/translations";
 	import { CounterClockwiseClock, Update } from "svelte-radix";
 
-	let intervals = [1, 5, 10, 15, 30, 60];
+	// Prefer longer intervals — 1–10s hammers the BFF/backend.
+	let intervals = [15, 30, 60];
 
 	let interval: number | undefined = $state(9999);
 
@@ -26,22 +28,42 @@
 	});
 
 	$effect(() => {
-		if (interval && interval !== 9999) {
-			const id = setInterval(() => {
-				void invalidate("board:all");
-				void invalidate("board:slug");
-				void invalidate("thread:id");
-			}, interval * 1000);
+		if (!interval || interval === 9999) return;
 
-			return () => {
-				clearInterval(id);
-			};
-		}
+		const tick = () => {
+			if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+				return;
+			}
+			const path = page.url.pathname;
+			if (path.includes("/thread/")) {
+				void invalidate("thread:id");
+			} else if (path.startsWith("/board/")) {
+				void invalidate("board:slug");
+			}
+			// Do not invalidate board:all on the timer — nav list is not the live surface.
+		};
+
+		const id = setInterval(tick, interval * 1000);
+		const onVisibility = () => {
+			if (document.visibilityState === "visible") tick();
+		};
+		document.addEventListener("visibilitychange", onVisibility);
+
+		return () => {
+			clearInterval(id);
+			document.removeEventListener("visibilitychange", onVisibility);
+		};
 	});
 
 	onMount(() => {
 		const savedInterval = localStorage.getItem("autoreload");
-		interval = savedInterval !== null ? +savedInterval : 9999;
+		const parsed = savedInterval !== null ? +savedInterval : 9999;
+		// Migrate aggressive saved prefs to at least 15s (or off).
+		if (parsed !== 9999 && parsed > 0 && parsed < 15) {
+			interval = 30;
+		} else {
+			interval = parsed;
+		}
 	});
 
 	let { children, data } = $props();

@@ -15,6 +15,10 @@ services:
         OIDC_LOGOUT_REDIRECT_URI: ${OIDC_LOGOUT_REDIRECT_URI}
     ports:
       - "3000:3000"
+    environment:
+      # Must match the public browser URL or multipart POSTs get CSRF 403.
+      ORIGIN: ${ORIGIN:-${AUTH_HOST}}
+      BODY_SIZE_LIMIT: ${BODY_SIZE_LIMIT:-16M}
 
   backend:
     build:

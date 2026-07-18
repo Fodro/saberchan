@@ -40,6 +40,73 @@ func (r *repo) GetThreads(boardID uuid.UUID) ([]database.Thread, error) {
 	})
 }
 
+func (r *repo) CountThreads(boardID uuid.UUID) (uint64, error) {
+	stmt := `SELECT COUNT(*) FROM thread WHERE board_id = $1`
+	var n uint64
+	if err := r.db.QueryRow(stmt, boardID).Scan(&n); err != nil {
+		return 0, err
+	}
+	return n, nil
+}
+
+func (r *repo) GetBoardCatalog(boardID uuid.UUID, limit, offset int) ([]database.CatalogThread, error) {
+	stmt := `
+WITH page AS (
+	SELECT id, board_id, title, locked, updated_at
+	FROM thread
+	WHERE board_id = $1
+	ORDER BY updated_at DESC
+	LIMIT $2 OFFSET $3
+),
+op AS (
+	SELECT DISTINCT ON (p.thread_id)
+		p.id, p.thread_id, p.number, p.text, p.sage, p.op_marker, p.ip,
+		p.created_at, p.browser_fingerprint, p.has_attachment
+	FROM post p
+	INNER JOIN page t ON t.id = p.thread_id
+	ORDER BY p.thread_id, p.number ASC
+),
+counts AS (
+	SELECT p.thread_id, GREATEST(COUNT(*)::bigint - 1, 0) AS replies
+	FROM post p
+	INNER JOIN page t ON t.id = p.thread_id
+	GROUP BY p.thread_id
+)
+SELECT
+	t.id, t.board_id, t.title, t.locked, t.updated_at,
+	o.id, o.number, o.text, o.sage, o.op_marker, o.ip, o.created_at, o.browser_fingerprint, o.has_attachment,
+	COALESCE(c.replies, 0)
+FROM page t
+INNER JOIN op o ON o.thread_id = t.id
+LEFT JOIN counts c ON c.thread_id = t.id
+ORDER BY t.updated_at DESC`
+
+	rows, err := r.db.Query(stmt, boardID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]database.CatalogThread, 0)
+	for rows.Next() {
+		var ct database.CatalogThread
+		if err := rows.Scan(
+			&ct.ID, &ct.BoardID, &ct.Title, &ct.Locked, &ct.UpdatedAt,
+			&ct.OP.ID, &ct.OP.Number, &ct.OP.Text, &ct.OP.Sage, &ct.OP.OpMarker, &ct.OP.IP,
+			&ct.OP.CreatedAt, &ct.OP.BrowserFingerprint, &ct.OP.HasAttachment,
+			&ct.RepliesCount,
+		); err != nil {
+			return nil, err
+		}
+		ct.OP.ThreadID = ct.ID
+		out = append(out, ct)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (r *repo) BumpThread(id uuid.UUID) error {
 	stmt := `UPDATE thread SET updated_at = $1 WHERE id = $2`
 	_, err := r.db.Exec(stmt, time.Now(), id)

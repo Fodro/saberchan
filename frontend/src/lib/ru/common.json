@@ -56,7 +56,8 @@
 		"add": "Добавить файл",
 		"remove": "Удалить",
 		"limitCount": "Максимум 4 файла",
-		"limitSize": "Максимальный размер 2 МБ"
+		"limitSize": "Максимальный размер 2 МБ",
+		"limitType": "Допустимы только JPEG, PNG, GIF или WebP"
 	},
 	"compose": {
 		"title_required": "Нужен заголовок",

@@ -3,6 +3,7 @@ package psql
 import (
 	"github.com/Fodro/saberchan/internal/database"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 )
 
 func (r *repo) AddAttachment(attachment *database.Attachment) error {
@@ -19,5 +20,19 @@ func (r *repo) GetAttachments(postID uuid.UUID) ([]database.Attachment, error) {
 	}
 	return collectRows(rows, func(attachment *database.Attachment) error {
 		return rows.Scan(&attachment.ID, &attachment.Link, &attachment.Name, &attachment.Type)
+	})
+}
+
+func (r *repo) GetAttachmentsByPostIDs(postIDs []uuid.UUID) ([]database.Attachment, error) {
+	if len(postIDs) == 0 {
+		return []database.Attachment{}, nil
+	}
+	stmt := `SELECT id, post_id, link, name, type FROM attachment WHERE post_id = ANY($1)`
+	rows, err := r.db.Query(stmt, pq.Array(postIDs))
+	if err != nil {
+		return nil, err
+	}
+	return collectRows(rows, func(attachment *database.Attachment) error {
+		return rows.Scan(&attachment.ID, &attachment.PostID, &attachment.Link, &attachment.Name, &attachment.Type)
 	})
 }

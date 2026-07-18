@@ -27,6 +27,8 @@ type Repository interface {
 	AddThread(thread *Thread) error
 	GetThread(id uuid.UUID) (*Thread, error)
 	GetThreads(boardID uuid.UUID) ([]Thread, error)
+	GetBoardCatalog(boardID uuid.UUID, limit, offset int) ([]CatalogThread, error)
+	CountThreads(boardID uuid.UUID) (uint64, error)
 	DeleteThread(id uuid.UUID) error
 	BumpThread(id uuid.UUID) error
 	CheckIfThreadBelowBumpLimit(id uuid.UUID) (bool, error)
@@ -42,6 +44,7 @@ type Repository interface {
 	//attachment
 	AddAttachment(attachment *Attachment) error
 	GetAttachments(postID uuid.UUID) ([]Attachment, error)
+	GetAttachmentsByPostIDs(postIDs []uuid.UUID) ([]Attachment, error)
 
 	Ping() error
 }
@@ -91,5 +94,12 @@ type (
 		Current   bool
 		SiteName  string
 		CreatedAt time.Time
+	}
+
+	// CatalogThread is a board-catalog row: thread + OP post + reply count (no N+1).
+	CatalogThread struct {
+		Thread
+		OP           Post
+		RepliesCount uint64
 	}
 )

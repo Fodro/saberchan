@@ -154,6 +154,21 @@ func (mr *MockRepositoryMockRecorder) CheckIfThreadBelowBumpLimit(id any) *gomoc
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckIfThreadBelowBumpLimit", reflect.TypeOf((*MockRepository)(nil).CheckIfThreadBelowBumpLimit), id)
 }
 
+// CountThreads mocks base method.
+func (m *MockRepository) CountThreads(boardID uuid.UUID) (uint64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CountThreads", boardID)
+	ret0, _ := ret[0].(uint64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CountThreads indicates an expected call of CountThreads.
+func (mr *MockRepositoryMockRecorder) CountThreads(boardID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountThreads", reflect.TypeOf((*MockRepository)(nil).CountThreads), boardID)
+}
+
 // DeleteBoard mocks base method.
 func (m *MockRepository) DeleteBoard(id uuid.UUID) error {
 	m.ctrl.T.Helper()
@@ -211,6 +226,21 @@ func (mr *MockRepositoryMockRecorder) GetAttachments(postID any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAttachments", reflect.TypeOf((*MockRepository)(nil).GetAttachments), postID)
 }
 
+// GetAttachmentsByPostIDs mocks base method.
+func (m *MockRepository) GetAttachmentsByPostIDs(postIDs []uuid.UUID) ([]database.Attachment, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetAttachmentsByPostIDs", postIDs)
+	ret0, _ := ret[0].([]database.Attachment)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAttachmentsByPostIDs indicates an expected call of GetAttachmentsByPostIDs.
+func (mr *MockRepositoryMockRecorder) GetAttachmentsByPostIDs(postIDs any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAttachmentsByPostIDs", reflect.TypeOf((*MockRepository)(nil).GetAttachmentsByPostIDs), postIDs)
+}
+
 // GetBoardByAlias mocks base method.
 func (m *MockRepository) GetBoardByAlias(alias string) (*database.Board, error) {
 	m.ctrl.T.Helper()
@@ -239,6 +269,21 @@ func (m *MockRepository) GetBoardById(id uuid.UUID) (*database.Board, error) {
 func (mr *MockRepositoryMockRecorder) GetBoardById(id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBoardById", reflect.TypeOf((*MockRepository)(nil).GetBoardById), id)
+}
+
+// GetBoardCatalog mocks base method.
+func (m *MockRepository) GetBoardCatalog(boardID uuid.UUID, limit, offset int) ([]database.CatalogThread, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBoardCatalog", boardID, limit, offset)
+	ret0, _ := ret[0].([]database.CatalogThread)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBoardCatalog indicates an expected call of GetBoardCatalog.
+func (mr *MockRepositoryMockRecorder) GetBoardCatalog(boardID, limit, offset any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBoardCatalog", reflect.TypeOf((*MockRepository)(nil).GetBoardCatalog), boardID, limit, offset)
 }
 
 // GetBoards mocks base method.
