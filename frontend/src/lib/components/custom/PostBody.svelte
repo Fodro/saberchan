@@ -1,76 +1,30 @@
 <script lang="ts">
-	import { Render } from "@jill64/svelte-sanitize";
-
-	const sanitizeOpts = {
-		sanitizeHtml: {
-			allowedTags: ["span"],
-			allowedAttributes: {
-				span: ["class"],
-			},
-			allowedClasses: {
-				span: [
-					"text-xs",
-					"align-sub",
-					"bg-zinc-500",
-					"hover:text-white",
-					"text-zinc-500",
-					"align-super",
-					"line-through",
-					"overline",
-					"underline",
-					"italic",
-					"font-bold",
-				],
-			},
-		},
-	};
+	import MarkupNodes from "$lib/components/custom/MarkupNodes.svelte";
+	import { buildPostLines } from "$lib/markup";
 
 	let { text, additionalClass }: { text: string; additionalClass: string } = $props();
 
-	const styledText = $derived.by(() =>
-		text
-			.replaceAll("[b]", `<span class="font-bold">`)
-			.replaceAll("[/b]", "</span>")
-			.replaceAll("[i]", `<span class="italic">`)
-			.replaceAll("[/i]", "</span>")
-			.replaceAll("[u]", `<span class="underline">`)
-			.replaceAll("[/u]", "</span>")
-			.replaceAll("[o]", `<span class="overline">`)
-			.replaceAll("[/o]", "</span>")
-			.replaceAll("[s]", `<span class="line-through">`)
-			.replaceAll("[/s]", "</span>")
-			.replaceAll("[sup]", `<span class="text-xs align-super">`)
-			.replaceAll("[/sup]", "</span>")
-			.replaceAll(
-				"[spoiler]",
-				`<span class="bg-zinc-500 text-zinc-500 hover:text-white">`,
-			)
-			.replaceAll("[/spoiler]", "</span>")
-			.replaceAll("[sub]", `<span class="text-xs align-sub">`)
-			.replaceAll("[/sub]", "</span>"),
-	);
-
-	const lines = $derived(styledText.split("\n"));
+	const lines = $derived(buildPostLines(text));
 	const textSize = $derived(text.length > 1000 ? "text-sm" : "text-base");
 </script>
 
 <div class="flex-2">
 	{#each lines as line, i (i)}
-		{#if line.trim().charAt(0) === ">" && line.trim().charAt(1) === ">"}
+		{#if line.kind === "reply"}
 			<a
 				class={`text-orange-500 hover:underline cursor-pointer ${textSize} ${additionalClass}`}
-				href={`#${line.trim().replaceAll(">>", "")}`}
+				href={line.href}
 				data-sveltekit-reload
 			>
-				<Render html={line.trim()} options={sanitizeOpts} />
+				<MarkupNodes nodes={line.nodes} />
 			</a>
-		{:else if line.trim().charAt(0) === ">"}
+		{:else if line.kind === "greentext"}
 			<p class={`text-green-500 ${textSize} ${additionalClass}`}>
-				<Render html={line.trim()} options={sanitizeOpts} />
+				<MarkupNodes nodes={line.nodes} />
 			</p>
 		{:else}
 			<p class={`${textSize} break-normal ${additionalClass}`}>
-				<Render html={line.trim()} options={sanitizeOpts} />
+				<MarkupNodes nodes={line.nodes} />
 			</p>
 		{/if}
 	{/each}
