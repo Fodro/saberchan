@@ -43,7 +43,9 @@
 	"delete": "Delete",
 	"lightbox": {
 		"close": "Close",
-		"viewing": "Full-size media"
+		"viewing": "Full-size media",
+		"prev": "Previous attachment",
+		"next": "Next attachment"
 	},
 	"admin": {
 		"add_board": "Add Board"
