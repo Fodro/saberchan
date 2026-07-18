@@ -1,6 +1,9 @@
 package psql
 
 import (
+	"database/sql"
+	"errors"
+
 	"github.com/Fodro/saberchan/internal/database"
 	"github.com/google/uuid"
 
@@ -8,7 +11,7 @@ import (
 )
 
 func (r *repo) AddConfig(config *database.Config) error {
-	stmt := `INSERT INTO config (nickname, bump_limit, current, site_name) VALUES ($1, $2, false, $3, $4)`
+	stmt := `INSERT INTO config (nickname, bump_limit, current, site_title) VALUES ($1, $2, false, $3)`
 	_, err := r.db.Exec(stmt, config.Nickname, config.BumpLimit, config.SiteName)
 	return err
 }
@@ -26,32 +29,26 @@ func (r *repo) ChangeCurrConfig(configId uuid.UUID) error {
 }
 
 func (r *repo) GetCurrentConfig() (*database.Config, error) {
-	stmt := `SELECT nickname, bump_limit, site_name FROM config WHERE current = true ORDER BY created_at DESC LIMIT 1`
+	stmt := `SELECT nickname, bump_limit, site_title FROM config WHERE current = true ORDER BY created_at DESC LIMIT 1`
 	row := r.db.QueryRow(stmt)
 	var config database.Config
-	if row.Scan(&config.Nickname, &config.BumpLimit) != nil {
-		return nil, database.ErrNoCurConfig
+	if err := row.Scan(&config.Nickname, &config.BumpLimit, &config.SiteName); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, database.ErrNoCurConfig
+		}
+		return nil, err
 	}
 
 	return &config, nil
 }
 
 func (r *repo) GetConfigs() ([]database.Config, error) {
-	stmt := `SELECT nickname, bump_limit, site_name FROM config ORDER BY created_at DESC`
+	stmt := `SELECT nickname, bump_limit, site_title FROM config ORDER BY created_at DESC`
 	rows, err := r.db.Query(stmt)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	var configs []database.Config
-	for rows.Next() {
-		var config database.Config
-		if rows.Scan(&config.Nickname, &config.BumpLimit) != nil {
-			return nil, err
-		}
-		configs = append(configs, config)
-	}
-
-	return configs, nil
+	return collectRows(rows, func(config *database.Config) error {
+		return rows.Scan(&config.Nickname, &config.BumpLimit, &config.SiteName)
+	})
 }

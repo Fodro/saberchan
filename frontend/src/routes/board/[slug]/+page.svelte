@@ -9,12 +9,17 @@
 	import { Separator } from "$lib/components/ui/separator/index.js";
 	import { Textarea } from "$lib/components/ui/textarea/index.js";
 	import Image from "$lib/components/custom/Image.svelte";
-	import type { Attachment, File as FileType } from "$lib/types/attachment";
+	import type { File as FileType } from "$lib/types/attachment";
 	import {
-		bufferToBase64,
-		formatDateTime,
-		insertTagAtCursor,
-	} from "$lib/helpers.js";
+			formatDateTime,
+			insertTagAtCursor,
+		} from "$lib/helpers.js";
+		import {
+			buildAttachments,
+			readApiError,
+			validateCompose,
+			type ComposeValidationError,
+		} from "$lib/composeValidate";
 	import { trackBoard } from "$lib/tracking";
 	import type { Thread } from "$lib/types/thread.js";
 	import { getContext, onMount } from "svelte";
@@ -42,6 +47,27 @@
 	let counter: () => number = getContext("counter");
 
 	let isReplyOpen = $state(false);
+
+	const composeErrorMessage = (code: ComposeValidationError): string => {
+		switch (code) {
+			case "title_required":
+				return $t("common.compose.title_required");
+			case "title_too_long":
+				return $t("common.compose.title_too_long");
+			case "text_required":
+				return $t("common.compose.text_required");
+			case "text_too_long":
+				return $t("common.compose.text_too_long");
+			case "captcha_required":
+				return $t("common.captcha.required");
+			case "file_count":
+				return $t("common.file.limitCount");
+			case "file_size":
+				return $t("common.file.limitSize");
+			case "payload_too_large":
+				return $t("common.compose.payload_too_large");
+		}
+	};
 
 	let formX = $state(0);
 	let formY = $state(0);
@@ -304,32 +330,39 @@
 					<Button
 						class="cursor-pointer"
 						on:click={async () => {
-							const attachments: Attachment[] = [];
-							filesList.forEach((value) => {
-								attachments.push({
-									id: undefined,
-									post_id: undefined,
-									link: undefined,
-									name: value.name,
-									type: "image",
-									body: bufferToBase64(value.blob),
-								});
+							const attachments = buildAttachments(filesList);
+							const payload = {
+								board_id: data.board.id,
+								title: newTitle,
+								original_post: {
+									text: newText,
+									attachments,
+								},
+								captcha: {
+									input: captchaInput,
+									token: captchaToken,
+								},
+							};
+
+							const invalid = validateCompose({
+								title: newTitle,
+								text: newText,
+								requireTitle: true,
+								captchaInput,
+								captchaToken,
+								files: filesList,
+								attachments,
+								payload,
 							});
+							if (invalid) {
+								toast.error(composeErrorMessage(invalid));
+								return;
+							}
 
 							const res = await fetch("/api/thread", {
 								method: "POST",
-								body: JSON.stringify({
-									board_id: data.board.id,
-									title: newTitle,
-									original_post: {
-										text: newText,
-										attachments: attachments,
-									},
-									captcha: {
-										input: captchaInput,
-										token: captchaToken,
-									},
-								}),
+								headers: { "Content-Type": "application/json" },
+								body: JSON.stringify(payload),
 							});
 							if (res.status == 403) {
 								toast.error($t("common.captcha.failed"));
@@ -338,7 +371,7 @@
 							}
 
 							if (res.status != 201 && res.status != 200) {
-								toast.error(await res.text());
+								toast.error(await readApiError(res));
 								return;
 							}
 							const thread: Thread = await res.json();

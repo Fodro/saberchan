@@ -49,12 +49,20 @@
 	"captcha": {
 		"show": "Show captcha",
 		"placeholder": "Type text here...",
-		"failed": "Wrong captcha!"
+		"failed": "Wrong captcha!",
+		"required": "Solve the captcha before posting"
 	},
 	"file": {
 		"add": "Add file",
 		"remove": "Remove",
 		"limitCount": "Maximum file count is 4",
 		"limitSize": "Maximum file size is 2MB"
+	},
+	"compose": {
+		"title_required": "Title is required",
+		"title_too_long": "Title is too long (max 255 characters)",
+		"text_required": "Post text is required",
+		"text_too_long": "Post text is too long (max 16000 characters)",
+		"payload_too_large": "Post is too large (try fewer or smaller images)"
 	}
 }

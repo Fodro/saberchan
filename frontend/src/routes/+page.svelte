@@ -104,6 +104,9 @@
 										};
 										const res = await fetch("/api/board", {
 											method: "POST",
+											headers: {
+												"Content-Type": "application/json",
+											},
 											body: JSON.stringify(board),
 										});
 										if (

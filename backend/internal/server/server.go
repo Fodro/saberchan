@@ -2,7 +2,9 @@ package server
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 
@@ -15,11 +17,11 @@ import (
 )
 
 type Server struct {
-	srv    *http.Server
-	conf   *config.Config
-	board  board.Service
+	srv     *http.Server
+	conf    *config.Config
+	board   board.Service
 	captcha captcha.Service
-	health health.Service
+	health  health.Service
 }
 
 func NewServer(conf *config.Config, board board.Service, captcha captcha.Service, health health.Service) *Server {
@@ -27,10 +29,10 @@ func NewServer(conf *config.Config, board board.Service, captcha captcha.Service
 		srv: &http.Server{
 			Addr: ":" + conf.Port,
 		},
-		conf:   conf,
-		board:  board,
+		conf:    conf,
+		board:   board,
 		captcha: captcha,
-		health: health,
+		health:  health,
 	}
 }
 
@@ -80,7 +82,6 @@ func (s *Server) Start() error {
 
 	return s.srv.ListenAndServe()
 }
-
 
 func (s *Server) CreateBoard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Access-Control-Allow-Origin", "*")
@@ -144,16 +145,22 @@ func (s *Server) CreateThread(w http.ResponseWriter, r *http.Request) {
 	res, err := s.board.CreateThread(&thread)
 	if err != nil {
 		log.Printf("failed to create thread: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(err.Error()))
+		status := http.StatusInternalServerError
+		if errors.Is(err, board.ErrBoardLocked) {
+			status = http.StatusForbidden
+		} else if errors.Is(err, sql.ErrNoRows) {
+			status = http.StatusBadRequest
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(status)
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 		return
 	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 	if err := json.NewEncoder(w).Encode(res); err != nil {
 		log.Printf("failed to encode response: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
 	}
-	w.WriteHeader(http.StatusCreated)
 }
 
 func (s *Server) GetThread(w http.ResponseWriter, r *http.Request) {

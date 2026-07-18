@@ -47,11 +47,11 @@ func (s *service) UploadFile(ctx context.Context, f *file.FileReq) (*file.FileRe
 	}
 
 	_, err = s.svc.PutObjectWithContext(ctx, &s3.PutObjectInput{
-		Bucket:       aws.String(s.bucket),
-		Key:          aws.String(key),
-		Body:         bytes.NewReader(body),
-		Expires:      expires,
-		CacheControl: aws.String("max-age=31536000"),
+		Bucket:             aws.String(s.bucket),
+		Key:                aws.String(key),
+		Body:               bytes.NewReader(body),
+		Expires:            expires,
+		CacheControl:       aws.String("max-age=31536000"),
 		ContentDisposition: aws.String(fmt.Sprintf("attachment; filename*=UTF-8''%s", url.QueryEscape(f.Name))),
 	})
 	if err != nil {
@@ -65,11 +65,16 @@ func (s *service) UploadFile(ctx context.Context, f *file.FileReq) (*file.FileRe
 }
 
 func NewService(conf *config.Config) file.Service {
-	sess, err := session.NewSession(&aws.Config{
-		Credentials: credentials.NewStaticCredentials(conf.S3.AccessKey, conf.S3.SecretKey, ""),
-		Endpoint:    aws.String("https://" + conf.S3.Url),
-		Region:      aws.String(conf.S3.Region),
-	})
+	endpoint := ResolveEndpoint(conf.S3.Url, conf.S3.UseSSL)
+	awsCfg := &aws.Config{
+		Credentials:      credentials.NewStaticCredentials(conf.S3.AccessKey, conf.S3.SecretKey, ""),
+		Endpoint:         aws.String(endpoint),
+		Region:           aws.String(conf.S3.Region),
+		S3ForcePathStyle: aws.Bool(conf.S3.ForcePathStyle),
+		DisableSSL:       aws.Bool(!conf.S3.UseSSL),
+	}
+
+	sess, err := session.NewSession(awsCfg)
 	if err != nil {
 		log.Fatalf("failed to connect to s3: %s", err)
 	}
@@ -80,6 +85,12 @@ func NewService(conf *config.Config) file.Service {
 		shouldExpire: conf.S3.EnableExpriration,
 		expires:      conf.S3.FileExpire,
 		svc:          svc,
-		linkPrefix:   fmt.Sprintf("https://%s.%s", conf.S3.Bucket, conf.S3.Url),
+		linkPrefix: ResolveLinkPrefix(
+			conf.S3.Bucket,
+			conf.S3.Url,
+			conf.S3.PublicURL,
+			conf.S3.UseSSL,
+			conf.S3.ForcePathStyle,
+		),
 	}
 }

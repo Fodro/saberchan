@@ -3,6 +3,7 @@ package captcha
 import (
 	"context"
 	"image/color"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,7 +13,7 @@ import (
 
 type service struct {
 	expires time.Duration
-	rdb     *redis.Client
+	store   TokenStore
 }
 
 func (s *service) Generate(ctx context.Context) (*generator.Data, string, error) {
@@ -26,7 +27,7 @@ func (s *service) Generate(ctx context.Context) (*generator.Data, string, error)
 	}
 
 	token := uuid.NewString()
-	err = s.rdb.Set(ctx, token, data.Text, s.expires).Err()
+	err = s.store.Set(ctx, token, data.Text, s.expires)
 	if err != nil {
 		return nil, "", err
 	}
@@ -35,12 +36,18 @@ func (s *service) Generate(ctx context.Context) (*generator.Data, string, error)
 }
 
 func (s *service) Validate(ctx context.Context, input, token string) (bool, error) {
-	text, err := s.rdb.GetDel(ctx, token).Result()
+	token = strings.TrimSpace(token)
+	input = strings.TrimSpace(input)
+	if token == "" {
+		return false, nil
+	}
+
+	text, err := s.store.GetDel(ctx, token)
 	if err != nil {
 		return false, err
 	}
 
-	if input == text {
+	if input == strings.TrimSpace(text) {
 		return true, nil
 	}
 
@@ -48,5 +55,9 @@ func (s *service) Validate(ctx context.Context, input, token string) (bool, erro
 }
 
 func NewService(rdb *redis.Client, expires time.Duration) Service {
-	return &service{expires, rdb}
+	return NewServiceWithStore(&redisStore{rdb: rdb}, expires)
+}
+
+func NewServiceWithStore(store TokenStore, expires time.Duration) Service {
+	return &service{expires: expires, store: store}
 }

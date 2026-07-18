@@ -3,14 +3,14 @@
 	import { cn } from "$lib/utils.js";
 
 	let {
-		ref = $bindable(null),
+		el = $bindable(undefined),
 		class: className,
 		...restProps
 	}: DrawerPrimitive.TitleProps = $props();
 </script>
 
 <DrawerPrimitive.Title
-	bind:ref
+	bind:el
 	data-slot="drawer-title"
 	class={cn("text-foreground font-semibold", className)}
 	{...restProps}

@@ -17,15 +17,7 @@ func (r *repo) GetAttachments(postID uuid.UUID) ([]database.Attachment, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-
-	attachments := make([]database.Attachment, 0)
-	for rows.Next() {
-		var attachment database.Attachment
-		if err := rows.Scan(&attachment.ID, &attachment.Link, &attachment.Name, &attachment.Type); err != nil {
-			return nil, err
-		}
-		attachments = append(attachments, attachment)
-	}
-	return attachments, nil
+	return collectRows(rows, func(attachment *database.Attachment) error {
+		return rows.Scan(&attachment.ID, &attachment.Link, &attachment.Name, &attachment.Type)
+	})
 }

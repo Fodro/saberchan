@@ -7,6 +7,11 @@ export function cn(...inputs: ClassValue[]) {
 	return twMerge(clsx(inputs));
 }
 
+/** shadcn/bits-ui helper used by some generated UI components */
+export type WithElementRef<T, E extends HTMLElement = HTMLElement> = T & {
+	ref?: E | null;
+};
+
 type FlyAndScaleParams = {
 	y?: number;
 	x?: number;
