@@ -10,17 +10,20 @@ import (
 
 type Service interface {
 	UploadFile(ctx context.Context, file *FileReq) (*FileResp, error)
+	DeleteFile(ctx context.Context, key string) error
 }
 
 type (
 	FileReq struct {
 		PostID uuid.UUID `json:"post_id"`
-		Name string `json:"name"`
-		Body string `json:"body"`
+		Name   string    `json:"name"`
+		Type   string    `json:"type"`
+		// Data is raw file bytes (multipart path or decoded base64).
+		Data []byte `json:"-"`
 	}
 
 	FileResp struct {
 		Link string `json:"link"`
+		Key  string `json:"key"`
 	}
-
 )

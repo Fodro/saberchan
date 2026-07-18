@@ -9,7 +9,7 @@
 	import { toast } from "svelte-sonner";
 	import ComposeForm from "$lib/components/custom/ComposeForm.svelte";
 	import PostCard from "$lib/components/custom/PostCard.svelte";
-	import { buildAttachments, composeErrorMessageFactory, submitCompose } from "$lib/compose";
+	import { composeErrorMessageFactory, submitCompose } from "$lib/compose";
 
 	let newText = $state("");
 	let newSage = $state(false);
@@ -44,22 +44,14 @@
 	const submitNewPost = async () => {
 		submitting = true;
 		try {
-			const attachments = buildAttachments(filesList);
-			const payload = {
-				thread_id: data.thread.id,
-				text: newText,
-				sage: newSage,
-				op_marker: newOP,
-				attachments,
-				captcha: {
-					input: captchaInput,
-					token: captchaToken,
-				},
-			};
-
 			const result = await submitCompose({
 				endpoint: "/api/post",
-				payload,
+				fields: {
+					thread_id: data.thread.id,
+					text: newText,
+					sage: newSage ? "true" : "false",
+					op_marker: newOP ? "true" : "false",
+				},
 				text: newText,
 				captchaInput,
 				captchaToken,

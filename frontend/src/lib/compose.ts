@@ -1,5 +1,5 @@
 import {
-	buildAttachments,
+	fileBlob,
 	readApiError,
 	validateCompose,
 	type ComposeValidationError,
@@ -25,8 +25,8 @@ export function composeErrorMessageFactory(t: (key: string) => string): ComposeE
 				return t('common.file.limitCount');
 			case 'file_size':
 				return t('common.file.limitSize');
-			case 'payload_too_large':
-				return t('common.compose.payload_too_large');
+			case 'file_type':
+				return t('common.file.limitType');
 		}
 	};
 }
@@ -37,7 +37,7 @@ export type SubmitComposeResult =
 
 export async function submitCompose(opts: {
 	endpoint: '/api/thread' | '/api/post';
-	payload: unknown;
+	fields: Record<string, string>;
 	title?: string | null;
 	text?: string | null;
 	requireTitle?: boolean;
@@ -47,7 +47,6 @@ export async function submitCompose(opts: {
 	errorMessage: ComposeErrorMessageFn;
 	captchaFailedMessage: string;
 }): Promise<SubmitComposeResult> {
-	const attachments = buildAttachments(opts.files);
 	const invalid = validateCompose({
 		title: opts.title,
 		text: opts.text,
@@ -55,17 +54,24 @@ export async function submitCompose(opts: {
 		captchaInput: opts.captchaInput,
 		captchaToken: opts.captchaToken,
 		files: opts.files,
-		attachments,
-		payload: opts.payload,
 	});
 	if (invalid) {
 		return { ok: false, kind: 'validation', message: opts.errorMessage(invalid) };
 	}
 
+	const form = new FormData();
+	for (const [key, value] of Object.entries(opts.fields)) {
+		form.set(key, value);
+	}
+	form.set('captcha_input', opts.captchaInput);
+	form.set('captcha_token', opts.captchaToken);
+	for (const file of opts.files) {
+		form.append('files', fileBlob(file), file.name);
+	}
+
 	const res = await fetch(opts.endpoint, {
 		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify(opts.payload),
+		body: form,
 	});
 
 	if (res.status === 403) {
@@ -85,5 +91,5 @@ export async function submitCompose(opts: {
 	return { ok: true, status: res.status, json };
 }
 
-export { buildAttachments, readApiError, validateCompose };
+export { fileBlob, readApiError, validateCompose };
 export type { ComposeValidationError };

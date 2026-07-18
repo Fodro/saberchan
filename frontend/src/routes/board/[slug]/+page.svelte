@@ -9,7 +9,7 @@
 	import Image from "$lib/components/custom/Image.svelte";
 	import type { File as FileType } from "$lib/types/attachment";
 	import { formatDateTime } from "$lib/helpers.js";
-	import { buildAttachments, composeErrorMessageFactory, submitCompose } from "$lib/compose";
+	import { composeErrorMessageFactory, submitCompose } from "$lib/compose";
 	import { trackBoard } from "$lib/tracking";
 	import type { Thread } from "$lib/types/thread.js";
 	import { onMount } from "svelte";
@@ -44,23 +44,13 @@
 	const submitNewThread = async () => {
 		submitting = true;
 		try {
-			const attachments = buildAttachments(filesList);
-			const payload = {
-				board_id: data.board.id,
-				title: newTitle,
-				original_post: {
-					text: newText,
-					attachments,
-				},
-				captcha: {
-					input: captchaInput,
-					token: captchaToken,
-				},
-			};
-
 			const result = await submitCompose({
 				endpoint: "/api/thread",
-				payload,
+				fields: {
+					board_id: data.board.id,
+					title: newTitle ?? "",
+					text: newText,
+				},
 				title: newTitle,
 				text: newText,
 				requireTitle: true,
@@ -201,3 +191,32 @@
 		</Card.Root>
 	{/each}
 </div>
+
+{#if (data.board.total_threads ?? 0) > (data.board.limit ?? 20)}
+	{@const pageLimit = data.board.limit ?? 20}
+	{@const pageOffset = data.board.offset ?? 0}
+	{@const totalThreads = data.board.total_threads ?? 0}
+	{@const page = Math.floor(pageOffset / pageLimit) + 1}
+	{@const totalPages = Math.max(1, Math.ceil(totalThreads / pageLimit))}
+	{@const prevOffset = Math.max(0, pageOffset - pageLimit)}
+	{@const nextOffset = pageOffset + pageLimit}
+	<div class="flex flex-row justify-center items-center gap-3 w-full py-4">
+		{#if pageOffset > 0}
+			<Button
+				variant="outline"
+				href={`/board/${data.slug}?limit=${pageLimit}&offset=${prevOffset}`}
+			>
+				←
+			</Button>
+		{/if}
+		<span class="text-muted-foreground text-sm">{page} / {totalPages}</span>
+		{#if nextOffset < totalThreads}
+			<Button
+				variant="outline"
+				href={`/board/${data.slug}?limit=${pageLimit}&offset=${nextOffset}`}
+			>
+				→
+			</Button>
+		{/if}
+	</div>
+{/if}

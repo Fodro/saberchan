@@ -2,12 +2,12 @@ package server
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"log"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/Fodro/saberchan/config"
@@ -16,6 +16,7 @@ import (
 	"github.com/Fodro/saberchan/internal/health"
 	chi "github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
 type Server struct {
@@ -82,7 +83,7 @@ func (s *Server) Start() error {
 		w.WriteHeader(http.StatusOK)
 	})
 	r.Get("/readiness", func(w http.ResponseWriter, r *http.Request) {
-		if err := s.health.Readiness(); err != nil {
+		if err := s.health.Readiness(r.Context()); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -125,7 +126,7 @@ func (s *Server) CreateBoard(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusBadRequest, err, "bad_request")
 		return
 	}
-	err := s.board.CreateBoard(&boardIn)
+	err := s.board.CreateBoard(r.Context(), &boardIn)
 	if err != nil {
 		log.Printf("failed to create board: %v", err)
 		if errors.Is(err, board.ErrNotImplemented) {
@@ -141,7 +142,7 @@ func (s *Server) CreateBoard(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) GetBoards(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Access-Control-Allow-Origin", "*")
-	boards, err := s.board.GetBoards()
+	boards, err := s.board.GetBoards(r.Context())
 	if err != nil {
 		log.Printf("failed to get boards: %v", err)
 		writeJSONError(w, http.StatusInternalServerError, err, "internal_error")
@@ -158,7 +159,21 @@ func (s *Server) GetBoards(w http.ResponseWriter, r *http.Request) {
 func (s *Server) GetBoardByAlias(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Access-Control-Allow-Origin", "*")
 	alias := chi.URLParam(r, "alias")
-	boardRes, err := s.board.GetBoardWithThreads(alias)
+
+	limit := 20
+	offset := 0
+	if v := r.URL.Query().Get("limit"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			limit = n
+		}
+	}
+	if v := r.URL.Query().Get("offset"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			offset = n
+		}
+	}
+
+	boardRes, err := s.board.GetBoardWithThreads(r.Context(), alias, limit, offset)
 	if err != nil {
 		log.Printf("failed to get board: %v", err)
 		writeJSONError(w, http.StatusInternalServerError, err, "internal_error")
@@ -175,13 +190,21 @@ func (s *Server) GetBoardByAlias(w http.ResponseWriter, r *http.Request) {
 func (s *Server) CreateThread(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Access-Control-Allow-Origin", "*")
 	var thread board.Thread
-	if err := json.NewDecoder(r.Body).Decode(&thread); err != nil {
+	if isMultipart(r) {
+		parsed, err := parseMultipartThread(r)
+		if err != nil {
+			log.Printf("failed to parse multipart thread: %v", err)
+			writeJSONError(w, http.StatusBadRequest, err, "bad_request")
+			return
+		}
+		thread = *parsed
+	} else if err := json.NewDecoder(r.Body).Decode(&thread); err != nil {
 		log.Printf("failed to decode thread: %v", err)
 		writeJSONError(w, http.StatusBadRequest, err, "bad_request")
 		return
 	}
 	s.applyClientIP(r, thread.OriginalPost)
-	res, err := s.board.CreateThread(&thread)
+	res, err := s.board.CreateThread(r.Context(), &thread)
 	if err != nil {
 		log.Printf("failed to create thread: %v", err)
 		status := http.StatusInternalServerError
@@ -189,8 +212,8 @@ func (s *Server) CreateThread(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, board.ErrBoardLocked) {
 			status = http.StatusForbidden
 			code = "board_locked"
-		} else if errors.Is(err, sql.ErrNoRows) {
-			status = http.StatusBadRequest
+		} else if errors.Is(err, pgx.ErrNoRows) {
+			status = http.StatusNotFound
 			code = "not_found"
 		} else if errors.Is(err, board.ErrNotImplemented) {
 			status = http.StatusNotImplemented
@@ -215,7 +238,7 @@ func (s *Server) GetThread(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusBadRequest, err, "bad_request")
 		return
 	}
-	thread, err := s.board.GetThreadWithPosts(convertedId)
+	thread, err := s.board.GetThreadWithPosts(r.Context(), convertedId)
 	if err != nil {
 		log.Printf("failed to get thread: %v", err)
 		writeJSONError(w, http.StatusInternalServerError, err, "internal_error")
@@ -239,13 +262,21 @@ func (s *Server) CreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var post board.Post
-	if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
+	if isMultipart(r) {
+		parsed, err := parseMultipartPost(r)
+		if err != nil {
+			log.Printf("failed to parse multipart post: %v", err)
+			writeJSONError(w, http.StatusBadRequest, err, "bad_request")
+			return
+		}
+		post = *parsed
+	} else if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
 		log.Printf("failed to decode post: %v", err)
 		writeJSONError(w, http.StatusBadRequest, err, "bad_request")
 		return
 	}
 	s.applyClientIP(r, &post)
-	if err := s.board.CreatePost(convertedThreadID, &post); err != nil {
+	if err := s.board.CreatePost(r.Context(), convertedThreadID, &post); err != nil {
 		log.Printf("failed to create post: %v", err)
 		status := http.StatusInternalServerError
 		code := "internal_error"

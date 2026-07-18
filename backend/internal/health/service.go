@@ -1,13 +1,17 @@
 package health
 
-import "github.com/Fodro/saberchan/internal/database"
+import (
+	"context"
+
+	"github.com/Fodro/saberchan/internal/database"
+)
 
 type service struct {
 	repo database.Repository
 }
 
-func (s *service) Readiness() error {
-	return s.repo.Ping()
+func (s *service) Readiness(ctx context.Context) error {
+	return s.repo.Ping(ctx)
 }
 
 func NewService(repo database.Repository) Service {

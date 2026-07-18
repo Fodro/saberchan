@@ -1,6 +1,7 @@
 package health
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -13,13 +14,13 @@ func TestReadiness(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	repo := mocks.NewMockRepository(ctrl)
 
-	repo.EXPECT().Ping().Return(nil)
-	if err := NewService(repo).Readiness(); err != nil {
+	repo.EXPECT().Ping(gomock.Any()).Return(nil)
+	if err := NewService(repo).Readiness(context.Background()); err != nil {
 		t.Fatalf("expected nil, got %v", err)
 	}
 
-	repo.EXPECT().Ping().Return(errors.New("down"))
-	if err := NewService(repo).Readiness(); err == nil {
+	repo.EXPECT().Ping(gomock.Any()).Return(errors.New("down"))
+	if err := NewService(repo).Readiness(context.Background()); err == nil {
 		t.Fatal("expected error")
 	}
 }
