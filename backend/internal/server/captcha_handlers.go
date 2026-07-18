@@ -9,6 +9,9 @@ import (
 )
 
 func (s *Server) GenerateCaptcha(w http.ResponseWriter, r *http.Request) {
+	if !s.checkRateLimit(w, r, s.limitCaptcha) {
+		return
+	}
 	data, token, err := s.captcha.Generate(r.Context())
 	if err != nil {
 		log.Printf("failed to generate captcha: %v", err)

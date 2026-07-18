@@ -13,7 +13,6 @@ import (
 )
 
 func (s *Server) DeleteThread(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
 	if !s.requireAdmin(w, r) {
 		return
 	}
@@ -31,7 +30,6 @@ func (s *Server) DeleteThread(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) RestoreThread(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
 	if !s.requireAdmin(w, r) {
 		return
 	}
@@ -49,7 +47,9 @@ func (s *Server) RestoreThread(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) CreateThread(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
+	if !s.checkRateLimit(w, r, s.limitWrite) {
+		return
+	}
 	var thread board.Thread
 	var captchaInput, captchaToken string
 	var err error
@@ -107,7 +107,6 @@ func (s *Server) CreateThread(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetThread(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Access-Control-Allow-Origin", "*")
 	id := chi.URLParam(r, "id")
 	convertedId, err := uuid.Parse(id)
 	if err != nil {

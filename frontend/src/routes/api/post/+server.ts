@@ -8,7 +8,7 @@ import {
 	proxyBackend,
 } from '$lib/server/backend';
 
-export const POST: RequestHandler = async ({ request, cookies, fetch }) => {
+export const POST: RequestHandler = async ({ request, cookies, fetch, getClientAddress }) => {
 	assertBodySize(request);
 
 	const form = await request.formData();
@@ -38,5 +38,5 @@ export const POST: RequestHandler = async ({ request, cookies, fetch }) => {
 	return proxyBackend(fetch, `/api/v1/post/${threadId}`, {
 		method: 'POST',
 		body: out,
-	});
+	}, getClientAddress());
 };

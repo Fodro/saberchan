@@ -162,7 +162,11 @@ Edit [`deploy/caddy/Caddyfile`](deploy/caddy/Caddyfile) / set `CADDY_SITE` to yo
 
 `PURGE_INTERVAL` (default `10m`) sweeps soft-deleted rows after the 24h grace window (S3 media included) and soft-deletes threads not bumped for 30 days.
 
+`TRUSTED_PROXIES` (comma-separated CIDRs) controls which peers may set `X-Forwarded-For`. The BFF forwards the browser address on create/captcha calls. Empty = never trust XFF.
+
+Rate limits (per client IP, in-process): captcha generate ~30/min, create post/thread ~12/min.
+
 Health endpoints on the Go API (compose network):
 
 - `GET /liveness` — process up
-- `GET /readiness` — DB ping
+- `GET /readiness` — DB + Redis ping

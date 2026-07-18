@@ -11,7 +11,7 @@ import {
 	proxyBackend,
 } from '$lib/server/backend';
 
-export const POST: RequestHandler = async ({ request, cookies, fetch }) => {
+export const POST: RequestHandler = async ({ request, cookies, fetch, getClientAddress }) => {
 	assertBodySize(request);
 
 	const form = await request.formData();
@@ -47,5 +47,5 @@ export const POST: RequestHandler = async ({ request, cookies, fetch }) => {
 		method: 'POST',
 		headers: await adminBackendHeaders(cookies),
 		body: out,
-	});
+	}, getClientAddress());
 };

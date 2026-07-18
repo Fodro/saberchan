@@ -86,8 +86,13 @@ export async function proxyBackend(
 	fetchFn: typeof fetch,
 	path: string,
 	init?: RequestInit,
+	clientAddress?: string,
 ): Promise<Response> {
-	const res = await fetchFn(backendUrl(path), init);
+	const headers = new Headers(init?.headers);
+	if (clientAddress) {
+		headers.set('X-Forwarded-For', clientAddress);
+	}
+	const res = await fetchFn(backendUrl(path), { ...init, headers });
 	if (!res.ok) {
 		const msg = await res.text();
 		error(res.status, { message: msg || `Backend request failed (${res.status})` });
