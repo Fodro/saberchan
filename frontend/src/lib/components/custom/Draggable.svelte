@@ -25,11 +25,28 @@
 		}
 	}
 
-	// Seed once from props + viewport offset; drag mutates thereafter (not reactive to prop changes)
-	let left = $state(untrack(() => initialLeft + leftMod));
-	let top = $state(untrack(() => initialTop + topMod));
+	// Pinned uses fixed (viewport) coords; unpinned uses absolute (document) coords.
+	// Seed once from props + viewport offset; drag mutates thereafter (not reactive to prop changes).
+	let left = $state(untrack(() => (pinned ? leftMod : initialLeft + leftMod)));
+	let top = $state(untrack(() => (pinned ? topMod : initialTop + topMod)));
 
+	let el = $state<HTMLElement | undefined>();
 	let moving = $state(false);
+
+	/** Call before flipping `pinned` so left/top match the upcoming position mode. */
+	export function preparePinChange(nextPinned: boolean) {
+		if (!el || nextPinned === pinned) {
+			return;
+		}
+		const rect = el.getBoundingClientRect();
+		if (nextPinned) {
+			left = rect.left;
+			top = rect.top;
+		} else {
+			left = rect.left + window.scrollX;
+			top = rect.top + window.scrollY;
+		}
+	}
 
 	function onMouseDown() {
 		if (pinned) {
@@ -52,9 +69,10 @@
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <section
+	bind:this={el}
 	onmousedown={onMouseDown}
 	style="left: {left}px; top: {top}px;"
-	class={`md:draggable absolute w-[100%] md:w-[50vw] md:h-[70vh]${pinned ? "" : " cursor-move"}`}
+	class={`md:draggable z-50 w-[100%] md:w-[50vw] md:h-[70vh] ${pinned ? "fixed" : "absolute cursor-move"}`}
 >
 	{@render children()}
 </section>
