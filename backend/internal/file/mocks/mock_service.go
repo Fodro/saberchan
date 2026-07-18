@@ -41,6 +41,20 @@ func (m *MockService) EXPECT() *MockServiceMockRecorder {
 	return m.recorder
 }
 
+// DeleteFile mocks base method.
+func (m *MockService) DeleteFile(ctx context.Context, key string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteFile", ctx, key)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteFile indicates an expected call of DeleteFile.
+func (mr *MockServiceMockRecorder) DeleteFile(ctx, key any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteFile", reflect.TypeOf((*MockService)(nil).DeleteFile), ctx, key)
+}
+
 // UploadFile mocks base method.
 func (m *MockService) UploadFile(ctx context.Context, arg1 *file.FileReq) (*file.FileResp, error) {
 	m.ctrl.T.Helper()

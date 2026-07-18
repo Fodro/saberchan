@@ -10,6 +10,7 @@
 package mocks
 
 import (
+	context "context"
 	reflect "reflect"
 
 	database "github.com/Fodro/saberchan/internal/database"
@@ -42,409 +43,423 @@ func (m *MockRepository) EXPECT() *MockRepositoryMockRecorder {
 }
 
 // AddAttachment mocks base method.
-func (m *MockRepository) AddAttachment(attachment *database.Attachment) error {
+func (m *MockRepository) AddAttachment(ctx context.Context, attachment *database.Attachment) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddAttachment", attachment)
+	ret := m.ctrl.Call(m, "AddAttachment", ctx, attachment)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AddAttachment indicates an expected call of AddAttachment.
-func (mr *MockRepositoryMockRecorder) AddAttachment(attachment any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) AddAttachment(ctx, attachment any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddAttachment", reflect.TypeOf((*MockRepository)(nil).AddAttachment), attachment)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddAttachment", reflect.TypeOf((*MockRepository)(nil).AddAttachment), ctx, attachment)
 }
 
 // AddBoard mocks base method.
-func (m *MockRepository) AddBoard(board *database.Board) error {
+func (m *MockRepository) AddBoard(ctx context.Context, board *database.Board) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddBoard", board)
+	ret := m.ctrl.Call(m, "AddBoard", ctx, board)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AddBoard indicates an expected call of AddBoard.
-func (mr *MockRepositoryMockRecorder) AddBoard(board any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) AddBoard(ctx, board any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddBoard", reflect.TypeOf((*MockRepository)(nil).AddBoard), board)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddBoard", reflect.TypeOf((*MockRepository)(nil).AddBoard), ctx, board)
 }
 
 // AddConfig mocks base method.
-func (m *MockRepository) AddConfig(config *database.Config) error {
+func (m *MockRepository) AddConfig(ctx context.Context, config *database.Config) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddConfig", config)
+	ret := m.ctrl.Call(m, "AddConfig", ctx, config)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AddConfig indicates an expected call of AddConfig.
-func (mr *MockRepositoryMockRecorder) AddConfig(config any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) AddConfig(ctx, config any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddConfig", reflect.TypeOf((*MockRepository)(nil).AddConfig), config)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddConfig", reflect.TypeOf((*MockRepository)(nil).AddConfig), ctx, config)
 }
 
 // AddPost mocks base method.
-func (m *MockRepository) AddPost(post *database.Post) error {
+func (m *MockRepository) AddPost(ctx context.Context, post *database.Post) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddPost", post)
+	ret := m.ctrl.Call(m, "AddPost", ctx, post)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AddPost indicates an expected call of AddPost.
-func (mr *MockRepositoryMockRecorder) AddPost(post any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) AddPost(ctx, post any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddPost", reflect.TypeOf((*MockRepository)(nil).AddPost), post)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddPost", reflect.TypeOf((*MockRepository)(nil).AddPost), ctx, post)
 }
 
 // AddThread mocks base method.
-func (m *MockRepository) AddThread(thread *database.Thread) error {
+func (m *MockRepository) AddThread(ctx context.Context, thread *database.Thread) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddThread", thread)
+	ret := m.ctrl.Call(m, "AddThread", ctx, thread)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AddThread indicates an expected call of AddThread.
-func (mr *MockRepositoryMockRecorder) AddThread(thread any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) AddThread(ctx, thread any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddThread", reflect.TypeOf((*MockRepository)(nil).AddThread), thread)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddThread", reflect.TypeOf((*MockRepository)(nil).AddThread), ctx, thread)
 }
 
 // BumpThread mocks base method.
-func (m *MockRepository) BumpThread(id uuid.UUID) error {
+func (m *MockRepository) BumpThread(ctx context.Context, id uuid.UUID) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "BumpThread", id)
+	ret := m.ctrl.Call(m, "BumpThread", ctx, id)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // BumpThread indicates an expected call of BumpThread.
-func (mr *MockRepositoryMockRecorder) BumpThread(id any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) BumpThread(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BumpThread", reflect.TypeOf((*MockRepository)(nil).BumpThread), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BumpThread", reflect.TypeOf((*MockRepository)(nil).BumpThread), ctx, id)
 }
 
 // ChangeCurrConfig mocks base method.
-func (m *MockRepository) ChangeCurrConfig(configId uuid.UUID) error {
+func (m *MockRepository) ChangeCurrConfig(ctx context.Context, configId uuid.UUID) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ChangeCurrConfig", configId)
+	ret := m.ctrl.Call(m, "ChangeCurrConfig", ctx, configId)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // ChangeCurrConfig indicates an expected call of ChangeCurrConfig.
-func (mr *MockRepositoryMockRecorder) ChangeCurrConfig(configId any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) ChangeCurrConfig(ctx, configId any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChangeCurrConfig", reflect.TypeOf((*MockRepository)(nil).ChangeCurrConfig), configId)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChangeCurrConfig", reflect.TypeOf((*MockRepository)(nil).ChangeCurrConfig), ctx, configId)
 }
 
 // CheckIfThreadBelowBumpLimit mocks base method.
-func (m *MockRepository) CheckIfThreadBelowBumpLimit(id uuid.UUID) (bool, error) {
+func (m *MockRepository) CheckIfThreadBelowBumpLimit(ctx context.Context, id uuid.UUID) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CheckIfThreadBelowBumpLimit", id)
+	ret := m.ctrl.Call(m, "CheckIfThreadBelowBumpLimit", ctx, id)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CheckIfThreadBelowBumpLimit indicates an expected call of CheckIfThreadBelowBumpLimit.
-func (mr *MockRepositoryMockRecorder) CheckIfThreadBelowBumpLimit(id any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) CheckIfThreadBelowBumpLimit(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckIfThreadBelowBumpLimit", reflect.TypeOf((*MockRepository)(nil).CheckIfThreadBelowBumpLimit), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckIfThreadBelowBumpLimit", reflect.TypeOf((*MockRepository)(nil).CheckIfThreadBelowBumpLimit), ctx, id)
 }
 
 // CountThreads mocks base method.
-func (m *MockRepository) CountThreads(boardID uuid.UUID) (uint64, error) {
+func (m *MockRepository) CountThreads(ctx context.Context, boardID uuid.UUID) (uint64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CountThreads", boardID)
+	ret := m.ctrl.Call(m, "CountThreads", ctx, boardID)
 	ret0, _ := ret[0].(uint64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CountThreads indicates an expected call of CountThreads.
-func (mr *MockRepositoryMockRecorder) CountThreads(boardID any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) CountThreads(ctx, boardID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountThreads", reflect.TypeOf((*MockRepository)(nil).CountThreads), boardID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountThreads", reflect.TypeOf((*MockRepository)(nil).CountThreads), ctx, boardID)
 }
 
 // DeleteBoard mocks base method.
-func (m *MockRepository) DeleteBoard(id uuid.UUID) error {
+func (m *MockRepository) DeleteBoard(ctx context.Context, id uuid.UUID) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteBoard", id)
+	ret := m.ctrl.Call(m, "DeleteBoard", ctx, id)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteBoard indicates an expected call of DeleteBoard.
-func (mr *MockRepositoryMockRecorder) DeleteBoard(id any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) DeleteBoard(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteBoard", reflect.TypeOf((*MockRepository)(nil).DeleteBoard), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteBoard", reflect.TypeOf((*MockRepository)(nil).DeleteBoard), ctx, id)
 }
 
 // DeletePost mocks base method.
-func (m *MockRepository) DeletePost(id uuid.UUID) error {
+func (m *MockRepository) DeletePost(ctx context.Context, id uuid.UUID) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeletePost", id)
+	ret := m.ctrl.Call(m, "DeletePost", ctx, id)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeletePost indicates an expected call of DeletePost.
-func (mr *MockRepositoryMockRecorder) DeletePost(id any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) DeletePost(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePost", reflect.TypeOf((*MockRepository)(nil).DeletePost), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePost", reflect.TypeOf((*MockRepository)(nil).DeletePost), ctx, id)
 }
 
 // DeleteThread mocks base method.
-func (m *MockRepository) DeleteThread(id uuid.UUID) error {
+func (m *MockRepository) DeleteThread(ctx context.Context, id uuid.UUID) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteThread", id)
+	ret := m.ctrl.Call(m, "DeleteThread", ctx, id)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteThread indicates an expected call of DeleteThread.
-func (mr *MockRepositoryMockRecorder) DeleteThread(id any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) DeleteThread(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteThread", reflect.TypeOf((*MockRepository)(nil).DeleteThread), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteThread", reflect.TypeOf((*MockRepository)(nil).DeleteThread), ctx, id)
 }
 
 // GetAttachments mocks base method.
-func (m *MockRepository) GetAttachments(postID uuid.UUID) ([]database.Attachment, error) {
+func (m *MockRepository) GetAttachments(ctx context.Context, postID uuid.UUID) ([]database.Attachment, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAttachments", postID)
+	ret := m.ctrl.Call(m, "GetAttachments", ctx, postID)
 	ret0, _ := ret[0].([]database.Attachment)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetAttachments indicates an expected call of GetAttachments.
-func (mr *MockRepositoryMockRecorder) GetAttachments(postID any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetAttachments(ctx, postID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAttachments", reflect.TypeOf((*MockRepository)(nil).GetAttachments), postID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAttachments", reflect.TypeOf((*MockRepository)(nil).GetAttachments), ctx, postID)
 }
 
 // GetAttachmentsByPostIDs mocks base method.
-func (m *MockRepository) GetAttachmentsByPostIDs(postIDs []uuid.UUID) ([]database.Attachment, error) {
+func (m *MockRepository) GetAttachmentsByPostIDs(ctx context.Context, postIDs []uuid.UUID) ([]database.Attachment, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAttachmentsByPostIDs", postIDs)
+	ret := m.ctrl.Call(m, "GetAttachmentsByPostIDs", ctx, postIDs)
 	ret0, _ := ret[0].([]database.Attachment)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetAttachmentsByPostIDs indicates an expected call of GetAttachmentsByPostIDs.
-func (mr *MockRepositoryMockRecorder) GetAttachmentsByPostIDs(postIDs any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetAttachmentsByPostIDs(ctx, postIDs any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAttachmentsByPostIDs", reflect.TypeOf((*MockRepository)(nil).GetAttachmentsByPostIDs), postIDs)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAttachmentsByPostIDs", reflect.TypeOf((*MockRepository)(nil).GetAttachmentsByPostIDs), ctx, postIDs)
 }
 
 // GetBoardByAlias mocks base method.
-func (m *MockRepository) GetBoardByAlias(alias string) (*database.Board, error) {
+func (m *MockRepository) GetBoardByAlias(ctx context.Context, alias string) (*database.Board, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetBoardByAlias", alias)
+	ret := m.ctrl.Call(m, "GetBoardByAlias", ctx, alias)
 	ret0, _ := ret[0].(*database.Board)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetBoardByAlias indicates an expected call of GetBoardByAlias.
-func (mr *MockRepositoryMockRecorder) GetBoardByAlias(alias any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetBoardByAlias(ctx, alias any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBoardByAlias", reflect.TypeOf((*MockRepository)(nil).GetBoardByAlias), alias)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBoardByAlias", reflect.TypeOf((*MockRepository)(nil).GetBoardByAlias), ctx, alias)
 }
 
 // GetBoardById mocks base method.
-func (m *MockRepository) GetBoardById(id uuid.UUID) (*database.Board, error) {
+func (m *MockRepository) GetBoardById(ctx context.Context, id uuid.UUID) (*database.Board, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetBoardById", id)
+	ret := m.ctrl.Call(m, "GetBoardById", ctx, id)
 	ret0, _ := ret[0].(*database.Board)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetBoardById indicates an expected call of GetBoardById.
-func (mr *MockRepositoryMockRecorder) GetBoardById(id any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetBoardById(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBoardById", reflect.TypeOf((*MockRepository)(nil).GetBoardById), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBoardById", reflect.TypeOf((*MockRepository)(nil).GetBoardById), ctx, id)
 }
 
 // GetBoardCatalog mocks base method.
-func (m *MockRepository) GetBoardCatalog(boardID uuid.UUID, limit, offset int) ([]database.CatalogThread, error) {
+func (m *MockRepository) GetBoardCatalog(ctx context.Context, boardID uuid.UUID, limit, offset int) ([]database.CatalogThread, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetBoardCatalog", boardID, limit, offset)
+	ret := m.ctrl.Call(m, "GetBoardCatalog", ctx, boardID, limit, offset)
 	ret0, _ := ret[0].([]database.CatalogThread)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetBoardCatalog indicates an expected call of GetBoardCatalog.
-func (mr *MockRepositoryMockRecorder) GetBoardCatalog(boardID, limit, offset any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetBoardCatalog(ctx, boardID, limit, offset any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBoardCatalog", reflect.TypeOf((*MockRepository)(nil).GetBoardCatalog), boardID, limit, offset)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBoardCatalog", reflect.TypeOf((*MockRepository)(nil).GetBoardCatalog), ctx, boardID, limit, offset)
 }
 
 // GetBoards mocks base method.
-func (m *MockRepository) GetBoards() ([]database.Board, error) {
+func (m *MockRepository) GetBoards(ctx context.Context) ([]database.Board, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetBoards")
+	ret := m.ctrl.Call(m, "GetBoards", ctx)
 	ret0, _ := ret[0].([]database.Board)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetBoards indicates an expected call of GetBoards.
-func (mr *MockRepositoryMockRecorder) GetBoards() *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetBoards(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBoards", reflect.TypeOf((*MockRepository)(nil).GetBoards))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBoards", reflect.TypeOf((*MockRepository)(nil).GetBoards), ctx)
 }
 
 // GetConfigs mocks base method.
-func (m *MockRepository) GetConfigs() ([]database.Config, error) {
+func (m *MockRepository) GetConfigs(ctx context.Context) ([]database.Config, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetConfigs")
+	ret := m.ctrl.Call(m, "GetConfigs", ctx)
 	ret0, _ := ret[0].([]database.Config)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetConfigs indicates an expected call of GetConfigs.
-func (mr *MockRepositoryMockRecorder) GetConfigs() *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetConfigs(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfigs", reflect.TypeOf((*MockRepository)(nil).GetConfigs))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfigs", reflect.TypeOf((*MockRepository)(nil).GetConfigs), ctx)
 }
 
 // GetCurrentConfig mocks base method.
-func (m *MockRepository) GetCurrentConfig() (*database.Config, error) {
+func (m *MockRepository) GetCurrentConfig(ctx context.Context) (*database.Config, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetCurrentConfig")
+	ret := m.ctrl.Call(m, "GetCurrentConfig", ctx)
 	ret0, _ := ret[0].(*database.Config)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetCurrentConfig indicates an expected call of GetCurrentConfig.
-func (mr *MockRepositoryMockRecorder) GetCurrentConfig() *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetCurrentConfig(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentConfig", reflect.TypeOf((*MockRepository)(nil).GetCurrentConfig))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentConfig", reflect.TypeOf((*MockRepository)(nil).GetCurrentConfig), ctx)
 }
 
 // GetOPPost mocks base method.
-func (m *MockRepository) GetOPPost(threadID uuid.UUID) (*database.Post, error) {
+func (m *MockRepository) GetOPPost(ctx context.Context, threadID uuid.UUID) (*database.Post, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOPPost", threadID)
+	ret := m.ctrl.Call(m, "GetOPPost", ctx, threadID)
 	ret0, _ := ret[0].(*database.Post)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetOPPost indicates an expected call of GetOPPost.
-func (mr *MockRepositoryMockRecorder) GetOPPost(threadID any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetOPPost(ctx, threadID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOPPost", reflect.TypeOf((*MockRepository)(nil).GetOPPost), threadID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOPPost", reflect.TypeOf((*MockRepository)(nil).GetOPPost), ctx, threadID)
 }
 
 // GetPost mocks base method.
-func (m *MockRepository) GetPost(id uuid.UUID) (*database.Post, error) {
+func (m *MockRepository) GetPost(ctx context.Context, id uuid.UUID) (*database.Post, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPost", id)
+	ret := m.ctrl.Call(m, "GetPost", ctx, id)
 	ret0, _ := ret[0].(*database.Post)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetPost indicates an expected call of GetPost.
-func (mr *MockRepositoryMockRecorder) GetPost(id any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetPost(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPost", reflect.TypeOf((*MockRepository)(nil).GetPost), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPost", reflect.TypeOf((*MockRepository)(nil).GetPost), ctx, id)
 }
 
 // GetPosts mocks base method.
-func (m *MockRepository) GetPosts(threadID uuid.UUID) ([]database.Post, error) {
+func (m *MockRepository) GetPosts(ctx context.Context, threadID uuid.UUID) ([]database.Post, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPosts", threadID)
+	ret := m.ctrl.Call(m, "GetPosts", ctx, threadID)
 	ret0, _ := ret[0].([]database.Post)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetPosts indicates an expected call of GetPosts.
-func (mr *MockRepositoryMockRecorder) GetPosts(threadID any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetPosts(ctx, threadID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPosts", reflect.TypeOf((*MockRepository)(nil).GetPosts), threadID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPosts", reflect.TypeOf((*MockRepository)(nil).GetPosts), ctx, threadID)
 }
 
 // GetRepliesForThread mocks base method.
-func (m *MockRepository) GetRepliesForThread(threadID uuid.UUID) (uint64, error) {
+func (m *MockRepository) GetRepliesForThread(ctx context.Context, threadID uuid.UUID) (uint64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetRepliesForThread", threadID)
+	ret := m.ctrl.Call(m, "GetRepliesForThread", ctx, threadID)
 	ret0, _ := ret[0].(uint64)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetRepliesForThread indicates an expected call of GetRepliesForThread.
-func (mr *MockRepositoryMockRecorder) GetRepliesForThread(threadID any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetRepliesForThread(ctx, threadID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRepliesForThread", reflect.TypeOf((*MockRepository)(nil).GetRepliesForThread), threadID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRepliesForThread", reflect.TypeOf((*MockRepository)(nil).GetRepliesForThread), ctx, threadID)
 }
 
 // GetThread mocks base method.
-func (m *MockRepository) GetThread(id uuid.UUID) (*database.Thread, error) {
+func (m *MockRepository) GetThread(ctx context.Context, id uuid.UUID) (*database.Thread, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetThread", id)
+	ret := m.ctrl.Call(m, "GetThread", ctx, id)
 	ret0, _ := ret[0].(*database.Thread)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetThread indicates an expected call of GetThread.
-func (mr *MockRepositoryMockRecorder) GetThread(id any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetThread(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetThread", reflect.TypeOf((*MockRepository)(nil).GetThread), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetThread", reflect.TypeOf((*MockRepository)(nil).GetThread), ctx, id)
 }
 
 // GetThreads mocks base method.
-func (m *MockRepository) GetThreads(boardID uuid.UUID) ([]database.Thread, error) {
+func (m *MockRepository) GetThreads(ctx context.Context, boardID uuid.UUID) ([]database.Thread, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetThreads", boardID)
+	ret := m.ctrl.Call(m, "GetThreads", ctx, boardID)
 	ret0, _ := ret[0].([]database.Thread)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetThreads indicates an expected call of GetThreads.
-func (mr *MockRepositoryMockRecorder) GetThreads(boardID any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) GetThreads(ctx, boardID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetThreads", reflect.TypeOf((*MockRepository)(nil).GetThreads), boardID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetThreads", reflect.TypeOf((*MockRepository)(nil).GetThreads), ctx, boardID)
+}
+
+// InTx mocks base method.
+func (m *MockRepository) InTx(ctx context.Context, fn func(database.Repository) error) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "InTx", ctx, fn)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// InTx indicates an expected call of InTx.
+func (mr *MockRepositoryMockRecorder) InTx(ctx, fn any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InTx", reflect.TypeOf((*MockRepository)(nil).InTx), ctx, fn)
 }
 
 // Ping mocks base method.
-func (m *MockRepository) Ping() error {
+func (m *MockRepository) Ping(ctx context.Context) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Ping")
+	ret := m.ctrl.Call(m, "Ping", ctx)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Ping indicates an expected call of Ping.
-func (mr *MockRepositoryMockRecorder) Ping() *gomock.Call {
+func (mr *MockRepositoryMockRecorder) Ping(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockRepository)(nil).Ping))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockRepository)(nil).Ping), ctx)
 }
 
 // UpdateBoard mocks base method.
-func (m *MockRepository) UpdateBoard(board *database.Board) error {
+func (m *MockRepository) UpdateBoard(ctx context.Context, board *database.Board) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateBoard", board)
+	ret := m.ctrl.Call(m, "UpdateBoard", ctx, board)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateBoard indicates an expected call of UpdateBoard.
-func (mr *MockRepositoryMockRecorder) UpdateBoard(board any) *gomock.Call {
+func (mr *MockRepositoryMockRecorder) UpdateBoard(ctx, board any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateBoard", reflect.TypeOf((*MockRepository)(nil).UpdateBoard), board)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateBoard", reflect.TypeOf((*MockRepository)(nil).UpdateBoard), ctx, board)
 }

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -19,7 +18,8 @@ import (
 	"github.com/Fodro/saberchan/internal/file/s3service"
 	"github.com/Fodro/saberchan/internal/health"
 	"github.com/Fodro/saberchan/internal/server"
-	_ "github.com/lib/pq"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
 	"github.com/redis/go-redis/v9"
 )
@@ -30,26 +30,42 @@ func main() {
 	log.Print("env parsed")
 
 	var repo database.Repository
+	var pool *pgxpool.Pool
 	if conf.DB.DBType == "postgres" {
 		connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
 			conf.DB.DBHost, conf.DB.DBPort, conf.DB.DBUser, conf.DB.DBPass, conf.DB.DBName, conf.DB.SSLMode)
+
+		ctx := context.Background()
+		cfg, err := pgxpool.ParseConfig(connStr)
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+		cfg.MaxConns = conf.DB.MaxConns
+		cfg.MinConns = conf.DB.MinConns
+		cfg.MaxConnLifetime = conf.DB.MaxConnLifetime
+		cfg.MaxConnIdleTime = conf.DB.MaxConnIdleTime
+
+		pool, err = pgxpool.NewWithConfig(ctx, cfg)
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+		defer pool.Close()
+
 		log.Print("running migrations")
-		db, err := sql.Open("postgres", connStr)
-		if err != nil {
-			log.Fatal(err)
-			return
-		}
+		db := stdlib.OpenDBFromPool(pool)
 		if err := goose.SetDialect("postgres"); err != nil {
-			log.Fatal(err)
-			return
+			panic(fmt.Errorf("goose dialect: %w", err))
 		}
-		err = goose.Up(db, "./migrations")
-		if err != nil {
-			log.Fatal(err)
-			return
+		if err := goose.Up(db, "./migrations"); err != nil {
+			panic(fmt.Errorf("migrations: %w", err))
+		}
+		if err := db.Close(); err != nil {
+			log.Printf("stdlib bridge close: %v", err)
 		}
 		log.Print("succeded running migrations")
-		repo = psql.NewRepo(connStr)
+		repo = psql.NewRepo(pool)
 	} else {
 		log.Fatalf("unsupported db type: %s", conf.DB.DBType)
 		return

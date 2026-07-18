@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"time"
 
 	"github.com/google/uuid"
@@ -9,44 +10,48 @@ import (
 //go:generate mockgen -destination=mocks/mock_repository.go -package=mocks github.com/Fodro/saberchan/internal/database Repository
 
 type Repository interface {
+	// InTx runs fn inside a single DB transaction. fn receives a Repository
+	// bound to that transaction (nested InTx uses a savepoint when supported).
+	InTx(ctx context.Context, fn func(tx Repository) error) error
+
 	//confg
-	AddConfig(config *Config) error
-	ChangeCurrConfig(configId uuid.UUID) error
-	GetCurrentConfig() (*Config, error)
-	GetConfigs() ([]Config, error)
+	AddConfig(ctx context.Context, config *Config) error
+	ChangeCurrConfig(ctx context.Context, configId uuid.UUID) error
+	GetCurrentConfig(ctx context.Context) (*Config, error)
+	GetConfigs(ctx context.Context) ([]Config, error)
 
 	//board
-	AddBoard(board *Board) error
-	GetBoardByAlias(alias string) (*Board, error)
-	GetBoardById(id uuid.UUID) (*Board, error)
-	GetBoards() ([]Board, error)
-	DeleteBoard(id uuid.UUID) error
-	UpdateBoard(board *Board) error
+	AddBoard(ctx context.Context, board *Board) error
+	GetBoardByAlias(ctx context.Context, alias string) (*Board, error)
+	GetBoardById(ctx context.Context, id uuid.UUID) (*Board, error)
+	GetBoards(ctx context.Context) ([]Board, error)
+	DeleteBoard(ctx context.Context, id uuid.UUID) error
+	UpdateBoard(ctx context.Context, board *Board) error
 
 	//thread
-	AddThread(thread *Thread) error
-	GetThread(id uuid.UUID) (*Thread, error)
-	GetThreads(boardID uuid.UUID) ([]Thread, error)
-	GetBoardCatalog(boardID uuid.UUID, limit, offset int) ([]CatalogThread, error)
-	CountThreads(boardID uuid.UUID) (uint64, error)
-	DeleteThread(id uuid.UUID) error
-	BumpThread(id uuid.UUID) error
-	CheckIfThreadBelowBumpLimit(id uuid.UUID) (bool, error)
+	AddThread(ctx context.Context, thread *Thread) error
+	GetThread(ctx context.Context, id uuid.UUID) (*Thread, error)
+	GetThreads(ctx context.Context, boardID uuid.UUID) ([]Thread, error)
+	GetBoardCatalog(ctx context.Context, boardID uuid.UUID, limit, offset int) ([]CatalogThread, error)
+	CountThreads(ctx context.Context, boardID uuid.UUID) (uint64, error)
+	DeleteThread(ctx context.Context, id uuid.UUID) error
+	BumpThread(ctx context.Context, id uuid.UUID) error
+	CheckIfThreadBelowBumpLimit(ctx context.Context, id uuid.UUID) (bool, error)
 
 	//post
-	AddPost(post *Post) error
-	GetPost(id uuid.UUID) (*Post, error)
-	GetPosts(threadID uuid.UUID) ([]Post, error)
-	DeletePost(id uuid.UUID) error
-	GetOPPost(threadID uuid.UUID) (*Post, error)
-	GetRepliesForThread(threadID uuid.UUID) (uint64, error)
+	AddPost(ctx context.Context, post *Post) error
+	GetPost(ctx context.Context, id uuid.UUID) (*Post, error)
+	GetPosts(ctx context.Context, threadID uuid.UUID) ([]Post, error)
+	DeletePost(ctx context.Context, id uuid.UUID) error
+	GetOPPost(ctx context.Context, threadID uuid.UUID) (*Post, error)
+	GetRepliesForThread(ctx context.Context, threadID uuid.UUID) (uint64, error)
 
 	//attachment
-	AddAttachment(attachment *Attachment) error
-	GetAttachments(postID uuid.UUID) ([]Attachment, error)
-	GetAttachmentsByPostIDs(postIDs []uuid.UUID) ([]Attachment, error)
+	AddAttachment(ctx context.Context, attachment *Attachment) error
+	GetAttachments(ctx context.Context, postID uuid.UUID) ([]Attachment, error)
+	GetAttachmentsByPostIDs(ctx context.Context, postIDs []uuid.UUID) ([]Attachment, error)
 
-	Ping() error
+	Ping(ctx context.Context) error
 }
 
 type (

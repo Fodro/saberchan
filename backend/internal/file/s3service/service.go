@@ -60,7 +60,23 @@ func (s *service) UploadFile(ctx context.Context, f *file.FileReq) (*file.FileRe
 
 	return &file.FileResp{
 		Link: fmt.Sprintf("%s/%s", s.linkPrefix, key),
+		Key:  key,
 	}, nil
+}
+
+func (s *service) DeleteFile(ctx context.Context, key string) error {
+	if key == "" {
+		return nil
+	}
+	_, err := s.svc.DeleteObject(ctx, &s3.DeleteObjectInput{
+		Bucket: aws.String(s.bucket),
+		Key:    aws.String(key),
+	})
+	if err != nil {
+		log.Printf("failed to delete file %s: %s", key, err)
+		return err
+	}
+	return nil
 }
 
 func NewService(conf *config.Config) file.Service {

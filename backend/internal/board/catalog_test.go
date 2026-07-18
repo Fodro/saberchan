@@ -1,6 +1,7 @@
 package board
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Fodro/saberchan/config"
@@ -22,23 +23,23 @@ func TestGetBoardWithThreads_UsesCatalogAndClampsLimit(t *testing.T) {
 	opID := uuid.New()
 	threadID := uuid.New()
 
-	repo.EXPECT().GetBoardByAlias("b").Return(&database.Board{
+	repo.EXPECT().GetBoardByAlias(gomock.Any(), "b").Return(&database.Board{
 		ID: boardID, Alias: "b", Name: "Board", Description: "d",
 	}, nil)
-	repo.EXPECT().CountThreads(boardID).Return(uint64(50), nil)
-	repo.EXPECT().GetBoardCatalog(boardID, 100, 0).Return([]database.CatalogThread{{
+	repo.EXPECT().CountThreads(gomock.Any(), boardID).Return(uint64(50), nil)
+	repo.EXPECT().GetBoardCatalog(gomock.Any(), boardID, 100, 0).Return([]database.CatalogThread{{
 		Thread: database.Thread{ID: threadID, BoardID: boardID, Title: "t"},
 		OP: database.Post{
 			ID: opID, ThreadID: threadID, Number: 1, Text: "op", HasAttachment: true,
 		},
 		RepliesCount: 3,
 	}}, nil)
-	repo.EXPECT().GetAttachmentsByPostIDs([]uuid.UUID{opID}).Return([]database.Attachment{{
+	repo.EXPECT().GetAttachmentsByPostIDs(gomock.Any(), []uuid.UUID{opID}).Return([]database.Attachment{{
 		ID: uuid.New(), PostID: opID, Link: "http://x/y", Name: "a.jpg", Type: "image",
 	}}, nil)
 
 	// limit 500 should clamp to 100
-	got, err := svc.GetBoardWithThreads("b", 500, -5)
+	got, err := svc.GetBoardWithThreads(context.Background(), "b", 500, -5)
 	if err != nil {
 		t.Fatal(err)
 	}

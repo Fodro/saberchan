@@ -2,7 +2,6 @@ package board
 
 import (
 	"context"
-	"database/sql"
 	"encoding/base64"
 	"errors"
 	"log"
@@ -11,6 +10,7 @@ import (
 	"github.com/Fodro/saberchan/internal/database"
 	"github.com/Fodro/saberchan/internal/file"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
 type service struct {
@@ -19,7 +19,7 @@ type service struct {
 	conf *config.Config
 }
 
-func (s *service) CreateBoard(board *BoardInput) error {
+func (s *service) CreateBoard(ctx context.Context, board *BoardInput) error {
 	boardDB := &database.Board{
 		ID:          uuid.New(),
 		Alias:       board.Alias,
@@ -29,76 +29,94 @@ func (s *service) CreateBoard(board *BoardInput) error {
 		Locked:      board.Locked,
 	}
 
-	err := s.repo.AddBoard(boardDB)
-
-	return err
+	return s.repo.AddBoard(ctx, boardDB)
 }
 
-func (s *service) CreatePost(threadID uuid.UUID, post *Post) error {
-	ip := post.IP
-	//TODO: add ip hashing
-	hasAttachment := len(post.Attachments) > 0
-	postID := uuid.New()
+func (s *service) cleanupUploads(ctx context.Context, keys []string) {
+	for _, key := range keys {
+		if err := s.file.DeleteFile(ctx, key); err != nil {
+			log.Printf("cleanup: failed to delete orphaned upload %s: %v", key, err)
+		}
+	}
+}
 
-	postDB := &database.Post{
+// persistPostInTx inserts the post (and attachments) inside an open transaction.
+// S3 uploads run here too so a failed DB step rolls back the post; uploadedKeys
+// is used by the caller to delete objects if the surrounding InTx fails (including commit).
+func (s *service) persistPostInTx(
+	ctx context.Context,
+	tx database.Repository,
+	threadID, postID uuid.UUID,
+	post *Post,
+	uploadedKeys *[]string,
+) error {
+	hasAttachment := len(post.Attachments) > 0
+	if err := tx.AddPost(ctx, &database.Post{
 		ID:                 postID,
 		Text:               post.Text,
 		ThreadID:           threadID,
 		Sage:               post.Sage,
 		OpMarker:           post.OpMarker,
 		BrowserFingerprint: post.BrowserFingerprint,
-		IP:                 ip,
+		IP:                 post.IP,
 		HasAttachment:      hasAttachment,
-	}
-
-	err := s.repo.AddPost(postDB)
-
-	if err != nil {
+	}); err != nil {
 		return err
 	}
 
-		if hasAttachment {
-			for _, attachment := range post.Attachments {
-				data, err := attachmentBytes(attachment)
-				if err != nil {
-					log.Printf("error decoding attachment: %v", err)
-					return err
-				}
-				fileResp, err := s.file.UploadFile(context.Background(), &file.FileReq{
-					PostID: postID,
-					Name:   attachment.Name,
-					Type:   attachment.Type,
-					Data:   data,
-				})
-				if err != nil {
-					log.Printf("error uploading file: %v", err)
-					return err
-				}
-				err = s.repo.AddAttachment(&database.Attachment{
-					ID:     uuid.New(),
-					PostID: postID,
-					Link:   fileResp.Link,
-					Name:   attachment.Name,
-					Type:   attachment.Type,
-				})
-				if err != nil {
-					log.Printf("error saving attachment %s to db: %v", fileResp.Link, err)
-					return err
-				}
-			}
+	for _, attachment := range post.Attachments {
+		data, err := attachmentBytes(attachment)
+		if err != nil {
+			log.Printf("error decoding attachment: %v", err)
+			return err
 		}
+		fileResp, err := s.file.UploadFile(ctx, &file.FileReq{
+			PostID: postID,
+			Name:   attachment.Name,
+			Type:   attachment.Type,
+			Data:   data,
+		})
+		if err != nil {
+			log.Printf("error uploading file: %v", err)
+			return err
+		}
+		*uploadedKeys = append(*uploadedKeys, fileResp.Key)
 
-	if !post.Sage {
-		shouldBump, _ := s.repo.CheckIfThreadBelowBumpLimit(threadID)
-		if shouldBump {
-			return s.repo.BumpThread(threadID)
+		if err := tx.AddAttachment(ctx, &database.Attachment{
+			ID:     uuid.New(),
+			PostID: postID,
+			Link:   fileResp.Link,
+			Name:   attachment.Name,
+			Type:   attachment.Type,
+		}); err != nil {
+			log.Printf("error saving attachment %s to db: %v", fileResp.Link, err)
+			return err
 		}
 	}
 
+	if !post.Sage {
+		shouldBump, _ := tx.CheckIfThreadBelowBumpLimit(ctx, threadID)
+		if shouldBump {
+			return tx.BumpThread(ctx, threadID)
+		}
+	}
 	return nil
 }
 
-func (s *service) CreateThread(thread *Thread) (*Thread, error) {
+func (s *service) CreatePost(ctx context.Context, threadID uuid.UUID, post *Post) error {
+	postID := uuid.New()
+	var uploadedKeys []string
+	err := s.repo.InTx(ctx, func(tx database.Repository) error {
+		return s.persistPostInTx(ctx, tx, threadID, postID, post, &uploadedKeys)
+	})
+	if err != nil {
+		s.cleanupUploads(ctx, uploadedKeys)
+		return err
+	}
+	return nil
+}
+
+func (s *service) CreateThread(ctx context.Context, thread *Thread) (*Thread, error) {
 	if thread == nil {
 		return nil, errors.New("thread is required")
 	}
@@ -106,7 +124,7 @@ func (s *service) CreateThread(thread *Thread) (*Thread, error) {
 		return nil, errors.New("original_post is required")
 	}
 
-	board, err := s.repo.GetBoardById(thread.BoardID)
+	board, err := s.repo.GetBoardById(ctx, thread.BoardID)
 	if err != nil {
 		return nil, err
 	}
@@ -124,13 +142,16 @@ func (s *service) CreateThread(thread *Thread) (*Thread, error) {
 		Title:   thread.Title,
 	}
 
-	err = s.repo.AddThread(threadDB)
+	postID := uuid.New()
+	var uploadedKeys []string
+	err = s.repo.InTx(ctx, func(tx database.Repository) error {
+		if err := tx.AddThread(ctx, threadDB); err != nil {
+			return err
+		}
+		return s.persistPostInTx(ctx, tx, threadDB.ID, postID, thread.OriginalPost, &uploadedKeys)
+	})
 	if err != nil {
-		return nil, err
-	}
-
-	err = s.CreatePost(threadDB.ID, thread.OriginalPost)
-	if err != nil {
+		s.cleanupUploads(ctx, uploadedKeys)
 		return nil, err
 	}
 
@@ -146,19 +167,19 @@ func (s *service) CreateThread(thread *Thread) (*Thread, error) {
 	}, nil
 }
 
-func (s *service) DeleteBoard(id uuid.UUID) error {
+func (s *service) DeleteBoard(ctx context.Context, id uuid.UUID) error {
 	return ErrNotImplemented
 }
 
-func (s *service) DeletePost(id uuid.UUID) error {
+func (s *service) DeletePost(ctx context.Context, id uuid.UUID) error {
 	return ErrNotImplemented
 }
 
-func (s *service) DeleteThread(id uuid.UUID) error {
+func (s *service) DeleteThread(ctx context.Context, id uuid.UUID) error {
 	return ErrNotImplemented
 }
 
-func (s *service) GetBoardWithThreads(alias string, limit, offset int) (*Board, error) {
+func (s *service) GetBoardWithThreads(ctx context.Context, alias string, limit, offset int) (*Board, error) {
 	if limit <= 0 {
 		limit = 20
 	}
@@ -169,17 +190,17 @@ func (s *service) GetBoardWithThreads(alias string, limit, offset int) (*Board, 
 		offset = 0
 	}
 
-	boardDB, err := s.repo.GetBoardByAlias(alias)
+	boardDB, err := s.repo.GetBoardByAlias(ctx, alias)
 	if err != nil {
 		return nil, err
 	}
 
-	total, err := s.repo.CountThreads(boardDB.ID)
+	total, err := s.repo.CountThreads(ctx, boardDB.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	catalog, err := s.repo.GetBoardCatalog(boardDB.ID, limit, offset)
+	catalog, err := s.repo.GetBoardCatalog(ctx, boardDB.ID, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +214,7 @@ func (s *service) GetBoardWithThreads(alias string, limit, offset int) (*Board, 
 
 	attsByPost := map[uuid.UUID][]Attachment{}
 	if len(opIDs) > 0 {
-		atts, err := s.repo.GetAttachmentsByPostIDs(opIDs)
+		atts, err := s.repo.GetAttachmentsByPostIDs(ctx, opIDs)
 		if err != nil {
 			log.Printf("error while batching attachments: %s", err)
 		} else {
@@ -248,8 +269,8 @@ func (s *service) GetBoardWithThreads(alias string, limit, offset int) (*Board, 
 	}, nil
 }
 
-func (s *service) GetBoards() ([]*Board, error) {
-	boardsDB, err := s.repo.GetBoards()
+func (s *service) GetBoards(ctx context.Context) ([]*Board, error) {
+	boardsDB, err := s.repo.GetBoards(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -266,12 +287,12 @@ func (s *service) GetBoards() ([]*Board, error) {
 	return boards, nil
 }
 
-func (s *service) GetThreadWithPosts(id uuid.UUID) (*Thread, error) {
-	threadDB, err := s.repo.GetThread(id)
+func (s *service) GetThreadWithPosts(ctx context.Context, id uuid.UUID) (*Thread, error) {
+	threadDB, err := s.repo.GetThread(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	postsDB, err := s.repo.GetPosts(id)
+	postsDB, err := s.repo.GetPosts(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -280,7 +301,7 @@ func (s *service) GetThreadWithPosts(id uuid.UUID) (*Thread, error) {
 	for i, postDB := range postsDB {
 		var attachments []Attachment
 		if postDB.HasAttachment {
-			attachments, err = s.getAttachmentsForPost(postDB.ID)
+			attachments, err = s.getAttachmentsForPost(ctx, postDB.ID)
 			if err != nil {
 				log.Printf("error while getting attachments for post %s: %s", postDB.ID, err)
 			}
@@ -325,30 +346,27 @@ func (s *service) GetThreadWithPosts(id uuid.UUID) (*Thread, error) {
 	}, nil
 }
 
-func (s *service) getAttachmentsForPost(id uuid.UUID) ([]Attachment, error) {
-	attachmentsDB, err := s.repo.GetAttachments(id)
+func (s *service) getAttachmentsForPost(ctx context.Context, id uuid.UUID) ([]Attachment, error) {
+	attachmentsDB, err := s.repo.GetAttachments(ctx, id)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
-		} else {
-			return nil, err
 		}
+		return nil, err
 	}
 	var attachments []Attachment
 	for _, attachmentDB := range attachmentsDB {
-		attachement := Attachment{
+		attachments = append(attachments, Attachment{
 			ID:   attachmentDB.ID,
 			Name: attachmentDB.Name,
 			Type: attachmentDB.Type,
 			Link: attachmentDB.Link,
-		}
-		attachments = append(attachments, attachement)
+		})
 	}
-
 	return attachments, nil
 }
 
-func (s *service) UpdateBoard(board *Board) error {
+func (s *service) UpdateBoard(ctx context.Context, board *Board) error {
 	return ErrNotImplemented
 }
 

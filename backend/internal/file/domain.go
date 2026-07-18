@@ -10,6 +10,7 @@ import (
 
 type Service interface {
 	UploadFile(ctx context.Context, file *FileReq) (*FileResp, error)
+	DeleteFile(ctx context.Context, key string) error
 }
 
 type (
@@ -23,5 +24,6 @@ type (
 
 	FileResp struct {
 		Link string `json:"link"`
+		Key  string `json:"key"`
 	}
 )

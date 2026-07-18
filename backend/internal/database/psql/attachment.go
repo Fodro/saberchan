@@ -1,38 +1,53 @@
 package psql
 
 import (
+	"context"
+
+	"github.com/Masterminds/squirrel"
 	"github.com/Fodro/saberchan/internal/database"
 	"github.com/google/uuid"
-	"github.com/lib/pq"
+	"github.com/jackc/pgx/v5"
 )
 
-func (r *repo) AddAttachment(attachment *database.Attachment) error {
-	stmt := `INSERT INTO attachment (id, post_id, link, name, type) VALUES ($1, $2, $3, $4, $5)`
-	_, err := r.db.Exec(stmt, attachment.ID, attachment.PostID, attachment.Link, attachment.Name, attachment.Type)
-	return err
+func (r *repo) AddAttachment(ctx context.Context, attachment *database.Attachment) error {
+	return r.exec(ctx, r.psqb.
+		Insert("attachment").
+		Columns("id", "post_id", "link", "name", "type").
+		Values(attachment.ID, attachment.PostID, attachment.Link, attachment.Name, attachment.Type),
+	)
 }
 
-func (r *repo) GetAttachments(postID uuid.UUID) ([]database.Attachment, error) {
-	stmt := `SELECT id, link, name, type FROM attachment WHERE post_id = $1`
-	rows, err := r.db.Query(stmt, postID)
+func (r *repo) GetAttachments(ctx context.Context, postID uuid.UUID) ([]database.Attachment, error) {
+	rows, err := r.query(ctx, r.psqb.
+		Select("id", "link", "name", "type").
+		From("attachment").
+		Where(squirrel.Eq{"post_id": postID}),
+	)
 	if err != nil {
 		return nil, err
 	}
-	return collectRows(rows, func(attachment *database.Attachment) error {
-		return rows.Scan(&attachment.ID, &attachment.Link, &attachment.Name, &attachment.Type)
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (database.Attachment, error) {
+		var a database.Attachment
+		err := row.Scan(&a.ID, &a.Link, &a.Name, &a.Type)
+		return a, err
 	})
 }
 
-func (r *repo) GetAttachmentsByPostIDs(postIDs []uuid.UUID) ([]database.Attachment, error) {
+func (r *repo) GetAttachmentsByPostIDs(ctx context.Context, postIDs []uuid.UUID) ([]database.Attachment, error) {
 	if len(postIDs) == 0 {
 		return []database.Attachment{}, nil
 	}
-	stmt := `SELECT id, post_id, link, name, type FROM attachment WHERE post_id = ANY($1)`
-	rows, err := r.db.Query(stmt, pq.Array(postIDs))
+	rows, err := r.query(ctx, r.psqb.
+		Select("id", "post_id", "link", "name", "type").
+		From("attachment").
+		Where(squirrel.Eq{"post_id": postIDs}),
+	)
 	if err != nil {
 		return nil, err
 	}
-	return collectRows(rows, func(attachment *database.Attachment) error {
-		return rows.Scan(&attachment.ID, &attachment.PostID, &attachment.Link, &attachment.Name, &attachment.Type)
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (database.Attachment, error) {
+		var a database.Attachment
+		err := row.Scan(&a.ID, &a.PostID, &a.Link, &a.Name, &a.Type)
+		return a, err
 	})
 }

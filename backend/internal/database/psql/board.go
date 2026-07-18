@@ -1,29 +1,34 @@
 package psql
 
 import (
-	"database/sql"
+	"context"
 	"errors"
 	"fmt"
 
+	"github.com/Masterminds/squirrel"
 	"github.com/Fodro/saberchan/internal/database"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
-func (r *repo) AddBoard(board *database.Board) error {
-	stmt := `INSERT INTO board (id, alias, name, description, author, locked) VALUES ($1, $2, $3, $4, $5, $6)`
-	_, err := r.db.Exec(stmt, board.ID, board.Alias, board.Name, board.Description, board.Author, board.Locked)
-	return err
+func (r *repo) AddBoard(ctx context.Context, board *database.Board) error {
+	return r.exec(ctx, r.psqb.
+		Insert("board").
+		Columns("id", "alias", "name", "description", "author", "locked").
+		Values(board.ID, board.Alias, board.Name, board.Description, board.Author, board.Locked),
+	)
 }
 
-func (r *repo) DeleteBoard(id uuid.UUID) error {
-	stmt := `DELETE FROM board WHERE id = $1 CASCADE`
-	_, err := r.db.Exec(stmt, id)
-	return err
+func (r *repo) DeleteBoard(ctx context.Context, id uuid.UUID) error {
+	return r.exec(ctx, r.psqb.Delete("board").Where(squirrel.Eq{"id": id}))
 }
 
-func (r *repo) GetBoardByAlias(alias string) (*database.Board, error) {
-	stmt := `SELECT id, alias, name, description, locked FROM board WHERE alias = $1`
-	row := r.db.QueryRow(stmt, alias)
+func (r *repo) GetBoardByAlias(ctx context.Context, alias string) (*database.Board, error) {
+	row := r.queryRow(ctx, r.psqb.
+		Select("id", "alias", "name", "description", "locked").
+		From("board").
+		Where(squirrel.Eq{"alias": alias}),
+	)
 	var board database.Board
 	if err := row.Scan(&board.ID, &board.Alias, &board.Name, &board.Description, &board.Locked); err != nil {
 		return nil, err
@@ -31,16 +36,19 @@ func (r *repo) GetBoardByAlias(alias string) (*database.Board, error) {
 	return &board, nil
 }
 
-func (r *repo) GetBoardById(id uuid.UUID) (*database.Board, error) {
+func (r *repo) GetBoardById(ctx context.Context, id uuid.UUID) (*database.Board, error) {
 	if id == uuid.Nil {
-		return nil, fmt.Errorf("board id is required: %w", sql.ErrNoRows)
+		return nil, fmt.Errorf("board id is required: %w", pgx.ErrNoRows)
 	}
 
-	stmt := `SELECT id, alias, name, description, locked FROM board WHERE id = $1`
-	row := r.db.QueryRow(stmt, id)
+	row := r.queryRow(ctx, r.psqb.
+		Select("id", "alias", "name", "description", "locked").
+		From("board").
+		Where(squirrel.Eq{"id": id}),
+	)
 	var board database.Board
 	if err := row.Scan(&board.ID, &board.Alias, &board.Name, &board.Description, &board.Locked); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, fmt.Errorf("board %s not found: %w", id, err)
 		}
 		return nil, err
@@ -48,19 +56,28 @@ func (r *repo) GetBoardById(id uuid.UUID) (*database.Board, error) {
 	return &board, nil
 }
 
-func (r *repo) GetBoards() ([]database.Board, error) {
-	stmt := `SELECT id, alias, name, description, locked FROM board ORDER BY created_at ASC`
-	rows, err := r.db.Query(stmt)
+func (r *repo) GetBoards(ctx context.Context) ([]database.Board, error) {
+	rows, err := r.query(ctx, r.psqb.
+		Select("id", "alias", "name", "description", "locked").
+		From("board").
+		OrderBy("created_at ASC"),
+	)
 	if err != nil {
 		return nil, err
 	}
-	return collectRows(rows, func(board *database.Board) error {
-		return rows.Scan(&board.ID, &board.Alias, &board.Name, &board.Description, &board.Locked)
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (database.Board, error) {
+		var board database.Board
+		err := row.Scan(&board.ID, &board.Alias, &board.Name, &board.Description, &board.Locked)
+		return board, err
 	})
 }
 
-func (r *repo) UpdateBoard(board *database.Board) error {
-	stmt := `UPDATE board SET alias = $1, name = $2, description = $3 WHERE id = $4`
-	_, err := r.db.Exec(stmt, board.Alias, board.Name, board.Description, board.ID)
-	return err
+func (r *repo) UpdateBoard(ctx context.Context, board *database.Board) error {
+	return r.exec(ctx, r.psqb.
+		Update("board").
+		Set("alias", board.Alias).
+		Set("name", board.Name).
+		Set("description", board.Description).
+		Where(squirrel.Eq{"id": board.ID}),
+	)
 }

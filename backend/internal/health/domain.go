@@ -1,5 +1,7 @@
 package health
 
+import "context"
+
 type Service interface {
-	Readiness() error
+	Readiness(ctx context.Context) error
 }

@@ -1,6 +1,7 @@
 package board
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -8,18 +9,18 @@ import (
 )
 
 type Service interface {
-	CreateBoard(board *BoardInput) error
-	GetBoardWithThreads(alias string, limit, offset int) (*Board, error)
-	GetBoards() ([]*Board, error)
-	DeleteBoard(id uuid.UUID) error
-	UpdateBoard(board *Board) error
+	CreateBoard(ctx context.Context, board *BoardInput) error
+	GetBoardWithThreads(ctx context.Context, alias string, limit, offset int) (*Board, error)
+	GetBoards(ctx context.Context) ([]*Board, error)
+	DeleteBoard(ctx context.Context, id uuid.UUID) error
+	UpdateBoard(ctx context.Context, board *Board) error
 
-	CreateThread(thread *Thread) (*Thread, error)
-	GetThreadWithPosts(id uuid.UUID) (*Thread, error)
-	DeleteThread(id uuid.UUID) error
+	CreateThread(ctx context.Context, thread *Thread) (*Thread, error)
+	GetThreadWithPosts(ctx context.Context, id uuid.UUID) (*Thread, error)
+	DeleteThread(ctx context.Context, id uuid.UUID) error
 
-	CreatePost(threadID uuid.UUID, post *Post) error
-	DeletePost(id uuid.UUID) error
+	CreatePost(ctx context.Context, threadID uuid.UUID, post *Post) error
+	DeletePost(ctx context.Context, id uuid.UUID) error
 }
 
 type (
