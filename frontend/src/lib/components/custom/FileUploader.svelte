@@ -8,6 +8,40 @@
 
 	let { value = $bindable() }: { value: FileType[] } = $props();
 	let fileCurrentId = $state(0);
+
+	function onFilePicked(e: Event) {
+		const input = e.target as HTMLInputElement | null;
+		const picked = input?.files?.[0];
+		if (!picked) return;
+
+		const id = fileCurrentId.toString();
+		fileCurrentId += 1;
+
+		if (picked.size > MAX_FILE_BYTES) {
+			toast.error($t("common.file.limitSize"));
+			return;
+		}
+
+		let fileExt = picked.name.split(".").pop() || "jpg";
+		const name =
+			picked.name.length > 10 + fileExt.length
+				? picked.name.substring(0, 8) + "." + fileExt
+				: picked.name;
+
+		const reader = new FileReader();
+		reader.readAsArrayBuffer(picked);
+		reader.onload = (readerEvent) => {
+			if (!readerEvent.target?.result) {
+				toast.error("Something wrong with file");
+				return;
+			}
+			value.push({
+				id,
+				name,
+				blob: readerEvent.target.result,
+			});
+		};
+	}
 </script>
 
 <div class="flex flex-row justify-start items-start gap-2">
@@ -15,8 +49,8 @@
 		<Button
 			id={`file-${file.id}`}
 			title={$t("common.file.remove")}
-			on:click={async () => {
-				value = value.filter((value) => value.id != file.id);
+			onclick={() => {
+				value = value.filter((v) => v.id != file.id);
 			}}
 		>
 			{file.name}
@@ -26,7 +60,7 @@
 	<Button
 		size="icon"
 		title={$t("common.file.add")}
-		on:click={async () => {
+		onclick={() => {
 			if (value.length >= MAX_FILES) {
 				toast.error($t("common.file.limitCount"));
 				return;
@@ -35,47 +69,7 @@
 			const input = document.createElement("input");
 			input.type = "file";
 			input.accept = "image/*";
-
-			let file: File;
-			input.onchange = async (e: any) => {
-				if (!e.target || !e.target.files) {
-					return;
-				}
-				file = e.target.files[0];
-				const id = fileCurrentId.toString()
-				fileCurrentId += 1
-
-				if (file.size > MAX_FILE_BYTES) {
-					toast.error($t("common.file.limitSize"));
-					return;
-				}
-				let name: string;
-				let fileExt = file.name.split(".").pop();
-				if (!fileExt) {
-					fileExt = ".jpg"
-				}
-				if (file.name.length > (10 + fileExt?.length)) {
-					name = file.name.substring(0, 8) + "." + fileExt;
-				} else {
-					name = file.name;
-				}
-
-				let reader = new FileReader();
-				reader.readAsArrayBuffer(file);
-
-				reader.onload = (readerEvent) => {
-					if (!readerEvent.target) {
-						toast.error("Something wrong with file");
-						return;
-					}
-					const content = readerEvent.target.result; // this is the content!
-					value.push({
-						id: id,
-						name: name,
-						blob: content,
-					});
-				};
-			};
+			input.onchange = onFilePicked;
 			input.click();
 		}}
 	>

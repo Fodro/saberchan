@@ -3,7 +3,7 @@
 	import { Separator } from "$lib/components/ui/separator/index.js";
 	import HoverCardContent from "$lib/components/ui/hover-card/hover-card-content.svelte";
 	import { t } from "$lib/translations";
-	import Button from "$lib/components/ui/button/button.svelte";
+	import { cn } from "$lib/utils.js";
 	import type { Board } from "$lib/types/board.js";
 	import * as Dialog from "$lib/components/ui/dialog/index.js";
 	import { buttonVariants } from "$lib/components/ui/button/index.js";
@@ -83,49 +83,47 @@
 					<div
 						class="flex flex-row justify-start items-center gap-4 w-full h-full"
 					>
-						<Dialog.Close asChild>
-							<Button
-								class="cursor-pointer"
-								on:click={async () => {
+						<Dialog.Close
+							class={cn(buttonVariants(), "cursor-pointer")}
+							onclick={async () => {
+								if (
+									newName &&
+									newAlias &&
+									newDescription &&
+									data.username
+								) {
+									const board: Board = {
+										id: "",
+										name: newName,
+										alias: newAlias,
+										description: newDescription,
+										locked: newLocked,
+										author: data.username,
+										threads: [],
+									};
+									const res = await fetch("/api/board", {
+										method: "POST",
+										headers: {
+											"Content-Type": "application/json",
+										},
+										body: JSON.stringify(board),
+									});
 									if (
-										newName &&
-										newAlias &&
-										newDescription &&
-										data.username
+										res.status != 201 &&
+										res.status != 200
 									) {
-										const board: Board = {
-											id: "",
-											name: newName,
-											alias: newAlias,
-											description: newDescription,
-											locked: newLocked,
-											author: data.username,
-											threads: [],
-										};
-										const res = await fetch("/api/board", {
-											method: "POST",
-											headers: {
-												"Content-Type": "application/json",
-											},
-											body: JSON.stringify(board),
-										});
-										if (
-											res.status != 201 &&
-											res.status != 200
-										) {
-											toast.error(await res.text());
-											return;
-										}
-										await window.open(
-											"/",
-											"_self",
-											"noopener",
-										);
+										toast.error(await res.text());
+										return;
 									}
-								}}
-							>
-								{$t("common.save")}
-							</Button>
+									await window.open(
+										"/",
+										"_self",
+										"noopener",
+									);
+								}
+							}}
+						>
+							{$t("common.save")}
 						</Dialog.Close>
 					</div>
 				</Dialog.Footer>

@@ -9,20 +9,15 @@
 	import { toggleMode } from "mode-watcher";
 	import { Button } from "$lib/components/ui/button/index.js";
 	import { goto, invalidate, invalidateAll } from "$app/navigation";
-	import { onMount, setContext } from "svelte";
+	import { onMount } from "svelte";
 	import { t } from "$lib/translations";
 	import { CounterClockwiseClock, Update } from "svelte-radix";
 
 	let intervals = [1, 5, 10, 15, 30, 60];
 
-	let counter = $state(0);
 	let interval: number | undefined = $state(9999);
 
 	let localeLoading = $state(false);
-
-	setContext("counter", () => {
-		return counter;
-	});
 
 	$effect(() => {
 		if (interval !== 9999) {
@@ -33,18 +28,15 @@
 	$effect(() => {
 		if (interval && interval !== 9999) {
 			const id = setInterval(() => {
-				counter += 1;
+				void invalidate("board:all");
+				void invalidate("board:slug");
+				void invalidate("thread:id");
 			}, interval * 1000);
 
 			return () => {
 				clearInterval(id);
 			};
 		}
-	});
-
-	$effect(() => {
-		counter;
-		invalidate("board:all");
 	});
 
 	onMount(() => {
@@ -66,7 +58,7 @@
 			</h2>
 			<Button
 				class="cursor-pointer"
-				on:click={() => {
+				onclick={() => {
 					goto("/");
 				}}
 				size="icon"
@@ -83,7 +75,7 @@
 				<Button
 					variant="secondary"
 					class="cursor-pointer"
-					on:click={async () => {
+					onclick={async () => {
 						localeLoading = true;
 						await fetch("/locale", {
 							method: "POST",
@@ -107,7 +99,7 @@
 				<Button
 					variant="secondary"
 					class="cursor-pointer"
-					on:click={async () => {
+					onclick={async () => {
 						localeLoading = true;
 						await fetch("/locale", {
 							method: "POST",
@@ -127,7 +119,7 @@
 					{/if}
 				</Button>
 			{/if}
-			<Button on:click={toggleMode} size="icon" class="cursor-pointer">
+			<Button onclick={toggleMode} size="icon" class="cursor-pointer">
 				<Sun
 					class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
 				/>
@@ -206,7 +198,7 @@
 			<Menubar.Content>
 				<Menubar.Item
 					inset
-					on:click={() => {
+					onclick={() => {
 						interval = undefined;
 					}}
 				>
@@ -215,7 +207,7 @@
 				{#each intervals as i}
 					<Menubar.Item
 						inset
-						on:click={() => {
+						onclick={() => {
 							interval = i;
 						}}
 					>
@@ -228,7 +220,7 @@
 			variant="ghost"
 			size="icon"
 			class="cursor-pointer"
-			on:click={() => {
+			onclick={() => {
 				invalidateAll();
 			}}
 		>

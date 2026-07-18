@@ -1,80 +1,33 @@
 <script lang="ts">
-	import { invalidate } from "$app/navigation";
-	import Draggable from "$lib/components/custom/Draggable.svelte";
 	import Badge from "$lib/components/ui/badge/badge.svelte";
 	import Button from "$lib/components/ui/button/button.svelte";
 	import * as Card from "$lib/components/ui/card/index.js";
 	import Input from "$lib/components/ui/input/input.svelte";
 	import Label from "$lib/components/ui/label/label.svelte";
 	import { Separator } from "$lib/components/ui/separator/index.js";
-	import { Textarea } from "$lib/components/ui/textarea/index.js";
+	import ComposeForm from "$lib/components/custom/ComposeForm.svelte";
 	import Image from "$lib/components/custom/Image.svelte";
 	import type { File as FileType } from "$lib/types/attachment";
-	import {
-			formatDateTime,
-			insertTagAtCursor,
-		} from "$lib/helpers.js";
-		import {
-			buildAttachments,
-			readApiError,
-			validateCompose,
-			type ComposeValidationError,
-		} from "$lib/composeValidate";
+	import { formatDateTime } from "$lib/helpers.js";
+	import { buildAttachments, composeErrorMessageFactory, submitCompose } from "$lib/compose";
 	import { trackBoard } from "$lib/tracking";
 	import type { Thread } from "$lib/types/thread.js";
-	import { getContext, onMount } from "svelte";
+	import { onMount } from "svelte";
 	import { t } from "$lib/translations";
-	import {
-		CaretDown,
-		CaretRight,
-		CaretUp,
-		DrawingPin,
-		DrawingPinFilled,
-		FontBold,
-		FontItalic,
-		Overline,
-		TextNone,
-		TransparencyGrid,
-		Underline,
-	} from "svelte-radix";
 	import PostBody from "$lib/components/custom/PostBody.svelte";
-	import Captcha from "$lib/components/custom/Captcha.svelte";
 	import { toast } from "svelte-sonner";
-	import FileUploader from "$lib/components/custom/FileUploader.svelte";
 
 	let { data } = $props();
 
-	let counter: () => number = getContext("counter");
-
 	let isReplyOpen = $state(false);
-
-	const composeErrorMessage = (code: ComposeValidationError): string => {
-		switch (code) {
-			case "title_required":
-				return $t("common.compose.title_required");
-			case "title_too_long":
-				return $t("common.compose.title_too_long");
-			case "text_required":
-				return $t("common.compose.text_required");
-			case "text_too_long":
-				return $t("common.compose.text_too_long");
-			case "captcha_required":
-				return $t("common.captcha.required");
-			case "file_count":
-				return $t("common.file.limitCount");
-			case "file_size":
-				return $t("common.file.limitSize");
-			case "payload_too_large":
-				return $t("common.compose.payload_too_large");
-		}
-	};
+	let submitting = $state(false);
 
 	let formX = $state(0);
 	let formY = $state(0);
 	let formPinned = $state(true);
 
 	let newTitle: string | null = $state(null);
-	let newText: string | null = $state(null);
+	let newText = $state("");
 
 	let filesList: FileType[] = $state([]);
 
@@ -82,22 +35,59 @@
 	let captchaToken = $state("");
 	let captchaCounter = $state(0);
 
-	const setCaptchaInput = (input: string) => {
-		captchaInput = input;
-	};
-
-	const setCaptchaToken = (token: string) => {
-		captchaToken = token;
-	};
-
-	$effect(() => {
-		counter();
-		invalidate("board:slug");
-	});
+	const composeErrorMessage = composeErrorMessageFactory((key) => $t(key));
 
 	onMount(async () => {
 		await trackBoard(data.board.alias);
 	});
+
+	const submitNewThread = async () => {
+		submitting = true;
+		try {
+			const attachments = buildAttachments(filesList);
+			const payload = {
+				board_id: data.board.id,
+				title: newTitle,
+				original_post: {
+					text: newText,
+					attachments,
+				},
+				captcha: {
+					input: captchaInput,
+					token: captchaToken,
+				},
+			};
+
+			const result = await submitCompose({
+				endpoint: "/api/thread",
+				payload,
+				title: newTitle,
+				text: newText,
+				requireTitle: true,
+				captchaInput,
+				captchaToken,
+				files: filesList,
+				errorMessage: composeErrorMessage,
+				captchaFailedMessage: $t("common.captcha.failed"),
+			});
+
+			if (!result.ok) {
+				toast.error(result.message);
+				if (result.bumpCaptcha) captchaCounter += 1;
+				return;
+			}
+
+			const thread = result.json as Thread;
+			newText = "";
+			newTitle = null;
+			isReplyOpen = false;
+			filesList = [];
+
+			await window.open(`/board/${data.slug}/thread/${thread.id}`, "_blank", "noopener");
+		} finally {
+			submitting = false;
+		}
+	};
 </script>
 
 <svelte:head>
@@ -112,7 +102,7 @@
 	</h3>
 	<Button
 		class="cursor-pointer"
-		on:click={() => {
+		onclick={() => {
 			isReplyOpen = !isReplyOpen;
 		}}
 	>
@@ -127,272 +117,30 @@
 <Separator class="my-4" />
 
 {#if isReplyOpen}
-	<Draggable initialLeft={formX} initialTop={formY} pinned={formPinned}>
-		<Card.Root class="w-[100%] h-[100%]">
-			<Card.Header>
-				<Card.Title>
-					<div class="flex flex-row items-center h-[5%]">
-						<div class="flex flex-row flex-1">
-							<p class="text-muted-foreground">
-								{$t("common.threads.new")}
-							</p>
-						</div>
-						<div class="flex flex-row-reverse flex-1">
-							<Button
-								class="cursor-pointer md:flex hidden"
-								variant="outline"
-								size="icon"
-								on:click={() => {
-									formPinned = !formPinned;
-								}}
-							>
-								{#if formPinned}
-									<DrawingPinFilled />
-								{/if}
-								{#if !formPinned}
-									<DrawingPin />
-								{/if}
-							</Button>
-						</div>
-					</div>
-				</Card.Title>
-				<Card.Description>
-					<p class="text-muted-foreground md:flex hidden">
-						{$t("common.draggable")}
-					</p>
-				</Card.Description>
-			</Card.Header>
-			<Card.Content>
-				<div class="grid grid-cols-1 w-full items-center gap-2">
-					<div class="flex flex-col justify-start items-start gap-3">
-						<Label>{$t("common.fields.title")}</Label>
-						<Input
-							placeholder={$t("common.fields.title_placeholder")}
-							bind:value={newTitle}
-						/>
-					</div>
-					<div class="flex flex-col justify-start items-start gap-2">
-						<Label>{$t("common.fields.text")}</Label>
-						<div
-							class="md:flex md:flex-row md:justify-start md:items-center grid grid-cols-3 gap-2"
-						>
-							<Button
-								class="cursor-pointer"
-								size="icon"
-								variant="outline"
-								on:click={() => {
-									const field = document.getElementById(
-										"new-thread-area",
-									) as HTMLTextAreaElement;
-									insertTagAtCursor(field, "[b]", "[/b]");
-								}}
-							>
-								<FontBold />
-							</Button>
-							<Button
-								class="cursor-pointer"
-								size="icon"
-								variant="outline"
-								on:click={() => {
-									const field = document.getElementById(
-										"new-thread-area",
-									) as HTMLTextAreaElement;
-									insertTagAtCursor(field, "[i]", "[/i]");
-								}}
-							>
-								<FontItalic />
-							</Button>
-							<Button
-								class="cursor-pointer"
-								size="icon"
-								variant="outline"
-								on:click={() => {
-									const field = document.getElementById(
-										"new-thread-area",
-									) as HTMLTextAreaElement;
-									insertTagAtCursor(field, "[u]", "[/u]");
-								}}
-							>
-								<Underline />
-							</Button>
-							<Button
-								class="cursor-pointer"
-								size="icon"
-								variant="outline"
-								on:click={() => {
-									const field = document.getElementById(
-										"new-thread-area",
-									) as HTMLTextAreaElement;
-									insertTagAtCursor(field, "[o]", "[/o]");
-								}}
-							>
-								<Overline />
-							</Button>
-							<Button
-								class="cursor-pointer"
-								size="icon"
-								variant="outline"
-								on:click={() => {
-									const field = document.getElementById(
-										"new-thread-area",
-									) as HTMLTextAreaElement;
-									insertTagAtCursor(field, "[s]", "[/s]");
-								}}
-							>
-								<TextNone />
-							</Button>
-							<Button
-								class="cursor-pointer"
-								size="icon"
-								variant="outline"
-								on:click={() => {
-									const field = document.getElementById(
-										"new-thread-area",
-									) as HTMLTextAreaElement;
-									insertTagAtCursor(field, "[sup]", "[/sup]");
-								}}
-							>
-								<CaretUp />
-							</Button>
-							<Button
-								class="cursor-pointer"
-								size="icon"
-								variant="outline"
-								on:click={() => {
-									const field = document.getElementById(
-										"new-thread-area",
-									) as HTMLTextAreaElement;
-									insertTagAtCursor(field, "[sub]", "[/sub]");
-								}}
-							>
-								<CaretDown />
-							</Button>
-							<Button
-								class="cursor-pointer"
-								size="icon"
-								variant="outline"
-								on:click={() => {
-									const field = document.getElementById(
-										"new-thread-area",
-									) as HTMLTextAreaElement;
-									insertTagAtCursor(
-										field,
-										"[spoiler]",
-										"[/spoiler]",
-									);
-								}}
-							>
-								<TransparencyGrid />
-							</Button>
-							<Button
-								class="cursor-pointer"
-								size="icon"
-								variant="outline"
-								on:click={() => {
-									const field = document.getElementById(
-										"new-thread-area",
-									) as HTMLTextAreaElement;
-									insertTagAtCursor(field, "\n>", "\n");
-								}}
-							>
-								<CaretRight />
-							</Button>
-						</div>
-						<Textarea
-							id="new-thread-area"
-							placeholder={$t("common.fields.text_placeholder")}
-							rows={10}
-							class="min-h-[70%] w-full resize-none"
-							bind:value={newText}
-						/>
-						<FileUploader bind:value={filesList} />
-						<Captcha
-							{setCaptchaInput}
-							{setCaptchaToken}
-							counter={captchaCounter}
-						/>
-					</div>
-				</div>
-			</Card.Content>
-			<Card.Footer>
-				<div
-					class="flex flex-row justify-start items-center gap-4 w-full h-full"
-				>
-					<Button
-						class="cursor-pointer"
-						variant="secondary"
-						on:click={() => {
-							isReplyOpen = !isReplyOpen;
-						}}
-					>
-						{$t("common.cancel")}
-					</Button>
-					<Button
-						class="cursor-pointer"
-						on:click={async () => {
-							const attachments = buildAttachments(filesList);
-							const payload = {
-								board_id: data.board.id,
-								title: newTitle,
-								original_post: {
-									text: newText,
-									attachments,
-								},
-								captcha: {
-									input: captchaInput,
-									token: captchaToken,
-								},
-							};
-
-							const invalid = validateCompose({
-								title: newTitle,
-								text: newText,
-								requireTitle: true,
-								captchaInput,
-								captchaToken,
-								files: filesList,
-								attachments,
-								payload,
-							});
-							if (invalid) {
-								toast.error(composeErrorMessage(invalid));
-								return;
-							}
-
-							const res = await fetch("/api/thread", {
-								method: "POST",
-								headers: { "Content-Type": "application/json" },
-								body: JSON.stringify(payload),
-							});
-							if (res.status == 403) {
-								toast.error($t("common.captcha.failed"));
-								captchaCounter += 1;
-								return;
-							}
-
-							if (res.status != 201 && res.status != 200) {
-								toast.error(await readApiError(res));
-								return;
-							}
-							const thread: Thread = await res.json();
-							newText = null;
-							newTitle = null;
-							isReplyOpen = false;
-							filesList = [];
-
-							await window.open(
-								`/board/${data.slug}/thread/${thread.id}`,
-								"_blank",
-								"noopener",
-							);
-						}}
-					>
-						{$t("common.post")}
-					</Button>
-				</div>
-			</Card.Footer>
-		</Card.Root>
-	</Draggable>
+	<ComposeForm
+		heading={$t("common.threads.new")}
+		textareaId="new-thread-area"
+		initialLeft={formX}
+		initialTop={formY}
+		bind:formPinned
+		bind:text={newText}
+		bind:files={filesList}
+		bind:captchaInput
+		bind:captchaToken
+		{captchaCounter}
+		onCancel={() => {
+			isReplyOpen = false;
+		}}
+		onSubmit={submitNewThread}
+		{submitting}
+	>
+		{#snippet beforeText()}
+			<div class="flex flex-col justify-start items-start gap-3">
+				<Label>{$t("common.fields.title")}</Label>
+				<Input placeholder={$t("common.fields.title_placeholder")} bind:value={newTitle} />
+			</div>
+		{/snippet}
+	</ComposeForm>
 {/if}
 
 <div class="grid md:grid-cols-2 grid-cols-1 gap-4 pb-2">
@@ -419,29 +167,21 @@
 				<div class="flex flex-row justify-start items-start gap-3">
 					{#if thread.original_post.attachments && thread.original_post.attachments.length > 0}
 						<div
-							class={`grid grid-cols-1 grid-rows-1 items-center gap-2 flex-1 p-2 border-r-7 flex-1`}
+							class="grid grid-cols-1 grid-rows-1 items-center gap-2 flex-1 p-2 border-r-7 flex-1"
 						>
 							<Image
-								link={thread.original_post.attachments[0]
-									.link ?? ""}
-								name={thread.original_post.attachments[0]
-									.name ?? ""}
+								link={thread.original_post.attachments[0].link ?? ""}
+								name={thread.original_post.attachments[0].name ?? ""}
 							/>
 						</div>
 					{/if}
 					<div class="flex-2">
 						{#if thread.original_post.text.length <= 300}
-							<PostBody
-								text={thread.original_post.text}
-								additionalClass=""
-							/>
+							<PostBody text={thread.original_post.text} additionalClass="" />
 						{/if}
 						{#if thread.original_post.text.length > 300}
 							<PostBody
-								text={thread.original_post.text.substring(
-									0,
-									300,
-								) + "..."}
+								text={thread.original_post.text.substring(0, 300) + "..."}
 								additionalClass="leading-7 whitespace-pre-wrap"
 							/>
 						{/if}

@@ -1,18 +1,22 @@
 <script lang="ts">
-	import { Menubar as MenubarPrimitive } from "bits-ui";
-	import { cn } from "$lib/utils.js";
+	import type { HTMLAttributes } from "svelte/elements";
+	import { cn, type WithElementRef } from "$lib/utils.js";
 
-	type $$Props = MenubarPrimitive.LabelProps & {
+	let {
+		ref = $bindable(null),
+		class: className,
+		inset,
+		children,
+		...restProps
+	}: WithElementRef<HTMLAttributes<HTMLDivElement>> & {
 		inset?: boolean;
-	};
-	let className: $$Props["class"] = undefined;
-	export let inset: $$Props["inset"] = undefined;
-	export { className as class };
+	} = $props();
 </script>
 
-<MenubarPrimitive.Label
+<div
+	bind:this={ref}
 	class={cn("px-2 py-1.5 text-sm font-semibold", inset && "pl-8", className)}
-	{...$$restProps}
+	{...restProps}
 >
-	<slot />
-</MenubarPrimitive.Label>
+	{@render children?.()}
+</div>

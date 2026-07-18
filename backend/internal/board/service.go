@@ -56,30 +56,30 @@ func (s *service) CreatePost(threadID uuid.UUID, post *Post) error {
 		return err
 	}
 
-		if hasAttachment {
-			for _, attachment := range post.Attachments {
-				fileResp, err := s.file.UploadFile(context.Background(), &file.FileReq{
-					PostID: postID,
-					Name:   attachment.Name,
-					Body:   attachment.Body,
-				})
-				if err != nil {
-					log.Printf("error uploading file: %v", err)
-					return err
-				}
-				err = s.repo.AddAttachment(&database.Attachment{
-					ID:     uuid.New(),
-					PostID: postID,
-					Link:   fileResp.Link,
-					Name:   attachment.Name,
-					Type:   attachment.Type,
-				})
-				if err != nil {
-					log.Printf("error saving attachment %s to db: %v", fileResp.Link, err)
-					return err
-				}
+	if hasAttachment {
+		for _, attachment := range post.Attachments {
+			fileResp, err := s.file.UploadFile(context.Background(), &file.FileReq{
+				PostID: postID,
+				Name:   attachment.Name,
+				Body:   attachment.Body,
+			})
+			if err != nil {
+				log.Printf("error uploading file: %v", err)
+				return err
+			}
+			err = s.repo.AddAttachment(&database.Attachment{
+				ID:     uuid.New(),
+				PostID: postID,
+				Link:   fileResp.Link,
+				Name:   attachment.Name,
+				Type:   attachment.Type,
+			})
+			if err != nil {
+				log.Printf("error saving attachment %s to db: %v", fileResp.Link, err)
+				return err
 			}
 		}
+	}
 
 	if !post.Sage {
 		shouldBump, _ := s.repo.CheckIfThreadBelowBumpLimit(threadID)
@@ -140,15 +140,15 @@ func (s *service) CreateThread(thread *Thread) (*Thread, error) {
 }
 
 func (s *service) DeleteBoard(id uuid.UUID) error {
-	panic("unimplemented")
+	return ErrNotImplemented
 }
 
 func (s *service) DeletePost(id uuid.UUID) error {
-	panic("unimplemented")
+	return ErrNotImplemented
 }
 
 func (s *service) DeleteThread(id uuid.UUID) error {
-	panic("unimplemented")
+	return ErrNotImplemented
 }
 
 func (s *service) GetBoardWithThreads(alias string) (*Board, error) {
@@ -312,7 +312,7 @@ func (s *service) getAttachmentsForPost(id uuid.UUID) ([]Attachment, error) {
 }
 
 func (s *service) UpdateBoard(board *Board) error {
-	panic("unimplemented")
+	return ErrNotImplemented
 }
 
 func NewService(repo database.Repository, file file.Service, conf *config.Config) Service {

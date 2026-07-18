@@ -34,7 +34,5 @@ export const keycloak = new arctic.KeyCloak(
 	redirectURI,
 );
 
-export const codeVerifier = arctic.generateCodeVerifier();
-
 /** Local HTTP cannot set Secure cookies — otherwise login appears to fail after callback. */
 export const cookieSecure = AUTH_HOST.startsWith('https://');

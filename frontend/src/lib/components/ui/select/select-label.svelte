@@ -2,12 +2,18 @@
 	import { Select as SelectPrimitive } from "bits-ui";
 	import { cn } from "$lib/utils.js";
 
-	type $$Props = SelectPrimitive.LabelProps;
-
-	let className: $$Props["class"] = undefined;
-	export { className as class };
+	let {
+		ref = $bindable(null),
+		class: className,
+		children,
+		...restProps
+	}: SelectPrimitive.GroupHeadingProps = $props();
 </script>
 
-<SelectPrimitive.Label class={cn("px-2 py-1.5 text-sm font-semibold", className)} {...$$restProps}>
-	<slot />
-</SelectPrimitive.Label>
+<SelectPrimitive.GroupHeading
+	bind:ref
+	class={cn("px-2 py-1.5 text-sm font-semibold", className)}
+	{...restProps}
+>
+	{@render children?.()}
+</SelectPrimitive.GroupHeading>
