@@ -76,6 +76,33 @@ func TestResolveLinkPrefix(t *testing.T) {
 			forcePathStyle: true,
 			want:           "http://localhost:9000/b",
 		},
+		{
+			name:           "public url always path-style even if forcePathStyle false",
+			bucket:         "saberchan",
+			host:           "garage:3900",
+			publicBase:     "https://board.example.com",
+			useSSL:         true,
+			forcePathStyle: false,
+			want:           "https://board.example.com/saberchan",
+		},
+		{
+			name:           "public url already includes bucket",
+			bucket:         "saberchan",
+			host:           "garage:3900",
+			publicBase:     "https://board.example.com/saberchan",
+			useSSL:         true,
+			forcePathStyle: true,
+			want:           "https://board.example.com/saberchan",
+		},
+		{
+			name:           "public media path is full prefix (no bucket append)",
+			bucket:         "saberchan",
+			host:           "garage:3900",
+			publicBase:     "https://board.example.com/media",
+			useSSL:         true,
+			forcePathStyle: true,
+			want:           "https://board.example.com/media",
+		},
 	}
 
 	for _, tt := range tests {
@@ -86,5 +113,17 @@ func TestResolveLinkPrefix(t *testing.T) {
 				t.Fatalf("got %q, want %q", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestObjectPublicURL(t *testing.T) {
+	t.Parallel()
+	got := ObjectPublicURL("https://board.example.com/saberchan", "abc.jpg", "http://old/host/saberchan/abc.jpg")
+	if got != "https://board.example.com/saberchan/abc.jpg" {
+		t.Fatalf("got %q", got)
+	}
+	got = ObjectPublicURL("https://board.example.com/saberchan", "", "http://stored/link.jpg")
+	if got != "http://stored/link.jpg" {
+		t.Fatalf("fallback got %q", got)
 	}
 }

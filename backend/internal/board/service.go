@@ -10,6 +10,7 @@ import (
 	"github.com/Fodro/saberchan/config"
 	"github.com/Fodro/saberchan/internal/database"
 	"github.com/Fodro/saberchan/internal/file"
+	"github.com/Fodro/saberchan/internal/file/s3service"
 	"github.com/Fodro/saberchan/internal/follow"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -18,10 +19,11 @@ import (
 const restoreWindow = 24 * time.Hour
 
 type service struct {
-	repo   database.Repository
-	file   file.Service
-	conf   *config.Config
-	follow follow.Service // optional; nil disables follow refresh on bump
+	repo        database.Repository
+	file        file.Service
+	conf        *config.Config
+	follow      follow.Service // optional; nil disables follow refresh on bump
+	mediaPrefix string         // public object URL prefix (S3_PUBLIC_URL/…/bucket)
 }
 
 func (s *service) CreateBoard(ctx context.Context, board *BoardInput) error {
@@ -346,7 +348,7 @@ func (s *service) GetBoardWithThreads(ctx context.Context, alias string, limit, 
 					ID:   a.ID,
 					Name: a.Name,
 					Type: a.Type,
-					Link: a.Link,
+					Link: s.publicAttachmentLink(a),
 				})
 			}
 		}
@@ -489,10 +491,14 @@ func (s *service) getAttachmentsForPost(ctx context.Context, id uuid.UUID) ([]At
 			ID:   attachmentDB.ID,
 			Name: attachmentDB.Name,
 			Type: attachmentDB.Type,
-			Link: attachmentDB.Link,
+			Link: s.publicAttachmentLink(attachmentDB),
 		})
 	}
 	return attachments, nil
+}
+
+func (s *service) publicAttachmentLink(a database.Attachment) string {
+	return s3service.ObjectPublicURL(s.mediaPrefix, a.Key, a.Link)
 }
 
 func (s *service) UpdateBoard(ctx context.Context, board *Board) error {
@@ -509,6 +515,22 @@ func attachmentBytes(a Attachment) ([]byte, error) {
 	return base64.StdEncoding.DecodeString(a.Body)
 }
 
-func NewService(repo database.Repository, file file.Service, conf *config.Config, followSvc follow.Service) Service {
-	return &service{repo: repo, file: file, conf: conf, follow: followSvc}
+func NewService(repo database.Repository, fileSvc file.Service, conf *config.Config, followSvc follow.Service) Service {
+	var mediaPrefix string
+	if conf != nil && conf.S3 != nil {
+		mediaPrefix = s3service.ResolveLinkPrefix(
+			conf.S3.Bucket,
+			conf.S3.Url,
+			conf.S3.PublicURL,
+			conf.S3.UseSSL,
+			conf.S3.ForcePathStyle,
+		)
+	}
+	return &service{
+		repo:        repo,
+		file:        fileSvc,
+		conf:        conf,
+		follow:      followSvc,
+		mediaPrefix: mediaPrefix,
+	}
 }

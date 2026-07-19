@@ -3,3 +3,4 @@
 .cursor/
 .env.local
 .env.prod
+**media-garage.conf.example**

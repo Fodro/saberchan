@@ -132,9 +132,35 @@ Local defaults in `.env.local.dist`:
 | `S3_URL` | `minio:9000` | SDK endpoint host (in-network) |
 | `S3_USE_SSL` | `false` | HTTP to MinIO |
 | `S3_FORCE_PATH_STYLE` | `true` | path-style API (`/bucket/key`) |
-| `S3_PUBLIC_URL` | `http://localhost:9000` | browser-facing link prefix |
+| `S3_PUBLIC_URL` | `http://localhost:9000` | browser-facing origin (bucket appended) |
 
-Object links look like `http://localhost:9000/saberchan/<key>`. Production typically keeps `S3_USE_SSL=true`, `S3_FORCE_PATH_STYLE=false`, and leaves `S3_PUBLIC_URL` empty (or set to a CloudFront URL).
+Object links look like `http://localhost:9000/saberchan/<key>`.
+
+### Production media: Garage (private) + nginx (public)
+
+Recommended split (`/media` public path, bucket only on the private side):
+
+| Role | Config |
+|------|--------|
+| Upload/delete (API → Garage) | `S3_URL=garage.internal:3900`, `S3_FORCE_PATH_STYLE=true`, `S3_USE_SSL=false` |
+| Browser URLs | `S3_PUBLIC_URL=https://board.example.com/media` → `https://board.example.com/media/<key>` |
+| nginx | `/media/foo` → Garage `/saberchan/foo` — see [`deploy/nginx/media-garage.conf.example`](deploy/nginx/media-garage.conf.example) |
+
+`S3_PUBLIC_URL` rules:
+
+- Origin only (`https://board.example.com`) → append `/{bucket}` (same shape as local MinIO).
+- Origin + path (`https://board.example.com/media`) → use as the full link prefix (no bucket in the public URL); nginx must add the bucket when proxying.
+- Already ends with `/{bucket}` → used as-is.
+
+The API rewrites attachment links from the object `key` + current public prefix on read (no DB migration when you change the public origin).
+
+```bash
+S3_URL=garage.internal:3900
+S3_BUCKET=saberchan
+S3_PUBLIC_URL=https://board.example.com/media
+S3_USE_SSL=false
+S3_FORCE_PATH_STYLE=true
+```
 
 ## Production (AWS VPS + compose)
 
@@ -181,6 +207,10 @@ Tracked leftovers from the pre-1.0 review — not blockers for the VPS demo.
 - [ ] **S3 prod checklist** — bucket policy / CloudFront via `S3_PUBLIC_URL`, IAM least-privilege (expand this doc)
 - [ ] **Dead `SECRET` env** — wire it for something real or remove from `config/env.go` + dist files
 - [ ] **Runtime secrets for frontend** — stop baking `OIDC_CLIENT_SECRET` / `ADMIN_API_TOKEN` / `AUTH_SECRET` into the image (SvelteKit private env strategy)
+- [x] **S3 / Garage + nginx media** — `S3_PUBLIC_URL` path-style public links; sample nginx; links rewritten from `key` on read
+- [ ] **S3 ops checklist** — Garage bucket public-read / key rotation
+- [ ] **Dead `SECRET` env** — wire it for something real or remove from `config/env.go` + dist files
+- [ ] **Runtime secrets for frontend** — stop baking `OIDC_CLIENT_SECRET` / `ADMIN_API_TOKEN` / `AUTH_SECRET` into the image
 - [ ] **Upload magic-byte sniff** — don’t trust `Content-Type` / extension alone
 - [ ] **Backup runbook** — managed PG snapshots/PITR + S3 lifecycle/versioning; Redis is ephemeral by design
 - [ ] **Shared rate-limit store** — move in-process limiters to Redis if backend replicas > 1
