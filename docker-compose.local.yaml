@@ -3,8 +3,8 @@
 #   cp .env.local.dist .env.local
 #   make local-up
 #
-# Production should use docker-compose.yaml with external Postgres/Redis/S3/OIDC.
-# Local publishes backend:8888 for debugging; prod compose does not.
+# Production: docker-compose.yaml (Keycloak in compose; external Postgres/Redis/S3;
+# TLS on host nginx). Local publishes backend:8888 for debugging; prod does not.
 
 services:
   postgres:

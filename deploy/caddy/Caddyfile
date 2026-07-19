@@ -1,9 +1,0 @@
-# TLS for production (compose profile `proxy`).
-# Replace board.example.com with your public hostname (must match AUTH_HOST / ORIGIN).
-#
-# Caddy obtains Let's Encrypt certs automatically when ports 80/443 are reachable.
-
-{$CADDY_SITE:board.example.com} {
-	encode gzip
-	reverse_proxy frontend:3000
-}

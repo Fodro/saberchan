@@ -130,7 +130,7 @@ func (s *Server) trustProxy(ipStr string) bool {
 }
 
 // clientIP returns the client address. X-Forwarded-For is honored only when
-// RemoteAddr is in TRUSTED_PROXIES (e.g. Docker bridge / Caddy).
+// RemoteAddr is in TRUSTED_PROXIES (e.g. Docker bridge / nginx).
 func (s *Server) clientIP(r *http.Request) string {
 	remote := remoteIP(r)
 	if s.trustProxy(remote) {

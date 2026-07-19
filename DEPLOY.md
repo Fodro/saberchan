@@ -2,12 +2,12 @@
 
 ## Topology
 
-| Environment | App | Postgres | Redis | Object storage | Auth |
-|-------------|-----|----------|-------|----------------|------|
-| **Production** | `docker-compose.yaml` (+ optional Caddy) | external | external | external S3 | external Keycloak / OIDC |
-| **Local** | `docker-compose.local.yaml` | in compose | in compose | MinIO in compose | Keycloak in compose |
+| Environment | App | Postgres | Redis | Object storage | Auth | TLS |
+|-------------|-----|----------|-------|----------------|------|-----|
+| **Production** | `docker-compose.yaml` (frontend + backend + Keycloak) | external | external | external S3 / Garage | Keycloak in compose | **host nginx** |
+| **Local** | `docker-compose.local.yaml` | in compose | in compose | MinIO in compose | Keycloak in compose | none (HTTP) |
 
-Production keeps the data plane (DB, S3, Redis) and IdP outside the app compose file. Point env vars at those services via `.env.prod`.
+Production keeps Postgres, Redis, and object storage outside compose. Keycloak runs in compose and is reached only via host nginx (`127.0.0.1:8080`). Point env vars at those services via `.env.prod`.
 
 ## Prerequisites
 
@@ -144,7 +144,7 @@ Recommended split (`/media` public path, bucket only on the private side):
 |------|--------|
 | Upload/delete (API → Garage) | `S3_URL=garage.internal:3900`, `S3_FORCE_PATH_STYLE=true`, `S3_USE_SSL=false` |
 | Browser URLs | `S3_PUBLIC_URL=https://board.example.com/media` → `https://board.example.com/media/<key>` |
-| nginx | `/media/foo` → Garage `/saberchan/foo` — see [`deploy/nginx/media-garage.conf.example`](deploy/nginx/media-garage.conf.example) |
+| nginx | `/media/foo` → Garage `/saberchan/foo` — full site: [`deploy/nginx/saberchan.conf.example`](deploy/nginx/saberchan.conf.example) |
 
 `S3_PUBLIC_URL` rules:
 
@@ -162,37 +162,130 @@ S3_USE_SSL=false
 S3_FORCE_PATH_STYLE=true
 ```
 
-## Production (AWS VPS + compose)
+## Production deploy (VPS + compose + host nginx)
+
+Assumes one VPS with Docker Compose, host nginx for TLS, and external Postgres / Redis / Garage (or other S3 API).
+
+### 0. DNS
+
+| Hostname | Points to | Role |
+|----------|-----------|------|
+| `board.example.com` | VPS public IP | App + `/media/` |
+| `auth.example.com` | VPS public IP | Keycloak |
+
+### 1. External data plane (before compose)
+
+On Postgres (same host as the app DB is fine):
+
+```sql
+CREATE DATABASE saberchan;
+CREATE DATABASE keycloak;
+-- grant your DB user access to both
+```
+
+Also have reachable Redis and Garage (S3 API). Create bucket `saberchan` (or match `S3_BUCKET`).
+
+### 2. Env file
 
 ```bash
 cp .env.prod.dist .env.prod
-# fill RDS / Redis / S3 / OIDC / ADMIN_API_TOKEN / AUTH_HOST=https://…
-make prod-up
 ```
 
-What this starts:
+Edit **every** placeholder. Critical mappings:
+
+| Var | Example | Notes |
+|-----|---------|--------|
+| `AUTH_HOST` / `ORIGIN` | `https://board.example.com` | Exact browser URL (scheme + host) |
+| `KC_HOSTNAME` | `https://auth.example.com` | Keycloak public URL (must match nginx) |
+| `OIDC_REALM` | `https://auth.example.com/realms/saberchan` | Browser authorize / logout / JWT `iss` |
+| `OIDC_REALM_INTERNAL` | `http://keycloak:8080/realms/saberchan` | Token/JWKS from **frontend container** |
+| `KC_DB_URL` | `jdbc:postgresql://…:5432/keycloak` | Keycloak’s own DB |
+| `DB_*` | app DB | Backend migrations + data |
+| `S3_*` | Garage | See media section above |
+| `ADMIN_API_TOKEN` | long random | Same value for Go + frontend |
+| `OIDC_CLIENT_SECRET` | from Keycloak | Fill after step 5, then rebuild |
+
+`FRONTEND_PORT` / `KEYCLOAK_PORT` default to `3000` / `8080` and are bound to **`127.0.0.1` only**.
+
+### 3. Host nginx + TLS
+
+1. Copy [`deploy/nginx/saberchan.conf.example`](deploy/nginx/saberchan.conf.example) into nginx (e.g. `/etc/nginx/sites-available/saberchan.conf`), replace hostnames and cert paths.
+2. Ensure the `map $http_upgrade $connection_upgrade` block exists in `http {}` (commented at the bottom of the example).
+3. Issue certs (certbot, etc.) for `board.example.com` and `auth.example.com`.
+4. `nginx -t && systemctl reload nginx`.
+
+Nginx targets:
+
+| Public | Upstream |
+|--------|----------|
+| `https://board.example.com/` | `127.0.0.1:3000` (frontend) |
+| `https://board.example.com/media/` | Garage `…/saberchan/` |
+| `https://auth.example.com/` | `127.0.0.1:8080` (Keycloak) |
+
+Do **not** open Docker-published ports on `0.0.0.0`. Backend stays unpublished.
+
+### 4. Start compose
+
+```bash
+make prod-up          # docker compose -f docker-compose.yaml --env-file .env.prod up -d --build
+make prod-ps          # wait until keycloak / backend / frontend are healthy
+```
 
 | Service | Published | Notes |
 |---------|-----------|--------|
-| `frontend` | `${FRONTEND_PORT:-3000}` | Public app / BFF |
-| `backend` | **none** | Only on compose network at `http://backend:8888` |
-| `caddy` | 80/443 | Optional: `docker compose --env-file .env.prod --profile proxy up -d` |
+| `keycloak` | `127.0.0.1:${KEYCLOAK_PORT:-8080}` | Prod mode (`start`); DB via `KC_DB_*` |
+| `frontend` | `127.0.0.1:${FRONTEND_PORT:-3000}` | BFF; nginx proxies here |
+| `backend` | **none** | Compose network only: `http://backend:8888` |
 
-Edit [`deploy/caddy/Caddyfile`](deploy/caddy/Caddyfile) / set `CADDY_SITE` to your hostname. Put TLS on Caddy (or a host nginx) and set `ORIGIN` + `AUTH_HOST` to that HTTPS URL.
+Useful: `make prod-logs`, `make prod-down`.
 
-**Security notes for prod:**
+### 5. First-time Keycloak (prod)
 
-- Never publish `:8888` — captcha is enforced on Go, but the BFF is still the intended public entrypoint.
-- `ADMIN_API_TOKEN` must match on Go + frontend; rotate requires rebuilding the frontend image (build-args bake `$env/static/private`).
-- Frontend image verifies TLS by default. Local-only: pass build-arg `ALLOW_INSECURE_TLS=0` if you must talk to a self-signed IdP (not used by default local HTTP Keycloak).
+1. Open `https://auth.example.com` — login with `KEYCLOAK_ADMIN` / `KEYCLOAK_ADMIN_PASSWORD`.
+2. Create realm `saberchan` (must match the path in `OIDC_REALM`).
+3. Create confidential client `saberchan`:
+   - **Valid redirect URIs:** `https://board.example.com/admin/auth/signIn`
+   - **Valid post logout redirect URIs:** `https://board.example.com/admin/auth/signOut`
+   - **Web origins:** `https://board.example.com`
+4. Copy the client secret into `.env.prod` as `OIDC_CLIENT_SECRET`.
+5. Rebuild frontend so the secret is baked in:
 
-`PURGE_INTERVAL` (default `10m`) sweeps soft-deleted rows after the 24h grace window (S3 media included) and soft-deletes threads not bumped for 30 days.
+```bash
+make prod-up
+```
 
-`TRUSTED_PROXIES` (comma-separated CIDRs) controls which peers may set `X-Forwarded-For`. The BFF forwards the browser address on create/captcha calls. Empty = never trust XFF.
+OIDC issuer split (same idea as local):
 
-Rate limits (per client IP, in-process): captcha generate ~30/min, create post/thread ~12/min.
+| Var | Example | Used for |
+|-----|---------|----------|
+| `OIDC_REALM` | `https://auth.example.com/realms/saberchan` | Browser authorize + logout + JWT `iss` |
+| `OIDC_REALM_INTERNAL` | `http://keycloak:8080/realms/saberchan` | Token/refresh + JWKS from the frontend container |
 
-Health endpoints on the Go API (compose network):
+If `OIDC_REALM_INTERNAL` points at the public hostname only, the frontend container must be able to resolve and reach it; the in-compose service name is the reliable default.
+
+### 6. Smoke checks
+
+```bash
+curl -fsS http://127.0.0.1:3000/ >/dev/null          # frontend on loopback
+curl -fsS https://board.example.com/ >/dev/null      # via nginx + TLS
+curl -fsS https://auth.example.com/ >/dev/null       # Keycloak via nginx
+# from compose network (optional):
+docker compose -f docker-compose.yaml --env-file .env.prod exec backend \
+  wget -qO- http://127.0.0.1:8888/readiness
+```
+
+Then: open the board, generate captcha, create a post with an image, confirm `/media/…` loads, sign in at `/admin`.
+
+### Security / ops notes
+
+- Never publish `:8888` — captcha is enforced on Go; the BFF is the public entrypoint.
+- `ADMIN_API_TOKEN` must match on Go + frontend; rotating OIDC/admin secrets requires rebuilding the frontend image (build-args bake `$env/static/private`).
+- Frontend verifies TLS by default (no `ALLOW_INSECURE_TLS` in prod).
+- `TRUSTED_PROXIES` (comma-separated CIDRs) controls who may set `X-Forwarded-For`. Include Docker bridge + `127.0.0.0/8` when nginx is on the host. Empty = never trust XFF.
+- `PURGE_INTERVAL` (default `10m`) sweeps soft-deleted rows after the 24h grace window (S3 media included) and soft-deletes threads not bumped for 30 days.
+- Rate limits (per client IP, in-process): captcha generate ~30/min, create post/thread ~12/min.
+
+Health endpoints on the Go API (compose network only):
 
 - `GET /liveness` — process up
 - `GET /readiness` — DB + Redis ping

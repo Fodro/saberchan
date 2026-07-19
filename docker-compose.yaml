@@ -1,13 +1,47 @@
-# Production app compose: frontend + backend only.
-# Data plane (Postgres, Redis, S3) and Keycloak/OIDC stay external.
+# Production app compose: frontend + backend + Keycloak.
+# Data plane (Postgres, Redis, S3/Garage) stays external. TLS stays on host nginx.
 #
 #   cp .env.prod.dist .env.prod   # edit secrets / hosts
 #   make prod-up
 #
-# TLS: put Caddy/nginx on the host (or `docker compose --profile proxy up`)
-# terminating HTTPS → frontend:3000. Do NOT publish backend:8888 to the internet.
+# Host nginx terminates HTTPS and proxies:
+#   board.example.com  → 127.0.0.1:3000  (frontend)
+#   auth.example.com   → 127.0.0.1:8080  (Keycloak)
+#   /media/            → Garage (see deploy/nginx/saberchan.conf.example)
+#
+# Do NOT publish backend:8888 to the internet (or even to the host).
 
 services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.2
+    restart: unless-stopped
+    command: start
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: ${KC_DB_URL}
+      KC_DB_USERNAME: ${KC_DB_USERNAME}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+      KC_HOSTNAME: ${KC_HOSTNAME}
+      KC_HOSTNAME_STRICT: ${KC_HOSTNAME_STRICT:-true}
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+      KC_HEALTH_ENABLED: "true"
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+    # Host nginx only — not reachable from the public internet directly.
+    ports:
+      - "127.0.0.1:${KEYCLOAK_PORT:-8080}:8080"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          '[ -f /tmp/HealthCheck.java ] || echo "public class HealthCheck { public static void main(String[] args) throws java.lang.Throwable { System.exit(java.net.HttpURLConnection.HTTP_OK == ((java.net.HttpURLConnection)new java.net.URL(args[0]).openConnection()).getResponseCode() ? 0 : 1); } }" > /tmp/HealthCheck.java && java /tmp/HealthCheck.java http://localhost:9000/health/ready',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 90s
+
   frontend:
     build:
       context: frontend
@@ -25,13 +59,15 @@ services:
         OIDC_LOGOUT_REDIRECT_URI: ${OIDC_LOGOUT_REDIRECT_URI}
     restart: unless-stopped
     ports:
-      - "${FRONTEND_PORT:-3000}:3000"
+      - "127.0.0.1:${FRONTEND_PORT:-3000}:3000"
     environment:
       ORIGIN: ${ORIGIN:-${AUTH_HOST}}
       BODY_SIZE_LIMIT: ${BODY_SIZE_LIMIT:-16M}
       ADMIN_API_TOKEN: ${ADMIN_API_TOKEN}
     depends_on:
       backend:
+        condition: service_healthy
+      keycloak:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/ >/dev/null || exit 1"]
@@ -85,24 +121,3 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
-
-  # Optional TLS terminator on the same host.
-  #   docker compose --env-file .env.prod --profile proxy up -d
-  caddy:
-    profiles: ["proxy"]
-    image: caddy:2.9-alpine
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      frontend:
-        condition: service_healthy
-
-volumes:
-  caddy_data:
-  caddy_config:

@@ -26,7 +26,7 @@ help:
 	@echo "  make local-down           stop local stack"
 	@echo "  make local-logs           follow local stack logs"
 	@echo "  make local-ps             show local stack status"
-	@echo "  make prod-up              start prod compose (external PG/Redis/S3)"
+	@echo "  make prod-up              start prod compose (app + Keycloak; external PG/Redis/S3)"
 	@echo "  make prod-down            stop prod compose"
 	@echo "  make prod-logs            follow prod compose logs"
 	@echo "  make prod-ps              show prod compose status"
