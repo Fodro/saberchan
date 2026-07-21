@@ -2,7 +2,7 @@ import { cookieSecure, keycloak } from '$lib/auth';
 import { redirect } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
-export const GET: RequestHandler = async ({ cookies }) => {
+export const GET: RequestHandler = async ({ cookies, request }) => {
 	const refreshTokenOld = cookies.get('refreshToken');
 	if (refreshTokenOld) {
 		let tokens;
@@ -43,7 +43,10 @@ export const GET: RequestHandler = async ({ cookies }) => {
 				sameSite: 'lax',
 			});
 		}
-		redirect(302, '/');
+		// Redirect back to the referring page (or /admin if none)
+		const referer = request.headers.get('referer');
+		const redirectTo = referer ? new URL(referer).pathname : '/';
+		redirect(302, redirectTo);
 	} else {
 		redirect(302, '/admin/auth/signOut');
 	}

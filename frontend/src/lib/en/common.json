@@ -1,4 +1,5 @@
 {
+	"metrics": "Metrics",
 	"recent": "Recent",
 	"all": "All",
 	"autoreload": "Autoreload",
@@ -48,7 +49,17 @@
 		"next": "Next attachment"
 	},
 	"admin": {
-		"add_board": "Add Board"
+		"add_board": "Add Board",
+		"dashboard": {
+			"title": "Metrics Dashboard",
+			"description": "Posts from the last 7 days, grouped by board.",
+			"error": "Error loading metrics: ",
+			"noData": "No metrics data available.",
+			"refresh": "Refresh",
+			"xAxis": "Date",
+			"yAxis": "Number of Posts",
+			"rawData": "View raw data"
+		}
 	},
 	"threads": {
 		"new": "New Thread"

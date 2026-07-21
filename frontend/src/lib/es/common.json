@@ -1,4 +1,5 @@
 {
+	"metrics": "Métricas",
 	"recent": "Recientes",
 	"all": "Todos",
 	"autoreload": "Actualización automática",
@@ -48,7 +49,14 @@
 		"next": "Adjunto siguiente"
 	},
 	"admin": {
-		"add_board": "Añadir tablón"
+		"add_board": "Añadir tablón",
+		"dashboard": {
+			"title": "Panel de métricas",
+			"description": "Publicaciones de los últimos 7 días, agrupadas por tablón.",
+			"error": "Error al cargar métricas: ",
+			"noData": "No hay datos de métricas disponibles.",
+			"refresh": "Actualizar"
+		}
 	},
 	"threads": {
 		"new": "Nuevo hilo"

@@ -50,10 +50,11 @@ type Repository interface {
 			ListThreadsDueForPurge(ctx context.Context, before time.Time) ([]Thread, error)
 			MarkThreadPurged(ctx context.Context, id uuid.UUID) error
 
-	//post
+//post
 	AddPost(ctx context.Context, post *Post) error
 	GetPost(ctx context.Context, id uuid.UUID) (*Post, error)
 	GetPosts(ctx context.Context, threadID uuid.UUID, includeDeleted bool) ([]Post, error)
+	GetBoardMetrics(ctx context.Context, from, to time.Time) ([]BoardMetrics, error)
 	DeletePost(ctx context.Context, id uuid.UUID) error
 	GetOPPost(ctx context.Context, threadID uuid.UUID) (*Post, error)
 	GetRepliesForThread(ctx context.Context, threadID uuid.UUID, includeDeleted bool) (uint64, error)
@@ -123,6 +124,16 @@ type (
 		Current   bool
 		SiteName  string
 		CreatedAt time.Time
+	}
+
+	// BoardMetrics represents aggregated post metrics for a board.
+	BoardMetrics struct {
+		BoardID       uuid.UUID
+		BoardAlias    string
+		PostCount     uint64
+		DeletedCount  uint64
+		SageCount     uint64
+		ThreadCount   uint64
 	}
 
 		// CatalogThread is a board-catalog row: thread + OP post + reply count (no N+1).

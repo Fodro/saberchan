@@ -24,6 +24,7 @@ type Service interface {
 	CreatePost(ctx context.Context, threadID uuid.UUID, post *Post) error
 	DeletePost(ctx context.Context, id uuid.UUID) error
 	RestorePost(ctx context.Context, id uuid.UUID) error
+	GetBoardMetrics(ctx context.Context, from, to time.Time) ([]*BoardMetrics, error)
 }
 
 type (
@@ -84,6 +85,16 @@ type (
 		Type   string    `json:"type"`
 		Body   string    `json:"body,omitempty"` // base64 (legacy JSON)
 		Data   []byte    `json:"-"`              // raw bytes (multipart)
+	}
+
+	// BoardMetrics represents aggregated post metrics for a board.
+	BoardMetrics struct {
+		BoardID       uuid.UUID  `json:"board_id"`
+		BoardAlias    string     `json:"board_alias"`
+		PostCount     uint64     `json:"post_count"`
+		DeletedCount  uint64     `json:"deleted_count"`
+		SageCount     uint64     `json:"sage_count"`
+		ThreadCount   uint64     `json:"thread_count"`
 	}
 )
 
