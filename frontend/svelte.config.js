@@ -7,11 +7,7 @@ const config = {
 
 	kit: {
 		adapter: adapter({
-<<<<<<< HEAD
-			precompress: true,
-=======
 			precompress: false,
->>>>>>> bb3b73c (del precompress)
 			trustProxy: true
 		})
 	}
