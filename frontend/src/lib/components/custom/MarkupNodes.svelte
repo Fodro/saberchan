@@ -9,8 +9,14 @@
 	{#if node.type === "text"}
 		{node.value}
 	{:else}
-		<span class={MARKUP_TAG_CLASS[node.tag]}>
-			<MarkupNodes nodes={node.children} />
-		</span>
+		{#if node.tag === "spoiler"}
+			<button class={MARKUP_TAG_CLASS[node.tag]} type="button">
+				<MarkupNodes nodes={node.children} />
+			</button>
+		{:else}
+			<span class={MARKUP_TAG_CLASS[node.tag]}>
+				<MarkupNodes nodes={node.children} />
+			</span>
+		{/if}
 	{/if}
 {/each}

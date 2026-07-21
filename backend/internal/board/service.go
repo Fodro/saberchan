@@ -505,6 +505,25 @@ func (s *service) UpdateBoard(ctx context.Context, board *Board) error {
 	return ErrNotImplemented
 }
 
+func (s *service) GetBoardMetrics(ctx context.Context, from, to time.Time) ([]*BoardMetrics, error) {
+	bm, err := s.repo.GetBoardMetrics(ctx, from, to)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]*BoardMetrics, len(bm))
+	for i := range bm {
+		result[i] = &BoardMetrics{
+			BoardID:      bm[i].BoardID,
+			BoardAlias:   bm[i].BoardAlias,
+			PostCount:    bm[i].PostCount,
+			DeletedCount: bm[i].DeletedCount,
+			SageCount:    bm[i].SageCount,
+			ThreadCount:  bm[i].ThreadCount,
+		}
+	}
+	return result, nil
+}
+
 func attachmentBytes(a Attachment) ([]byte, error) {
 	if len(a.Data) > 0 {
 		return a.Data, nil

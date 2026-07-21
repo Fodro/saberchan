@@ -129,6 +129,7 @@
 					[ADMIN] {$t("common.logged_in")}
 					{data.username}
 				</p>
+				<Button href="/admin">{$t("common.metrics")}</Button>
 			{/if}
 		</div>
 	</div>
@@ -149,8 +150,6 @@
 						{#each data.meta.recentBoards as alias}
 							<Menubar.Item
 								href={`/board/${alias}`}
-								target="_blank"
-								rel="noreferrer noopener"
 							>
 								/{alias}/
 							</Menubar.Item>
@@ -164,8 +163,6 @@
 						{#each data.boards as board}
 							<Menubar.Item
 								href={`/board/${board.alias}`}
-								target="_blank"
-								rel="noreferrer noopener"
 							>
 								/{board.alias}/ - {board.name}
 							</Menubar.Item>
@@ -220,8 +217,6 @@
 						<Menubar.Item class="gap-2 p-0 focus:bg-transparent data-[highlighted]:bg-transparent">
 							<a
 								href={thread.href}
-								target="_blank"
-								rel="noreferrer noopener"
 								class="hover:bg-accent flex min-w-0 flex-1 items-center justify-between gap-2 rounded-sm px-2 py-1.5"
 							>
 								<span class="truncate max-w-40">{thread.title}</span>

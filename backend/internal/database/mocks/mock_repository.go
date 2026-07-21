@@ -302,6 +302,21 @@ func (mr *MockRepositoryMockRecorder) GetBoardCatalog(ctx, boardID, limit, offse
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBoardCatalog", reflect.TypeOf((*MockRepository)(nil).GetBoardCatalog), ctx, boardID, limit, offset, includeDeleted)
 }
 
+// GetBoardMetrics mocks base method.
+func (m *MockRepository) GetBoardMetrics(ctx context.Context, from, to time.Time) ([]database.BoardMetrics, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBoardMetrics", ctx, from, to)
+	ret0, _ := ret[0].([]database.BoardMetrics)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBoardMetrics indicates an expected call of GetBoardMetrics.
+func (mr *MockRepositoryMockRecorder) GetBoardMetrics(ctx, from, to any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBoardMetrics", reflect.TypeOf((*MockRepository)(nil).GetBoardMetrics), ctx, from, to)
+}
+
 // GetBoards mocks base method.
 func (m *MockRepository) GetBoards(ctx context.Context, includeDeleted bool) ([]database.Board, error) {
 	m.ctrl.T.Helper()

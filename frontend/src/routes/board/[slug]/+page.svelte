@@ -324,8 +324,6 @@
 				<Button
 					class="cursor-pointer"
 					href={`/board/${data.slug}/thread/${thread.id}`}
-					target="_blank"
-					rel="noreferrer noopener"
 				>
 					{$t("common.reply")}
 				</Button>

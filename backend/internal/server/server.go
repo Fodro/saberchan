@@ -230,11 +230,15 @@ func (s *Server) Start() error {
 				r.Post("/", s.ValidateCaptcha)
 			})
 
-			r.Route("/follow", func(r chi.Router) {
-				r.Get("/", s.GetFollowStatus)
-				r.Post("/{id}", s.FollowThread)
-			})
+r.Route("/follow", func(r chi.Router) {
+			r.Get("/", s.GetFollowStatus)
+			r.Post("/{id}", s.FollowThread)
 		})
+
+		r.Route("/metric", func(r chi.Router) {
+			r.Get("/posts", s.GetMetricPosts)
+		})
+	})
 	})
 
 	return s.srv.ListenAndServe()

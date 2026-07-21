@@ -68,6 +68,34 @@ func (r *repo) GetOPPost(ctx context.Context, threadID uuid.UUID) (*database.Pos
 	return &post, nil
 }
 
+func (r *repo) GetBoardMetrics(ctx context.Context, from, to time.Time) ([]database.BoardMetrics, error) {
+	rows, err := r.query(ctx, r.psqb.
+		Select(
+			"b.id as board_id",
+			"b.alias as board_alias",
+			"COUNT(p.id) as post_count",
+			"COUNT(p.id) FILTER (WHERE p.deleted_at IS NOT NULL) as deleted_count",
+			"COUNT(p.id) FILTER (WHERE p.sage = true) as sage_count",
+			"COUNT(DISTINCT p.thread_id) as thread_count",
+		).
+		From("post p").
+		Join("thread t ON p.thread_id = t.id").
+		Join("board b ON t.board_id = b.id").
+		Where(squirrel.GtOrEq{"p.created_at": from}).
+		Where(squirrel.LtOrEq{"p.created_at": to}).
+		GroupBy("b.id", "b.alias").
+		OrderBy("b.alias ASC"),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (database.BoardMetrics, error) {
+		var bm database.BoardMetrics
+		err := row.Scan(&bm.BoardID, &bm.BoardAlias, &bm.PostCount, &bm.DeletedCount, &bm.SageCount, &bm.ThreadCount)
+		return bm, err
+	})
+}
+
 func (r *repo) GetRepliesForThread(ctx context.Context, threadID uuid.UUID, includeDeleted bool) (uint64, error) {
 	row := r.queryRow(ctx, r.psqb.
 		Select("COUNT(id)").

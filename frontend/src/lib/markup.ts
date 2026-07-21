@@ -18,7 +18,7 @@ export const MARKUP_TAG_CLASS: Record<MarkupTag, string> = {
 	s: 'line-through',
 	sup: 'text-xs align-super',
 	sub: 'text-xs align-sub',
-	spoiler: 'bg-zinc-500 text-zinc-500 hover:text-white',
+	spoiler: 'bg-zinc-500 text-zinc-500 hover:text-white active:text-white focus:text-white focus:outline-none',
 };
 
 /**
