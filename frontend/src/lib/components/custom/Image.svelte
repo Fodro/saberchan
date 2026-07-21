@@ -33,7 +33,6 @@
 >
 	<span class="text-sm text-primary underline-offset-4 hover:underline">{name}</span>
 	{#if isVideo}
-		<!-- svelte-ignore a11y_media_has_caption -->
 		<video
 			src={link}
 			muted

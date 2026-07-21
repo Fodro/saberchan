@@ -11,7 +11,10 @@
 		Tooltip,
 		Legend,
 		Filler,
-		type ChartOptions
+		type ChartOptions,
+        type TooltipItem
+
+
 	} from 'chart.js';
 
 	ChartJS.register(
@@ -127,7 +130,7 @@
 				titleFont: { size: 13 },
 				bodyFont: { size: 12 },
 				callbacks: {
-					label: (ctx: any) => `${ctx.dataset.label}: ${ctx.parsed.y} posts`
+					label: (ctx: TooltipItem<"line">) => `${ctx.dataset.label}: ${ctx.parsed.y} posts`
 				}
 			}
 		},

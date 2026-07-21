@@ -135,7 +135,7 @@
 <Separator class="my-4" />
 
 <div class="flex flex-col gap-3 justify-start items-start h-auto">
-	{#each data.boards as board}
+	{#each data.boards as board (board.alias)}
 		<div class="flex flex-row justify-start items-center">
 			<HoverCard>
 				<HoverCardTrigger

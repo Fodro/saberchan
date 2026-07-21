@@ -178,7 +178,7 @@
 			class={`scroll-m-20 text-2xl font-semibold tracking-tight ${isBoardDeleted ? "text-red-600" : ""}`}
 		>
 			{#if isBoardDeleted}
-				{$t("common.deleted")}{" "}
+				{$t("common.deleted")} 
 			{/if}
 			{data.board.name}
 		</h3>

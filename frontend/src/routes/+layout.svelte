@@ -17,6 +17,7 @@
 	import LocaleSwitcher from "$lib/components/custom/LocaleSwitcher.svelte";
 	import { Cross2, Update } from "svelte-radix";
 	import { toast } from "svelte-sonner";
+    import { resolve } from "$app/paths";
 
 	// Prefer longer intervals — 1–10s hammers the BFF/backend.
 	let intervals = [15, 30, 60];
@@ -92,7 +93,7 @@
 			<Button
 				class="cursor-pointer"
 				onclick={() => {
-					goto("/");
+					goto(resolve("/"));
 				}}
 				size="icon"
 				variant="outline"
@@ -147,7 +148,7 @@
 								{$t("common.boards.noRecent")}
 							</Menubar.Item>
 						{/if}
-						{#each data.meta.recentBoards as alias}
+						{#each data.meta.recentBoards as alias (alias)}
 							<Menubar.Item
 								href={`/board/${alias}`}
 							>
@@ -160,7 +161,7 @@
 				<Menubar.Sub>
 					<Menubar.SubTrigger>All</Menubar.SubTrigger>
 					<Menubar.SubContent>
-						{#each data.boards as board}
+						{#each data.boards as board (board.alias)}
 							<Menubar.Item
 								href={`/board/${board.alias}`}
 							>
@@ -186,7 +187,7 @@
 				>
 					{$t("common.disable")}
 				</Menubar.Item>
-				{#each intervals as i}
+				{#each intervals as i (i)}
 					<Menubar.Item
 						inset
 						onclick={() => {

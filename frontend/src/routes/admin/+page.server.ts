@@ -1,5 +1,6 @@
 import { MAIN_BACKEND_URL } from '$env/static/private';
 import { adminBackendHeaders } from '$lib/server/backend';
+import type { Cookies } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
 interface BoardMetrics {
@@ -15,7 +16,7 @@ interface DailyMetrics {
 	boards: BoardMetrics[];
 }
 
-async function fetchDailyMetrics(fetch: typeof globalThis.fetch, cookies: any, date: Date): Promise<BoardMetrics[]> {
+async function fetchDailyMetrics(fetch: typeof globalThis.fetch, cookies: Cookies, date: Date): Promise<BoardMetrics[]> {
 	const from = new Date(date);
 	from.setHours(0, 0, 0, 0);
 	const to = new Date(date);

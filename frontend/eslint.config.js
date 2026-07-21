@@ -43,7 +43,8 @@ export default ts.config(
 				  "argsIgnorePattern": "^_",
 				  "varsIgnorePattern": "^\\$\\$(Props|Events|Slots|Generic)$"
 			  }
-		  ]
+		  ],
+		  "svelte/no-navigation-without-resolve": "off"
 	  }
   }
 );
