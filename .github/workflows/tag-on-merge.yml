@@ -17,9 +17,23 @@ jobs:
           fetch-depth: 0
       - name: Tag
         env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
+          LABELS: ${{ toJSON(github.event.pull_request.labels) }}
         run: |
+          git config user.name "saberchan-runner"
+          git config user.email "saberchan-runner@users.noreply.github.com"
+
           LAST_TAG=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1)
+
+          if echo "$LABELS" | jq -e 'any(.name == "major")' > /dev/null 2>&1; then
+            IS_MAJOR=true
+          else
+            IS_MAJOR=false
+          fi
+          if echo "$LABELS" | jq -e 'any(.name == "patch")' > /dev/null 2>&1; then
+            IS_PATCH=true
+          else
+            IS_PATCH=false
+          fi
 
           if [ -z "$LAST_TAG" ]; then
             NEW_TAG="v1.0.0"
@@ -27,15 +41,20 @@ jobs:
             VERSION="${LAST_TAG#v}"
             MAJOR=$(echo "$VERSION" | cut -d. -f1)
             MINOR=$(echo "$VERSION" | cut -d. -f2)
+            PATCH=$(echo "$VERSION" | cut -d. -f3)
 
-            if echo "$PR_TITLE" | grep -qi "major"; then
+            if [ "$IS_MAJOR" = true ]; then
               MAJOR=$((MAJOR + 1))
               MINOR=0
+              PATCH=0
+            elif [ "$IS_PATCH" = true ]; then
+              PATCH=$((PATCH + 1))
             else
               MINOR=$((MINOR + 1))
+              PATCH=0
             fi
 
-            NEW_TAG="v${MAJOR}.${MINOR}.0"
+            NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}"
           fi
 
           git tag -a "$NEW_TAG" -m "Release $NEW_TAG"
