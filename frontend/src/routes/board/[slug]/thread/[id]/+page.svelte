@@ -170,7 +170,7 @@
 			class={`scroll-m-20 text-2xl font-semibold tracking-tight ${isThreadDeleted ? "text-red-600" : ""}`}
 		>
 			{#if isThreadDeleted}
-				{$t("common.deleted")}{" "}
+				{$t("common.deleted")} 
 			{/if}
 			{data.thread.title}
 		</h3>

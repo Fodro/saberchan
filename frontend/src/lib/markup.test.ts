@@ -3,7 +3,7 @@ import {
 	buildPostLines,
 	classifyLine,
 	parseMarkup,
-	replyHref,
+	replyPostNumber,
 	type MarkupNode,
 	type MarkupTag,
 } from './markup';
@@ -67,7 +67,7 @@ describe('parseMarkup', () => {
 	});
 });
 
-describe('classifyLine / replyHref', () => {
+describe('classifyLine / replyPostNumber', () => {
 	it('classifies reply, greentext, and plain', () => {
 		expect(classifyLine('>>12')).toBe('reply');
 		expect(classifyLine('>greentext')).toBe('greentext');
@@ -75,9 +75,9 @@ describe('classifyLine / replyHref', () => {
 		expect(classifyLine('')).toBe('plain');
 	});
 
-	it('builds reply href like the old PostBody', () => {
-		expect(replyHref('>>123')).toBe('#123');
-		expect(replyHref('>>1 >>2')).toBe('#1 2');
+	it('extracts post number from reply prefix', () => {
+		expect(replyPostNumber('>>123')).toBe('123');
+		expect(replyPostNumber('>>1 >>2')).toBe('1 2');
 	});
 });
 
@@ -97,7 +97,7 @@ describe('buildPostLines', () => {
 		expect(lines[2]).toMatchObject({
 			trimmed: '>>9',
 			kind: 'reply',
-			href: '#9',
+			replyNumber: '9',
 		});
 	});
 

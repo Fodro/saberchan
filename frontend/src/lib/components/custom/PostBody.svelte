@@ -13,8 +13,7 @@
 		{#if line.kind === "reply"}
 			<a
 				class={`text-orange-500 hover:underline cursor-pointer ${textSize} ${additionalClass}`}
-				href={line.href}
-				data-sveltekit-reload
+				href={line.replyNumber ? `#${line.replyNumber}` : undefined}
 			>
 				<MarkupNodes nodes={line.nodes} />
 			</a>

@@ -26,6 +26,7 @@
 {#if href}
 	<MenubarPrimitive.Item bind:ref {...restProps}>
 		{#snippet child({ props })}
+			<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
 			<a {href} {target} {rel} class={cn(itemClass, inset && "pl-8", className)} {...props}>
 				{@render children?.()}
 			</a>

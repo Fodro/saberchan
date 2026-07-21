@@ -94,9 +94,9 @@ export function classifyLine(trimmed: string): LineKind {
 	return 'plain';
 }
 
-/** Same href behavior as the old PostBody (`>>123` → `#123`). */
-export function replyHref(trimmed: string): string {
-	return `#${trimmed.replaceAll('>>', '')}`;
+/** Extract post number from a reply prefix (`>>123` → `123`). */
+export function replyPostNumber(trimmed: string): string {
+	return trimmed.replaceAll('>>', '');
 }
 
 export type PostLine = {
@@ -104,7 +104,7 @@ export type PostLine = {
 	kind: LineKind;
 	nodes: MarkupNode[];
 	/** Set when `kind === 'reply'`. */
-	href?: string;
+	replyNumber?: string;
 };
 
 /** Split a full post into display lines with parsed markup (unit-testable). */
@@ -114,7 +114,7 @@ export function buildPostLines(text: string): PostLine[] {
 		const kind = classifyLine(trimmed);
 		const nodes = parseMarkup(trimmed);
 		if (kind === 'reply') {
-			return { trimmed, kind, nodes, href: replyHref(trimmed) };
+			return { trimmed, kind, nodes, replyNumber: replyPostNumber(trimmed) };
 		}
 		return { trimmed, kind, nodes };
 	});
