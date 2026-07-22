@@ -1,8 +1,10 @@
-import { MAIN_BACKEND_URL } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import { trimLargeWords } from '$lib/helpers';
 import { adminBackendHeaders } from '$lib/server/backend';
 import type { Board } from '$lib/types/board';
 import type { LayoutServerLoad } from './$types';
+
+const MAIN_BACKEND_URL = env.MAIN_BACKEND_URL;
 
 const DEFAULT_LIMIT = 20;
 

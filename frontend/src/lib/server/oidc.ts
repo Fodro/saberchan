@@ -1,9 +1,9 @@
-import {
-	OIDC_CLIENT_ID,
-	OIDC_REALM,
-	OIDC_REALM_INTERNAL,
-} from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
+
+const OIDC_CLIENT_ID = env.OIDC_CLIENT_ID;
+const OIDC_REALM = env.OIDC_REALM;
+const OIDC_REALM_INTERNAL = env.OIDC_REALM_INTERNAL;
 
 function trimSlash(url: string): string {
 	return url.replace(/\/$/, '');

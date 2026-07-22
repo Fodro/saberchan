@@ -1,4 +1,4 @@
-import { MAIN_BACKEND_URL } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import { cookieSecure } from '$lib/auth';
 import { isAppLocale } from '$lib/locales';
 import { beginLogin, redirectIfNeedsRefresh } from '$lib/server/auth';
@@ -8,6 +8,8 @@ import { loadTranslations, translations } from '$lib/translations';
 import type { Board } from '$lib/types/board';
 import type { Metadata } from '$lib/types/metadata';
 import type { LayoutServerLoad } from './$types';
+
+const MAIN_BACKEND_URL = env.MAIN_BACKEND_URL;
 
 export const load: LayoutServerLoad = async ({ fetch, cookies, depends }) => {
 	const boardsRes = await fetch(`${MAIN_BACKEND_URL}/api/v1/board`, {

@@ -80,28 +80,28 @@ func TestResolveLinkPrefix(t *testing.T) {
 			name:           "public url always path-style even if forcePathStyle false",
 			bucket:         "saberchan",
 			host:           "garage:3900",
-			publicBase:     "https://board.example.com",
+			publicBase:     "https://example.com",
 			useSSL:         true,
 			forcePathStyle: false,
-			want:           "https://board.example.com/saberchan",
+			want:           "https://example.com/saberchan",
 		},
 		{
 			name:           "public url already includes bucket",
 			bucket:         "saberchan",
 			host:           "garage:3900",
-			publicBase:     "https://board.example.com/saberchan",
+			publicBase:     "https://example.com/saberchan",
 			useSSL:         true,
 			forcePathStyle: true,
-			want:           "https://board.example.com/saberchan",
+			want:           "https://example.com/saberchan",
 		},
 		{
 			name:           "public media path is full prefix (no bucket append)",
 			bucket:         "saberchan",
 			host:           "garage:3900",
-			publicBase:     "https://board.example.com/media",
+			publicBase:     "https://example.com/media",
 			useSSL:         true,
 			forcePathStyle: true,
-			want:           "https://board.example.com/media",
+			want:           "https://example.com/media",
 		},
 	}
 
@@ -118,11 +118,11 @@ func TestResolveLinkPrefix(t *testing.T) {
 
 func TestObjectPublicURL(t *testing.T) {
 	t.Parallel()
-	got := ObjectPublicURL("https://board.example.com/saberchan", "abc.jpg", "http://old/host/saberchan/abc.jpg")
-	if got != "https://board.example.com/saberchan/abc.jpg" {
+	got := ObjectPublicURL("https://example.com/saberchan", "abc.jpg", "http://old/host/saberchan/abc.jpg")
+	if got != "https://example.com/saberchan/abc.jpg" {
 		t.Fatalf("got %q", got)
 	}
-	got = ObjectPublicURL("https://board.example.com/saberchan", "", "http://stored/link.jpg")
+	got = ObjectPublicURL("https://example.com/saberchan", "", "http://stored/link.jpg")
 	if got != "http://stored/link.jpg" {
 		t.Fatalf("fallback got %q", got)
 	}

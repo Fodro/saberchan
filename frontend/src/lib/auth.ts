@@ -1,11 +1,11 @@
-import {
-	OIDC_REALM,
-	OIDC_REALM_INTERNAL,
-	OIDC_CLIENT_ID,
-	OIDC_CLIENT_SECRET,
-	AUTH_HOST,
-} from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import * as arctic from 'arctic';
+
+const AUTH_HOST = env.AUTH_HOST;
+const OIDC_CLIENT_ID = env.OIDC_CLIENT_ID;
+const OIDC_CLIENT_SECRET = env.OIDC_CLIENT_SECRET;
+const OIDC_REALM = env.OIDC_REALM;
+const OIDC_REALM_INTERNAL = env.OIDC_REALM_INTERNAL;
 
 const redirectURI = `${AUTH_HOST}/admin/auth/signIn`;
 

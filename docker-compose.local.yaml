@@ -150,17 +150,6 @@ services:
     build:
       context: frontend
       dockerfile: ../frontend.Dockerfile
-      args:
-        MAIN_BACKEND_URL: ${MAIN_BACKEND_URL}
-        OIDC_REALM: ${OIDC_REALM}
-        OIDC_REALM_INTERNAL: ${OIDC_REALM_INTERNAL}
-        OIDC_CLIENT_ID: ${OIDC_CLIENT_ID}
-        OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET}
-        AUTH_HOST: ${AUTH_HOST}
-        AUTH_SECRET: ${AUTH_SECRET}
-        ADMIN_API_TOKEN: ${ADMIN_API_TOKEN}
-        OIDC_REDIRECT_URI: ${OIDC_REDIRECT_URI}
-        OIDC_LOGOUT_REDIRECT_URI: ${OIDC_LOGOUT_REDIRECT_URI}
     restart: unless-stopped
     depends_on:
       backend:

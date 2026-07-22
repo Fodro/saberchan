@@ -84,7 +84,8 @@ local-ps:
 
 prod-up:
 	@test -f $(ROOT).env.prod || (echo "Missing .env.prod — copy from .env.prod.dist" && exit 1)
-	$(COMPOSE_PROD) up -d --build
+	$(COMPOSE_PROD) pull
+	$(COMPOSE_PROD) up -d
 
 prod-down:
 	@test -f $(ROOT).env.prod || (echo "Missing .env.prod — copy from .env.prod.dist" && exit 1)

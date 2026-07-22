@@ -1,7 +1,9 @@
-import { MAIN_BACKEND_URL } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import { adminBackendHeaders } from '$lib/server/backend';
 import type { Cookies } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
+
+const MAIN_BACKEND_URL = env.MAIN_BACKEND_URL;
 
 interface BoardMetrics {
 	alias: string;

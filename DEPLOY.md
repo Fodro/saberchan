@@ -4,10 +4,10 @@
 
 | Environment | App | Postgres | Redis | Object storage | Auth | TLS |
 |-------------|-----|----------|-------|----------------|------|-----|
-| **Production** | `docker-compose.yaml` (frontend + backend + Keycloak) | external | external | external S3 / Garage | Keycloak in compose | **host nginx** |
+| **Production** | `docker-compose.yaml` (frontend + backend + Keycloak — images from ghcr.io) | external | external | external S3 / Garage | Keycloak in compose | **host nginx** |
 | **Local** | `docker-compose.local.yaml` | in compose | in compose | MinIO in compose | Keycloak in compose | none (HTTP) |
 
-Production keeps Postgres, Redis, and object storage outside compose. Keycloak runs in compose and is reached only via host nginx (`127.0.0.1:8080`). Point env vars at those services via `.env.prod`.
+Production keeps Postgres, Redis, and object storage outside compose. Keycloak runs in compose and is reached via nginx at `/cloak/`. Point env vars at those services via `.env.prod`.
 
 ## Prerequisites
 
@@ -114,7 +114,7 @@ Set it to the exact public URL users type in the browser (scheme + host + port):
 
 ```bash
 ORIGIN=http://localhost:3000   # local Docker
-# ORIGIN=https://board.example.com   # production
+# ORIGIN=https://example.com   # production
 ```
 
 Local compose already passes `ORIGIN` (defaults to `AUTH_HOST`).
@@ -136,20 +136,18 @@ Local defaults in `.env.local.dist`:
 
 Object links look like `http://localhost:9000/saberchan/<key>`.
 
-### Production media: Garage (private) + nginx (public)
+### Production media: any S3-compatible storage
 
-Recommended split (`/media` public path, bucket only on the private side):
+Any S3-compatible storage works (Garage, MinIO, AWS S3, DigitalOcean Spaces, etc.).
 
 | Role | Config |
 |------|--------|
 | Upload/delete (API → Garage) | `S3_URL=garage.internal:3900`, `S3_FORCE_PATH_STYLE=true`, `S3_USE_SSL=false` |
-| Browser URLs | `S3_PUBLIC_URL=https://board.example.com/media` → `https://board.example.com/media/<key>` |
-| nginx | `/media/foo` → Garage `/saberchan/foo` — full site: [`deploy/nginx/saberchan.conf.example`](deploy/nginx/saberchan.conf.example) |
-
+| Browser URLs | `S3_PUBLIC_URL=https://example.com/media` → `https://example.com/media/<key>` |
 `S3_PUBLIC_URL` rules:
 
-- Origin only (`https://board.example.com`) → append `/{bucket}` (same shape as local MinIO).
-- Origin + path (`https://board.example.com/media`) → use as the full link prefix (no bucket in the public URL); nginx must add the bucket when proxying.
+- Origin only (`https://example.com`) → append `/{bucket}` (same shape as local MinIO).
+- Origin + path (`https://example.com/media`) → use as the full link prefix (no bucket in the public URL); nginx must add the bucket when proxying.
 - Already ends with `/{bucket}` → used as-is.
 
 The API rewrites attachment links from the object `key` + current public prefix on read (no DB migration when you change the public origin).
@@ -157,21 +155,20 @@ The API rewrites attachment links from the object `key` + current public prefix 
 ```bash
 S3_URL=garage.internal:3900
 S3_BUCKET=saberchan
-S3_PUBLIC_URL=https://board.example.com/media
+S3_PUBLIC_URL=https://example.com/media
 S3_USE_SSL=false
 S3_FORCE_PATH_STYLE=true
 ```
 
 ## Production deploy (VPS + compose + host nginx)
 
-Assumes one VPS with Docker Compose, host nginx for TLS, and external Postgres / Redis / Garage (or other S3 API).
+Assumes one VPS with Docker Compose, host nginx for TLS, and external Postgres / Redis / S3-compatible storage.
 
 ### 0. DNS
 
 | Hostname | Points to | Role |
 |----------|-----------|------|
-| `board.example.com` | VPS public IP | App + `/media/` |
-| `auth.example.com` | VPS public IP | Keycloak |
+| `example.com` | VPS public IP | App + Keycloak at `/cloak/` |
 
 ### 1. External data plane (before compose)
 
@@ -195,45 +192,40 @@ Edit **every** placeholder. Critical mappings:
 
 | Var | Example | Notes |
 |-----|---------|--------|
-| `AUTH_HOST` / `ORIGIN` | `https://board.example.com` | Exact browser URL (scheme + host) |
-| `KC_HOSTNAME` | `https://auth.example.com` | Keycloak public URL (must match nginx) |
-| `OIDC_REALM` | `https://auth.example.com/realms/saberchan` | Browser authorize / logout / JWT `iss` |
+| `AUTH_HOST` / `ORIGIN` | `https://example.com` | Exact browser URL (scheme + host) |
+| `KC_HOSTNAME` | `https://example.com` | Keycloak public URL (nginx proxies `/cloak/`) |
+| `OIDC_REALM` | `https://example.com/cloak/realms/saberchan` | Browser authorize / logout / JWT `iss` |
 | `OIDC_REALM_INTERNAL` | `http://keycloak:8080/realms/saberchan` | Token/JWKS from **frontend container** |
 | `KC_DB_URL` | `jdbc:postgresql://…:5432/keycloak` | Keycloak’s own DB |
 | `DB_*` | app DB | Backend migrations + data |
-| `S3_*` | Garage | See media section above |
+| `S3_*` | S3-compatible storage | See media section above |
 | `ADMIN_API_TOKEN` | long random | Same value for Go + frontend |
-| `OIDC_CLIENT_SECRET` | from Keycloak | Fill after step 5, then rebuild |
+| `OIDC_CLIENT_SECRET` | from Keycloak | Fill after step 5, then restart |
 
 `FRONTEND_PORT` / `KEYCLOAK_PORT` default to `3000` / `8080` and are bound to **`127.0.0.1` only**.
 
-### 3. Host nginx + TLS
+### 3. Host nginx
 
-1. Copy [`deploy/nginx/saberchan.conf.example`](deploy/nginx/saberchan.conf.example) into nginx (e.g. `/etc/nginx/sites-available/saberchan.conf`), replace hostnames and cert paths.
-2. Ensure the `map $http_upgrade $connection_upgrade` block exists in `http {}` (commented at the bottom of the example).
-3. Issue certs (certbot, etc.) for `board.example.com` and `auth.example.com`.
-4. `nginx -t && systemctl reload nginx`.
-
-Nginx targets:
+Write your own nginx config. Targets:
 
 | Public | Upstream |
 |--------|----------|
-| `https://board.example.com/` | `127.0.0.1:3000` (frontend) |
-| `https://board.example.com/media/` | Garage `…/saberchan/` |
-| `https://auth.example.com/` | `127.0.0.1:8080` (Keycloak) |
+| `https://example.com/` | `127.0.0.1:3000` (frontend) |
+| `https://example.com/cloak/` | `127.0.0.1:8080` (Keycloak) |
+| `https://example.com/media/` | your S3 bucket (optional) |
 
 Do **not** open Docker-published ports on `0.0.0.0`. Backend stays unpublished.
 
 ### 4. Start compose
 
 ```bash
-make prod-up          # docker compose -f docker-compose.yaml --env-file .env.prod up -d --build
+make prod-up          # pulls images from ghcr.io and starts
 make prod-ps          # wait until keycloak / backend / frontend are healthy
 ```
 
 | Service | Published | Notes |
 |---------|-----------|--------|
-| `keycloak` | `127.0.0.1:${KEYCLOAK_PORT:-8080}` | Prod mode (`start`); DB via `KC_DB_*` |
+| `keycloak` | `127.0.0.1:${KEYCLOAK_PORT:-8080}` | Prod mode (`start`); nginx proxies `/cloak/` |
 | `frontend` | `127.0.0.1:${FRONTEND_PORT:-3000}` | BFF; nginx proxies here |
 | `backend` | **none** | Compose network only: `http://backend:8888` |
 
@@ -241,14 +233,14 @@ Useful: `make prod-logs`, `make prod-down`.
 
 ### 5. First-time Keycloak (prod)
 
-1. Open `https://auth.example.com` — login with `KEYCLOAK_ADMIN` / `KEYCLOAK_ADMIN_PASSWORD`.
+1. Open `https://example.com/cloak/` — login with `KEYCLOAK_ADMIN` / `KEYCLOAK_ADMIN_PASSWORD`.
 2. Create realm `saberchan` (must match the path in `OIDC_REALM`).
 3. Create confidential client `saberchan`:
-   - **Valid redirect URIs:** `https://board.example.com/admin/auth/signIn`
-   - **Valid post logout redirect URIs:** `https://board.example.com/admin/auth/signOut`
-   - **Web origins:** `https://board.example.com`
+   - **Valid redirect URIs:** `https://example.com/admin/auth/signIn`
+   - **Valid post logout redirect URIs:** `https://example.com/admin/auth/signOut`
+   - **Web origins:** `https://example.com`
 4. Copy the client secret into `.env.prod` as `OIDC_CLIENT_SECRET`.
-5. Rebuild frontend so the secret is baked in:
+5. Restart frontend (secrets are read at runtime):
 
 ```bash
 make prod-up
@@ -258,7 +250,7 @@ OIDC issuer split (same idea as local):
 
 | Var | Example | Used for |
 |-----|---------|----------|
-| `OIDC_REALM` | `https://auth.example.com/realms/saberchan` | Browser authorize + logout + JWT `iss` |
+| `OIDC_REALM` | `https://example.com/cloak/realms/saberchan` | Browser authorize + logout + JWT `iss` |
 | `OIDC_REALM_INTERNAL` | `http://keycloak:8080/realms/saberchan` | Token/refresh + JWKS from the frontend container |
 
 If `OIDC_REALM_INTERNAL` points at the public hostname only, the frontend container must be able to resolve and reach it; the in-compose service name is the reliable default.
@@ -267,8 +259,8 @@ If `OIDC_REALM_INTERNAL` points at the public hostname only, the frontend contai
 
 ```bash
 curl -fsS http://127.0.0.1:3000/ >/dev/null          # frontend on loopback
-curl -fsS https://board.example.com/ >/dev/null      # via nginx + TLS
-curl -fsS https://auth.example.com/ >/dev/null       # Keycloak via nginx
+curl -fsS https://example.com/ >/dev/null      # via nginx + TLS
+curl -fsS https://example.com/cloak/ >/dev/null        # Keycloak via nginx
 # from compose network (optional):
 docker compose -f docker-compose.yaml --env-file .env.prod exec backend \
   wget -qO- http://127.0.0.1:8888/readiness
@@ -279,7 +271,7 @@ Then: open the board, generate captcha, create a post with an image, confirm `/m
 ### Security / ops notes
 
 - Never publish `:8888` — captcha is enforced on Go; the BFF is the public entrypoint.
-- `ADMIN_API_TOKEN` must match on Go + frontend; rotating OIDC/admin secrets requires rebuilding the frontend image (build-args bake `$env/static/private`).
+- `ADMIN_API_TOKEN` must match on Go + frontend. Secrets are read from the runtime environment (`$env/dynamic/private`); update `.env.prod` and restart to rotate.
 - Frontend verifies TLS by default (no `ALLOW_INSECURE_TLS` in prod).
 - `TRUSTED_PROXIES` (comma-separated CIDRs) controls who may set `X-Forwarded-For`. Include Docker bridge + `127.0.0.0/8` when nginx is on the host. Empty = never trust XFF.
 - `PURGE_INTERVAL` (default `10m`) sweeps soft-deleted rows after the 24h grace window (S3 media included) and soft-deletes threads not bumped for 30 days.
@@ -296,14 +288,12 @@ Tracked leftovers from the pre-1.0 review — not blockers for the VPS demo.
 
 - [ ] **One-shot migrate job** — run goose outside the long-lived API process so multi-replica starts don’t race
 - [ ] **Structured logging + request IDs** — replace stdlib `log` / noisy boot prints
-- [ ] **CI** — GitHub Action for `make ci` + `govulncheck` / `npm audit`
+- [ ] **CI** — `govulncheck` / `npm audit` in GitHub Actions
 - [ ] **S3 prod checklist** — bucket policy / CloudFront via `S3_PUBLIC_URL`, IAM least-privilege (expand this doc)
 - [ ] **Dead `SECRET` env** — wire it for something real or remove from `config/env.go` + dist files
-- [ ] **Runtime secrets for frontend** — stop baking `OIDC_CLIENT_SECRET` / `ADMIN_API_TOKEN` / `AUTH_SECRET` into the image (SvelteKit private env strategy)
-- [x] **S3 / Garage + nginx media** — `S3_PUBLIC_URL` path-style public links; sample nginx; links rewritten from `key` on read
-- [ ] **S3 ops checklist** — Garage bucket public-read / key rotation
-- [ ] **Dead `SECRET` env** — wire it for something real or remove from `config/env.go` + dist files
-- [ ] **Runtime secrets for frontend** — stop baking `OIDC_CLIENT_SECRET` / `ADMIN_API_TOKEN` / `AUTH_SECRET` into the image
-- [ ] **Upload magic-byte sniff** — don’t trust `Content-Type` / extension alone
+- [x] **Runtime secrets for frontend** — switched from `$env/static/private` to `$env/dynamic/private`
+- [x] **S3 / media** — `S3_PUBLIC_URL` path-style public links; links rewritten from `key` on read
+- [ ] **S3 ops checklist** — bucket public-read / key rotation
+- [ ] **Upload magic-byte sniff** — don't trust `Content-Type` / extension alone
 - [ ] **Backup runbook** — managed PG snapshots/PITR + S3 lifecycle/versioning; Redis is ephemeral by design
 - [ ] **Shared rate-limit store** — move in-process limiters to Redis if backend replicas > 1

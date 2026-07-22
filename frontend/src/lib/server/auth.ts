@@ -1,13 +1,13 @@
 import { cookieSecure, keycloakAuthorize, oidcRealmPublic } from '$lib/auth';
 import { verifyExp } from '$lib/helpers';
-import {
-	AUTH_HOST,
-	OIDC_CLIENT_ID,
-} from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import * as arctic from 'arctic';
 import { jwtDecode, type JwtPayload } from 'jwt-decode';
 import type { Cookies } from '@sveltejs/kit';
 import { redirect } from '@sveltejs/kit';
+
+const AUTH_HOST = env.AUTH_HOST;
+const OIDC_CLIENT_ID = env.OIDC_CLIENT_ID;
 
 export const PKCE_VERIFIER_COOKIE = 'oidc_code_verifier';
 
