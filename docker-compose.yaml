@@ -4,10 +4,9 @@
 #   cp .env.prod.dist .env.prod   # edit secrets / hosts
 #   make prod-up
 #
-# Host nginx terminates HTTPS and proxies:
-#   board.example.com  → 127.0.0.1:3000  (frontend)
-#   auth.example.com   → 127.0.0.1:8080  (Keycloak)
-#   /media/            → Garage (see deploy/nginx/saberchan.conf.example)
+# Host nginx proxies:
+#   /         → 127.0.0.1:3000  (frontend)
+#   /cloak/   → 127.0.0.1:8080  (Keycloak)
 #
 # Do NOT publish backend:8888 to the internet (or even to the host).
 
