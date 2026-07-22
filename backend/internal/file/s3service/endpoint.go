@@ -24,7 +24,7 @@ func ResolveEndpoint(host string, useSSL bool) string {
 }
 
 // publicBaseHasPath reports whether publicBase includes a URL path other than "/".
-// e.g. https://board.example.com/media → true; https://board.example.com → false.
+// e.g. https://example.com/media → true; https://example.com → false.
 func publicBaseHasPath(publicBase string) bool {
 	u, err := url.Parse(publicBase)
 	if err != nil || u.Scheme == "" || u.Host == "" {
@@ -45,8 +45,8 @@ func publicBaseHasPath(publicBase string) bool {
 // (without trailing slash). Links are always "{prefix}/{objectKey}".
 //
 // When publicBase is set:
-//   - Origin only (https://board.example.com) → "{public}/{bucket}" (MinIO-style).
-//   - Origin + path (https://board.example.com/media) → publicBase as-is; nginx
+//   - Origin only (https://example.com) → "{public}/{bucket}" (MinIO-style).
+//   - Origin + path (https://example.com/media) → publicBase as-is; nginx
 //     should map that path onto Garage's /{bucket}/{key} (strip /media, add bucket).
 //   - Already ends with /{bucket} → returned as-is.
 //

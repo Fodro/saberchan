@@ -1,7 +1,9 @@
 import { redirect } from '@sveltejs/kit';
-import { MAIN_BACKEND_URL } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import { trimLargeWords } from '$lib/helpers';
 import { adminBackendHeaders } from '$lib/server/backend';
+
+const MAIN_BACKEND_URL = env.MAIN_BACKEND_URL;
 import {
 	FOLLOWED_COOKIE,
 	markSeen,

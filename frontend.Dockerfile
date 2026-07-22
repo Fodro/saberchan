@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # Build context: frontend/ (see docker-compose*.yaml).
-# Private SvelteKit env ($env/static/private) is baked at build time via ARG/ENV below.
+# Secrets are provided at runtime via docker-compose environment — no build args needed.
 # Keep NODE_OPTIONS modest — adapter-node tracing OOMs low-RAM Colima VMs (see DEPLOY.md).
 #
 # Production: do NOT set ALLOW_INSECURE_TLS (default empty = normal TLS verify).
@@ -10,30 +10,7 @@
 
 FROM node:24-alpine AS builder
 
-ARG OIDC_REALM
-ARG OIDC_REALM_INTERNAL
-ARG OIDC_CLIENT_ID
-ARG OIDC_CLIENT_SECRET
-ARG AUTH_HOST
-ARG MAIN_BACKEND_URL
-ARG PORT=3000
-ARG AUTH_SECRET
-ARG ADMIN_API_TOKEN
-ARG OIDC_REDIRECT_URI
-ARG OIDC_LOGOUT_REDIRECT_URI
-
-ENV OIDC_REALM=${OIDC_REALM} \
-	OIDC_REALM_INTERNAL=${OIDC_REALM_INTERNAL} \
-	OIDC_CLIENT_ID=${OIDC_CLIENT_ID} \
-	OIDC_CLIENT_SECRET=${OIDC_CLIENT_SECRET} \
-	AUTH_HOST=${AUTH_HOST} \
-	MAIN_BACKEND_URL=${MAIN_BACKEND_URL} \
-	PORT=${PORT} \
-	AUTH_SECRET=${AUTH_SECRET} \
-	ADMIN_API_TOKEN=${ADMIN_API_TOKEN} \
-	OIDC_REDIRECT_URI=${OIDC_REDIRECT_URI} \
-	OIDC_LOGOUT_REDIRECT_URI=${OIDC_LOGOUT_REDIRECT_URI} \
-	NODE_OPTIONS="--max-old-space-size=1536" \
+ENV NODE_OPTIONS="--max-old-space-size=1536" \
 	UV_THREADPOOL_SIZE=2
 
 WORKDIR /app
@@ -60,30 +37,6 @@ WORKDIR /app
 COPY --from=builder --chown=node:node /app/build ./build
 COPY --from=builder --chown=node:node /app/node_modules ./node_modules
 COPY --from=builder --chown=node:node /app/package.json ./
-
-ARG OIDC_REALM
-ARG OIDC_REALM_INTERNAL
-ARG OIDC_CLIENT_ID
-ARG OIDC_CLIENT_SECRET
-ARG AUTH_HOST
-ARG MAIN_BACKEND_URL
-ARG PORT=3000
-ARG AUTH_SECRET
-ARG ADMIN_API_TOKEN
-ARG OIDC_REDIRECT_URI
-ARG OIDC_LOGOUT_REDIRECT_URI
-
-ENV OIDC_REALM=${OIDC_REALM} \
-	OIDC_REALM_INTERNAL=${OIDC_REALM_INTERNAL} \
-	OIDC_CLIENT_ID=${OIDC_CLIENT_ID} \
-	OIDC_CLIENT_SECRET=${OIDC_CLIENT_SECRET} \
-	AUTH_HOST=${AUTH_HOST} \
-	MAIN_BACKEND_URL=${MAIN_BACKEND_URL} \
-	PORT=${PORT} \
-	AUTH_SECRET=${AUTH_SECRET} \
-	ADMIN_API_TOKEN=${ADMIN_API_TOKEN} \
-	OIDC_REDIRECT_URI=${OIDC_REDIRECT_URI} \
-	OIDC_LOGOUT_REDIRECT_URI=${OIDC_LOGOUT_REDIRECT_URI}
 
 EXPOSE 3000
 CMD ["node", "build"]

@@ -51,7 +51,7 @@ type S3 struct {
 	Bucket            string        `env:"S3_BUCKET"`
 	Region            string        `env:"S3_REGION"`
 	Url               string        `env:"S3_URL"`
-	PublicURL         string        `env:"S3_PUBLIC_URL"` // browser origin, e.g. https://board.example.com (links become {PublicURL}/{bucket}/{key})
+	PublicURL         string        `env:"S3_PUBLIC_URL"` // browser origin, e.g. https://example.com (links become {PublicURL}/{bucket}/{key})
 	UseSSL            bool          `env:"S3_USE_SSL" envDefault:"true"`
 	ForcePathStyle    bool          `env:"S3_FORCE_PATH_STYLE" envDefault:"false"`
 	EnableExpriration bool          `env:"S3_ENABLE_EXPIRATION" envDefault:"false"`

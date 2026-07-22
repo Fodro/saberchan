@@ -1,5 +1,8 @@
-import { MAIN_BACKEND_URL, ADMIN_API_TOKEN } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 import { error } from '@sveltejs/kit';
+
+const MAIN_BACKEND_URL = env.MAIN_BACKEND_URL;
+const ADMIN_API_TOKEN = env.ADMIN_API_TOKEN;
 import {
 	IMAGE_MIME,
 	MAX_FILES,
